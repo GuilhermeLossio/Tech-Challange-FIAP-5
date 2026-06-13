@@ -14,7 +14,7 @@
 | 3 | Baseline and algorithmic strategy | Pending |
 | 4 | Offline evaluation and golden set | Pending |
 | 5 | Demonstrable service or interface | Pending |
-| 6 | Target Azure architecture | Drafted in `architecture.md` |
+| 6 | MVP and target Azure architecture | Drafted in `architecture.md` |
 | 7 | MLOps lifecycle | Pending |
 | 8 | Governance, Demo Day, and reports | Pending |
 
@@ -61,16 +61,74 @@ The hypothetical production privacy approach is documented in [`docs/lgpd-plan.m
 ```text
 .
 +-- docs/
+|   +-- api-contract.md
 |   +-- azure-architecture-flow.svg
+|   +-- data-generation.md
+|   +-- demo-script.md
 |   +-- decision-flow.svg
+|   +-- evaluation-plan.md
+|   +-- glossary.md
+|   +-- governance.md
+|   +-- lgpd-plan.md
+|   +-- model-card.md
 |   +-- mlops-lifecycle.svg
+|   +-- system-card.md
 +-- architecture.md
 +-- README.md
 +-- .gitignore
 +-- LICENSE
 ```
 
-The structure above reflects the current documentation-focused state of the repository. Planned implementation folders for data, notebooks, reports, source code, and tests are described as target components rather than existing assets.
+The structure above reflects the current documentation-focused state of the repository. The planned MVP implementation structure is:
+
+```text
+src/
+  api/
+    main.py
+    schemas.py
+  bandits/
+    thompson.py
+    nilos_ucb.py
+    baseline.py
+  data/
+    download.py
+    process.py
+    synthetic.py
+  evaluation/
+    run.py
+    metrics.py
+  storage/
+    cosmos.py
+    blob.py
+tests/
+  test_bandits.py
+  test_api_contract.py
+  test_metrics.py
+infra/
+  azure/
+    main.bicep
+    parameters.dev.json
+.env.example
+pyproject.toml
+Dockerfile
+```
+
+---
+
+## Documentation Index
+
+| Document | Purpose |
+|----------|---------|
+| [`architecture.md`](architecture.md) | MVP-first Azure architecture, target enterprise architecture, and deployment considerations |
+| [`docs/api-contract.md`](docs/api-contract.md) | Planned Decision API and reward event payloads |
+| [`docs/data-generation.md`](docs/data-generation.md) | Synthetic data generation approach and validation checks |
+| [`docs/evaluation-plan.md`](docs/evaluation-plan.md) | Offline evaluation, golden set, metrics, and approval criteria |
+| [`docs/governance.md`](docs/governance.md) | Release approval, rollback, audit, ownership, and compliance checkpoints |
+| [`docs/lgpd-plan.md`](docs/lgpd-plan.md) | Hypothetical production privacy and LGPD plan |
+| [`docs/model-card.md`](docs/model-card.md) | Policy intent, metrics, risks, fairness, and approval criteria |
+| [`docs/system-card.md`](docs/system-card.md) | System behavior, Cloe/RAG boundaries, guardrails, and monitoring |
+| [`docs/demo-script.md`](docs/demo-script.md) | Suggested Demo Day presentation flow |
+| [`docs/glossary.md`](docs/glossary.md) | Definitions of project terms |
 
 ---
 
@@ -133,11 +191,31 @@ uvicorn src.api.main:app --reload
 
 ## Azure Architecture
 
-The target Azure architecture is detailed in [`architecture.md`](architecture.md).
+The Azure plan is documented in [`architecture.md`](architecture.md) as a phased strategy. ECloe keeps a target enterprise architecture, but the first implementation should be a smaller MVP to reduce cost, complexity, and delivery risk.
 
 ![Azure architecture flow](docs/azure-architecture-flow.svg)
 
-It covers:
+The first infrastructure version should prioritize:
+
+- FastAPI Decision API.
+- Thompson Sampling policy.
+- Deterministic baseline.
+- Reward tracking.
+- Azure Blob Storage for datasets, golden sets, model artifacts, and reports.
+- Cosmos DB Serverless for decision events, reward events, and policy versions.
+- Key Vault and Managed Identity when possible.
+- Basic observability with Application Insights.
+- Synthetic-only data.
+
+Recommended MVP deployment:
+
+- Frontend/demo: Vercel, Streamlit, Hugging Face Space, or a simple local dashboard.
+- Runtime: Azure Container Apps or Azure App Service. Avoid AKS in the first version.
+- Data: Blob Storage and Cosmos DB Serverless.
+- Security: Key Vault, Managed Identity when possible, no hardcoded credentials, and no real personal data.
+- Observability: API latency, error rate, decision count, reward count, and policy version tracking.
+
+The target enterprise architecture remains relevant for later phases. It covers:
 
 - Azure API Management as the entry gateway.
 - AKS for the Decision API, bandit service, and LLM assistant.
