@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="420" viewBox="0 0 1120 420" role="img" aria-labelledby="title desc">
+  <title id="title">ECloe MLOps lifecycle</title>
+  <desc id="desc">Flowchart showing data preparation, training, evaluation, approval, registry promotion, deployment, monitoring, and rollback.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#334155"/>
+    </marker>
+    <style>
+      .bg{fill:#f8fafc}
+      .box{fill:#ffffff;stroke:#0f766e;stroke-width:2;rx:10}
+      .gate{fill:#fffbeb;stroke:#d97706;stroke-width:2;rx:10}
+      .deploy{fill:#eef2ff;stroke:#4f46e5;stroke-width:2;rx:10}
+      .text{font-family:Arial,Helvetica,sans-serif;fill:#0f172a;font-size:17px;font-weight:700}
+      .sub{font-family:Arial,Helvetica,sans-serif;fill:#475569;font-size:13px}
+      .line{stroke:#334155;stroke-width:2.2;fill:none;marker-end:url(#arrow)}
+      .loop{stroke:#64748b;stroke-width:2;fill:none;stroke-dasharray:7 6;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect class="bg" width="1120" height="420"/>
+  <text x="40" y="44" class="text" style="font-size:24px">MLOps Lifecycle</text>
+  <text x="40" y="69" class="sub">Policy releases move through controlled validation before they reach the serving layer.</text>
+
+  <rect class="box" x="40" y="125" width="145" height="80"/>
+  <text class="text" x="112.5" y="156" text-anchor="middle">Prepare Data</text>
+  <text class="sub" x="112.5" y="179" text-anchor="middle">synthetic events</text>
+
+  <rect class="box" x="230" y="125" width="145" height="80"/>
+  <text class="text" x="302.5" y="156" text-anchor="middle">Train Policy</text>
+  <text class="sub" x="302.5" y="179" text-anchor="middle">offline pipeline</text>
+
+  <rect class="box" x="420" y="125" width="145" height="80"/>
+  <text class="text" x="492.5" y="156" text-anchor="middle">Evaluate</text>
+  <text class="sub" x="492.5" y="179" text-anchor="middle">regret, fairness</text>
+
+  <rect class="gate" x="610" y="125" width="145" height="80"/>
+  <text class="text" x="682.5" y="156" text-anchor="middle">Approve</text>
+  <text class="sub" x="682.5" y="179" text-anchor="middle">human gate</text>
+
+  <rect class="deploy" x="800" y="125" width="145" height="80"/>
+  <text class="text" x="872.5" y="156" text-anchor="middle">Promote</text>
+  <text class="sub" x="872.5" y="179" text-anchor="middle">model registry</text>
+
+  <rect class="deploy" x="610" y="285" width="145" height="80"/>
+  <text class="text" x="682.5" y="316" text-anchor="middle">Deploy</text>
+  <text class="sub" x="682.5" y="339" text-anchor="middle">AKS rollout</text>
+
+  <rect class="box" x="420" y="285" width="145" height="80"/>
+  <text class="text" x="492.5" y="316" text-anchor="middle">Monitor</text>
+  <text class="sub" x="492.5" y="339" text-anchor="middle">drift, latency</text>
+
+  <rect class="gate" x="230" y="285" width="145" height="80"/>
+  <text class="text" x="302.5" y="316" text-anchor="middle">Rollback</text>
+  <text class="sub" x="302.5" y="339" text-anchor="middle">previous version</text>
+
+  <path class="line" d="M185 165 H228"/>
+  <path class="line" d="M375 165 H418"/>
+  <path class="line" d="M565 165 H608"/>
+  <path class="line" d="M755 165 H798"/>
+  <path class="line" d="M872 205 C872 260 755 270 715 285"/>
+  <path class="line" d="M610 325 H567"/>
+  <path class="loop" d="M420 325 H377"/>
+  <path class="loop" d="M302 285 C302 245 492 234 492 207"/>
+  <path class="loop" d="M492 365 C492 392 112 392 112 208"/>
+</svg>

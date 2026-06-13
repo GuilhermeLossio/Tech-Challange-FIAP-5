@@ -1,0 +1,95 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
+  <title id="title">ECloe target Azure architecture</title>
+  <desc id="desc">Flowchart showing channels, API Management, AKS runtime, Azure Machine Learning, data services, security, and observability.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#334155"/>
+    </marker>
+    <style>
+      .bg{fill:#f8fafc}
+      .group{fill:#ffffff;stroke:#cbd5e1;stroke-width:2;rx:12}
+      .runtime{fill:#eef2ff;stroke:#4f46e5;stroke-width:2;rx:10}
+      .data{fill:#ecfdf5;stroke:#059669;stroke-width:2;rx:10}
+      .security{fill:#fff7ed;stroke:#ea580c;stroke-width:2;rx:10}
+      .obs{fill:#fef2f2;stroke:#dc2626;stroke-width:2;rx:10}
+      .ml{fill:#f0fdfa;stroke:#0f766e;stroke-width:2;rx:10}
+      .text{font-family:Arial,Helvetica,sans-serif;fill:#0f172a;font-size:16px;font-weight:700}
+      .sub{font-family:Arial,Helvetica,sans-serif;fill:#475569;font-size:12px}
+      .head{font-family:Arial,Helvetica,sans-serif;fill:#334155;font-size:14px;font-weight:700}
+      .line{stroke:#334155;stroke-width:2;fill:none;marker-end:url(#arrow)}
+      .dash{stroke:#64748b;stroke-width:2;fill:none;stroke-dasharray:7 6;marker-end:url(#arrow)}
+    </style>
+  </defs>
+  <rect class="bg" width="1200" height="620"/>
+  <text x="40" y="44" class="text" style="font-size:26px">Target Azure Architecture</text>
+  <text x="40" y="70" class="sub">Runtime decisions, offline learning, security, and observability are separated into explicit layers.</text>
+
+  <rect class="group" x="40" y="105" width="180" height="255"/>
+  <text x="65" y="133" class="head">Channels</text>
+  <rect class="runtime" x="65" y="155" width="130" height="45"/>
+  <text class="text" x="130" y="183" text-anchor="middle">Web App</text>
+  <rect class="runtime" x="65" y="220" width="130" height="45"/>
+  <text class="text" x="130" y="248" text-anchor="middle">Browser Ext.</text>
+  <rect class="runtime" x="65" y="285" width="130" height="45"/>
+  <text class="text" x="130" y="313" text-anchor="middle">Mobile App</text>
+
+  <rect class="group" x="270" y="145" width="180" height="130"/>
+  <text x="295" y="173" class="head">Gateway</text>
+  <rect class="runtime" x="300" y="195" width="120" height="55"/>
+  <text class="text" x="360" y="217" text-anchor="middle">API Mgmt</text>
+  <text class="sub" x="360" y="237" text-anchor="middle">auth, throttle</text>
+
+  <rect class="group" x="500" y="105" width="210" height="255"/>
+  <text x="525" y="133" class="head">AKS Runtime</text>
+  <rect class="runtime" x="535" y="155" width="140" height="48"/>
+  <text class="text" x="605" y="184" text-anchor="middle">Decision API</text>
+  <rect class="runtime" x="535" y="225" width="140" height="48"/>
+  <text class="text" x="605" y="254" text-anchor="middle">Bandit Service</text>
+  <rect class="runtime" x="535" y="295" width="140" height="48"/>
+  <text class="text" x="605" y="324" text-anchor="middle">LLM Assistant</text>
+
+  <rect class="group" x="770" y="105" width="180" height="255"/>
+  <text x="795" y="133" class="head">Data Layer</text>
+  <rect class="data" x="800" y="155" width="120" height="48"/>
+  <text class="text" x="860" y="184" text-anchor="middle">Cosmos DB</text>
+  <rect class="data" x="800" y="225" width="120" height="48"/>
+  <text class="text" x="860" y="254" text-anchor="middle">Blob Storage</text>
+  <rect class="data" x="800" y="295" width="120" height="48"/>
+  <text class="text" x="860" y="324" text-anchor="middle">AI Search</text>
+
+  <rect class="group" x="1000" y="105" width="160" height="255"/>
+  <text x="1025" y="133" class="head">Azure ML</text>
+  <rect class="ml" x="1025" y="155" width="110" height="48"/>
+  <text class="text" x="1080" y="184" text-anchor="middle">Pipeline</text>
+  <rect class="ml" x="1025" y="225" width="110" height="48"/>
+  <text class="text" x="1080" y="254" text-anchor="middle">Registry</text>
+  <rect class="ml" x="1025" y="295" width="110" height="48"/>
+  <text class="text" x="1080" y="324" text-anchor="middle">Monitoring</text>
+
+  <rect class="group" x="270" y="430" width="300" height="130"/>
+  <text x="295" y="458" class="head">Security and Identity</text>
+  <rect class="security" x="300" y="480" width="100" height="48"/>
+  <text class="text" x="350" y="509" text-anchor="middle">Entra ID</text>
+  <rect class="security" x="430" y="480" width="110" height="48"/>
+  <text class="text" x="485" y="509" text-anchor="middle">Key Vault</text>
+
+  <rect class="group" x="640" y="430" width="320" height="130"/>
+  <text x="665" y="458" class="head">Observability</text>
+  <rect class="obs" x="670" y="480" width="120" height="48"/>
+  <text class="text" x="730" y="509" text-anchor="middle">App Insights</text>
+  <rect class="obs" x="820" y="480" width="110" height="48"/>
+  <text class="text" x="875" y="509" text-anchor="middle">Log Analytics</text>
+
+  <path class="line" d="M220 232 H268"/>
+  <path class="line" d="M450 222 H498"/>
+  <path class="line" d="M675 179 H798"/>
+  <path class="line" d="M675 249 H798"/>
+  <path class="line" d="M675 319 H798"/>
+  <path class="line" d="M920 249 H1023"/>
+  <path class="line" d="M1025 249 H922"/>
+  <path class="dash" d="M1080 295 C1080 390 880 400 875 478"/>
+  <path class="dash" d="M360 480 C360 390 360 300 360 252"/>
+  <path class="dash" d="M485 480 C485 390 560 385 605 345"/>
+  <path class="dash" d="M605 345 C605 415 700 430 730 478"/>
+  <path class="dash" d="M605 273 C605 390 805 395 875 478"/>
+</svg>

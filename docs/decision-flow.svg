@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="360" viewBox="0 0 1120 360" role="img" aria-labelledby="title desc">
+  <title id="title">ECloe decision flow</title>
+  <desc id="desc">Flowchart showing customer context, decision API, bandit policy, offer presentation, reward event, and policy update.</desc>
+  <defs>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M2,2 L10,6 L2,10 Z" fill="#334155"/>
+    </marker>
+    <style>
+      .bg{fill:#f8fafc}
+      .box{fill:#ffffff;stroke:#2563eb;stroke-width:2;rx:10}
+      .store{fill:#eef2ff;stroke:#4f46e5;stroke-width:2;rx:10}
+      .text{font-family:Arial,Helvetica,sans-serif;fill:#0f172a;font-size:18px;font-weight:700}
+      .sub{font-family:Arial,Helvetica,sans-serif;fill:#475569;font-size:13px}
+      .line{stroke:#334155;stroke-width:2.2;fill:none;marker-end:url(#arrow)}
+      .dash{stroke:#64748b;stroke-width:2;fill:none;stroke-dasharray:7 6;marker-end:url(#arrow)}
+      .label{font-family:Arial,Helvetica,sans-serif;fill:#334155;font-size:13px;font-weight:700}
+    </style>
+  </defs>
+  <rect class="bg" x="0" y="0" width="1120" height="360"/>
+  <text x="40" y="44" class="text" style="font-size:24px">Decision and Learning Flow</text>
+  <text x="40" y="69" class="sub">Each interaction becomes a decision record and later a reward signal for policy improvement.</text>
+
+  <rect class="box" x="40" y="120" width="150" height="82"/>
+  <text class="text" x="115" y="154" text-anchor="middle">Channel</text>
+  <text class="sub" x="115" y="177" text-anchor="middle">web, app, CRM</text>
+
+  <rect class="box" x="240" y="120" width="160" height="82"/>
+  <text class="text" x="320" y="154" text-anchor="middle">Decision API</text>
+  <text class="sub" x="320" y="177" text-anchor="middle">contract validation</text>
+
+  <rect class="box" x="450" y="120" width="170" height="82"/>
+  <text class="text" x="535" y="154" text-anchor="middle">Bandit Service</text>
+  <text class="sub" x="535" y="177" text-anchor="middle">active policy</text>
+
+  <rect class="box" x="670" y="120" width="150" height="82"/>
+  <text class="text" x="745" y="154" text-anchor="middle">Offer</text>
+  <text class="sub" x="745" y="177" text-anchor="middle">presented to user</text>
+
+  <rect class="store" x="870" y="120" width="170" height="82"/>
+  <text class="text" x="955" y="154" text-anchor="middle">Event Store</text>
+  <text class="sub" x="955" y="177" text-anchor="middle">decision and reward</text>
+
+  <rect class="store" x="450" y="250" width="170" height="70"/>
+  <text class="text" x="535" y="282" text-anchor="middle">Policy Update</text>
+  <text class="sub" x="535" y="304" text-anchor="middle">offline evaluation</text>
+
+  <path class="line" d="M190 161 H238"/>
+  <path class="line" d="M400 161 H448"/>
+  <path class="line" d="M620 161 H668"/>
+  <path class="line" d="M820 161 H868"/>
+  <path class="dash" d="M955 203 C955 278 690 285 623 285"/>
+  <path class="dash" d="M450 285 C360 285 322 242 322 205"/>
+
+  <text class="label" x="208" y="148">context</text>
+  <text class="label" x="414" y="148">request</text>
+  <text class="label" x="633" y="148">decision</text>
+  <text class="label" x="833" y="148">events</text>
+  <text class="label" x="715" y="270">rewards</text>
+  <text class="label" x="316" y="272">new version</text>
+</svg>
