@@ -82,6 +82,7 @@ The architecture is organized into channels, gateway, runtime services, data ser
 - Record decision logs with pseudonymization and defined retention.
 - Separate permissions for reading data, writing events, training models, and approving model releases.
 - Apply rate limiting and authentication in API Management.
+- Keep the production privacy assumptions aligned with [`docs/lgpd-plan.md`](docs/lgpd-plan.md).
 
 ## Observability
 

@@ -52,6 +52,8 @@ The project uses the Kaggle [`bank-marketing` dataset by henriqueyamahata](https
 
 In a future production scenario, the platform would require a documented privacy plan covering legal basis, data minimization, retention, and incident response. In this repository context, the LLM assistant only queries synthetic data and synthetic internal policies through RAG; no real identifier is indexed.
 
+The hypothetical production privacy approach is documented in [`docs/lgpd-plan.md`](docs/lgpd-plan.md).
+
 ---
 
 ## Repository Structure
@@ -165,6 +167,7 @@ The lifecycle separates offline experimentation from serving. Policies are promo
 - Documented rollback for degraded policies.
 - Monitoring for drift, latency, errors, and fairness.
 - Secrets managed through Key Vault and Managed Identity.
+- Privacy controls and LGPD assumptions documented in [`docs/lgpd-plan.md`](docs/lgpd-plan.md).
 
 ---
 
