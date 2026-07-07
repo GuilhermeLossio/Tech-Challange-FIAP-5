@@ -1,15 +1,16 @@
 # Data Structure
 
-This document describes the initial data layout for the Kaggle extraction stage and the Azure resources expected by the MVP.
+This document describes the initial data layout for Kaggle extraction, local evaluation, and the low-consumption Azure MVP target.
 
 ## Local Folders
 
 ```text
-data/
-  raw/          # Original Kaggle files, ignored by git
-  processed/    # Cleaned datasets, ignored by git
-  golden_set/   # Future offline evaluation cases, ignored by git
-reports/        # Generated EDA outputs, ignored by git
+.
+├── data/
+│   ├── raw/              # Original Kaggle files, ignored by git
+│   ├── processed/        # Cleaned datasets, ignored by git
+│   └── golden_set/       # Five deterministic evaluation cases
+└── reports/              # Generated EDA outputs, metrics, and experiment artifacts
 ```
 
 The folders are committed with `.gitkeep` files, but generated datasets and reports are intentionally ignored.
@@ -36,17 +37,11 @@ ecloe-raw
 ecloe-processed
 ```
 
-Use `ecloe-raw` for immutable Kaggle source files and `ecloe-processed` for cleaned datasets, synthetic datasets, golden sets, and evaluation artifacts.
+Use `ecloe-raw` for immutable Kaggle source files and `ecloe-processed` for cleaned datasets, Golden Set files, metrics, and evaluation artifacts.
 
-## Azure Cosmos DB
+## Azure Event Store
 
-Recommended database:
-
-```text
-ecloe
-```
-
-Recommended containers:
+For the MVP, use either Cosmos DB Serverless or a small PostgreSQL instance. The planned event collections/tables are:
 
 ```text
 decisions
@@ -54,12 +49,12 @@ rewards
 policy_versions
 ```
 
-Suggested partition keys:
+Suggested logical partitioning:
 
-| Container | Partition key | Purpose |
-|-----------|---------------|---------|
-| `decisions` | `/customer_id` | Decision events returned by the policy |
-| `rewards` | `/customer_id` | Click or conversion events linked to a decision |
-| `policy_versions` | `/policy_name` | Approved policy metadata and offline metrics |
+| Store | Partition or index | Purpose |
+|-------|--------------------|---------|
+| `decisions` | `decision_id` or customer/session hash | Decision events returned by the policy |
+| `rewards` | `decision_id` | Click or conversion events linked to a decision |
+| `policy_versions` | `policy_name` | Approved policy metadata and offline metrics |
 
-The Python document shapes are defined in `src/storage/cosmos_documents.py`.
+The Python document shapes for Cosmos DB are defined in `src/storage/cosmos_documents.py`.

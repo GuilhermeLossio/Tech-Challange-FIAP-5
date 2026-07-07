@@ -2,65 +2,70 @@
 
 ## Goal
 
-Use this script to present ECloe as an ML Engineering project for adaptive financial offer experimentation. The demo should be clear that the repository is documentation-first and uses synthetic or public-source-derived data only.
+Use this script to present ECloe as a practical ML Engineering MVP for adaptive financial offer experimentation. The demo should emphasize low-cost execution, offline evaluation, and a working recommendation flow rather than enterprise infrastructure.
 
 ## Suggested Flow
 
-### 1. Problem
+### 1. Business Problem
 
-Digital financial channels often choose offers using static rules or long A/B tests. ECloe proposes adaptive experimentation so the system can learn from each interaction while preserving governance and auditability.
+Digital financial channels often choose offers using static rules or long A/B tests. ECloe reframes the problem as adaptive experimentation so the system can learn from each interaction while preserving governance and auditability.
 
-### 2. Solution Overview
+### 2. Dataset and Preparation
 
-Show the decision flow in [`decision-flow.svg`](decision-flow.svg). Explain that the channel sends minimized context, the Decision API calls the active bandit policy, the offer is returned with reason codes, and later reward events improve future policy versions.
+Show that the project uses the public Kaggle `bank-marketing` dataset. Explain that `duration` is removed because it would leak post-contact information, and that `y` is treated as the observed conversion signal.
 
-### 3. Architecture
+### 3. Stage 3 Algorithm Strategy
 
-Show [`azure-architecture-flow.svg`](azure-architecture-flow.svg), but explicitly separate the MVP from the target enterprise architecture.
+Explain that the algorithms are compared, not merged:
 
-For the MVP, explain that ECloe should start with a FastAPI Decision API running on Azure Container Apps or Azure App Service, backed by Blob Storage, Cosmos DB Serverless, Key Vault, Managed Identity where possible, and basic Application Insights telemetry. The MVP should avoid AKS, API Management, Azure ML, and Azure AI Search until the core decision, reward, and evaluation loop is proven.
+- Deterministic baseline as the control policy.
+- Epsilon-Greedy as a simple adaptive policy.
+- UCB as an optimistic adaptive policy.
+- Thompson Sampling as the main candidate policy.
 
-For the target architecture, highlight API Management, AKS runtime services, Cosmos DB, Blob Storage, Azure ML, Azure AI Search, Key Vault, full observability, and advanced governance.
+The same customer order and reward assumptions are used for all policies so the comparison is fair.
 
-### 4. Decision Example
+### 4. Decision Flow
 
-Use the example request from [`api-contract.md`](api-contract.md):
+Show [`decision-flow.svg`](decision-flow.svg). Explain that a future channel or demo interface sends minimized context and eligible offers, the active policy returns one offer with reason codes, and later reward events update evaluation metrics.
 
-```json
-{
-  "customer_context": {
-    "segment": "digital_high_engagement",
-    "channel": "web",
-    "risk_band": "low"
-  },
-  "eligible_offers": ["card_limit", "personal_loan", "cashback"],
-  "request_id": "req_123"
-}
-```
+### 5. Golden Set
 
-Then show the expected response with `decision_id`, `offer_id`, `policy`, `policy_version`, and `reason_codes`.
+Show 5 customer examples with:
 
-### 5. Cloe Explanation
+- short context;
+- recommended offer;
+- selected policy;
+- short business explanation.
 
-Explain that Cloe uses RAG over synthetic data, policy documentation, model cards, system cards, and experiment summaries. Cloe does not access CRM systems, direct identifiers, or sensitive attributes.
+This is the clearest Demo Day evidence that the recommendation flow is understandable.
 
-### 6. Evaluation
+### 6. MLOps and Metrics
 
-Use [`evaluation-plan.md`](evaluation-plan.md) to describe conversion rate, cumulative regret, exploration ratio, reward latency, fairness index, and API latency p95.
+Use [`evaluation-plan.md`](evaluation-plan.md) to describe conversion rate, cumulative reward, cumulative regret, exploration rate, and local MLflow tracking. The goal is to prove the evaluation loop, not to claim production performance.
 
-### 7. Governance and LGPD
+### 7. Low-Cost Architecture
 
-Summarize that no real personal data is used in the Datathon context. For a hypothetical production scenario, governance and privacy controls are documented in [`governance.md`](governance.md) and [`lgpd-plan.md`](lgpd-plan.md).
+Show [`azure-architecture-flow.svg`](azure-architecture-flow.svg), but separate the MVP from future enterprise architecture.
+
+For the MVP, explain:
+
+- local Python execution first;
+- optional script, notebook, or lightweight API;
+- Azure App Service or Container Apps only if a cloud demo is needed;
+- Blob Storage for artifacts;
+- Cosmos DB Serverless or small PostgreSQL for events;
+- Application Insights for basic operational telemetry.
 
 ### 8. Limitations
 
 Close with the main limitations:
 
-- The repository is currently documentation-first.
-- The first implementation should be a pragmatic MVP, not the full enterprise Azure architecture.
-- Results would be synthetic and not production evidence.
-- Production deployment would require implementation, legal review, security review, and regulated financial validation.
+- The dataset is public and not real customer data.
+- Offers and reward assumptions are simulated for the MVP.
+- Offline results are not production evidence.
+- Regulated production use would require security, privacy, legal, and model risk reviews.
 
 ## Suggested Closing
 
-ECloe demonstrates how adaptive ML decisioning can be designed with evaluation, observability, privacy, explainability, and governance from the start.
+ECloe demonstrates how a financial recommendation engine can be designed as a practical, low-consumption ML Engineering MVP with offline evaluation, explainability, and governance from the start.

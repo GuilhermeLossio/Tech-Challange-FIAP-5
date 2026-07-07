@@ -2,70 +2,67 @@
 
 ## Purpose
 
-This document defines how ECloe policies should be evaluated before any policy version is approved. The current repository does not contain executed experiments; the plan describes the expected evaluation process for future implementation.
+This document defines how ECloe policies should be evaluated for the Datathon MVP. The focus is a simple, reproducible offline comparison between a deterministic baseline and three adaptive bandit policies.
 
 ## Evaluation Layers
 
 | Layer | Goal |
 |-------|------|
-| Contract validation | Confirm request, response, and reward payloads match the API contract |
-| Offline policy evaluation | Compare Thompson Sampling, Nilos-UCB, and deterministic baseline |
-| Golden set validation | Ensure known scenarios produce expected behavior |
-| Fairness review | Check exposure balance across synthetic segments |
-| Operational review | Confirm latency, logging, rollback, and observability readiness |
+| Data validation | Confirm `duration` is removed, `y` is binary, and no direct identifiers are used |
+| Offline policy evaluation | Compare Baseline, Epsilon-Greedy, UCB, and Thompson Sampling |
+| Golden Set validation | Explain 5 customer examples and the recommended offer for each one |
+| MLOps tracking | Log parameters, metrics, and artifacts locally with MLflow |
+| Operational review | Confirm the demo remains lightweight and executable locally |
 
 ## Primary Metrics
 
 | Metric | Interpretation |
 |--------|----------------|
-| Conversion rate | Higher is better when measured on comparable synthetic cohorts |
+| Conversion rate | Higher is better when measured on the same simulated cohort |
+| Cumulative reward | Higher indicates more successful simulated recommendations |
 | Cumulative regret | Lower indicates better offer selection over time |
-| Exploration ratio | Must remain within the configured experiment budget |
-| Reward latency | Lower improves feedback speed, but delayed rewards must remain supported |
-| Fairness index | Exposure variation across synthetic segments must remain explainable |
-| API latency p95 | Future serving endpoint should remain within the service target |
+| Exploration rate | Must remain explainable and aligned with the policy strategy |
+| Demo latency | The script, notebook, or API should respond quickly enough for Demo Day |
+| Operational consumption | The MVP should avoid unnecessary cloud services and heavy infrastructure |
 
 ## Golden Set Expectations
 
-The golden set should contain at least 20 deterministic cases covering:
+The Datathon scope requires a simplified Golden Set with 5 examples. Each case should include:
 
-- Valid requests with multiple eligible offers.
-- Requests with a single eligible offer.
-- Missing or invalid `customer_context` fields.
-- Unknown `offer_id` values.
-- Segments with low historical evidence.
-- Reward events for known and unknown `decision_id` values.
-- Delayed rewards after the initial decision window.
-- Cases where the deterministic baseline should be selected as fallback.
+- customer/context summary;
+- eligible offers;
+- recommended offer;
+- selected policy;
+- short explanation of why the recommendation makes sense.
 
-Each case should include an expected pass/fail outcome and the reason for the expectation.
+The Golden Set can be generated from the processed dataset or from documented synthetic examples. It should be deterministic for the same seed and configuration.
 
 ## Pass and Fail Criteria
 
-A policy version passes evaluation when:
+A policy passes evaluation when:
 
 - It is reproducible from recorded configuration and data version references.
 - It performs better than or equal to the deterministic baseline on the selected primary metric.
-- It does not create unexplained exposure concentration across synthetic segments.
-- It emits reason codes for decisions.
-- It supports rollback to the previous approved version.
+- It does not rely on leakage fields or unavailable production-time data.
+- It produces interpretable outputs for the Golden Set.
+- Its metrics are logged through the planned local MLflow workflow.
 
-A policy version fails evaluation when:
+A policy fails evaluation when:
 
-- It relies on leakage fields or unavailable production-time data.
+- It relies on `duration` or another leakage field.
 - It cannot be reproduced.
-- It lacks decision logs or reason codes.
-- It materially worsens regret, fairness, or operational reliability.
+- It materially worsens reward or regret versus the baseline without a clear trade-off.
+- It lacks a documented reward update strategy.
+- It cannot support the Demo Day recommendation flow.
 
 ## Reporting Outputs
 
 Each evaluation run should produce:
 
-- Policy name and version.
-- Dataset and synthetic generation version.
-- Metric table by offer and segment.
-- Fairness summary.
-- Drift summary when applicable.
-- Known limitations.
-- Approval recommendation.
-
+- policy name and configuration;
+- dataset source and processing version;
+- metric table by policy and offer;
+- cumulative reward and regret summary;
+- Golden Set recommendations;
+- MLflow run metadata;
+- known limitations and final policy recommendation.

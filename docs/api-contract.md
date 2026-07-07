@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document defines the planned Decision API payloads for ECloe. The repository does not currently include an API implementation; these contracts are intended to guide future implementation and contract tests.
+This document defines the planned Decision API payloads for ECloe. The MVP can start with a local script or notebook, but any future API should preserve this request, response, and reward shape.
 
 ## Decision Request
 
@@ -13,7 +13,7 @@ This document defines the planned Decision API payloads for ECloe. The repositor
     "channel": "web",
     "risk_band": "low"
   },
-  "eligible_offers": ["card_limit", "personal_loan", "cashback"],
+  "eligible_offers": ["credit_limit", "personal_loan", "cashback_investment"],
   "request_id": "req_123"
 }
 ```
@@ -31,9 +31,9 @@ This document defines the planned Decision API payloads for ECloe. The repositor
 ```json
 {
   "decision_id": "dec_123",
-  "offer_id": "cashback",
+  "offer_id": "cashback_investment",
   "policy": "thompson_sampling",
-  "policy_version": "2026-05-27.1",
+  "policy_version": "2026-07-05.1",
   "reason_codes": ["segment_performance", "exploration_budget"]
 }
 ```
@@ -53,7 +53,7 @@ This document defines the planned Decision API payloads for ECloe. The repositor
   "decision_id": "dec_123",
   "event_type": "conversion",
   "reward": 1.0,
-  "occurred_at": "2026-05-27T15:00:00Z"
+  "occurred_at": "2026-07-05T15:00:00Z"
 }
 ```
 
@@ -80,4 +80,3 @@ Error payloads should include a machine-readable code, a human-readable message,
 ## Privacy Constraints
 
 Payloads must not include direct identifiers, sensitive attributes, income, wealth, precise location, or raw browsing data. Upstream systems are responsible for eligibility filtering before calling the Decision API.
-

@@ -1,263 +1,246 @@
-# ECloe - Datathon 7MLET
+# 🚀 ECloe - Datathon 7MLET
+> **Low-cost adaptive experimentation platform for financial next-best-action recommendations.**
 
-> Adaptive experimentation platform for personalized financial offers using multi-armed bandits, MLOps, governance, and an explainable LLM assistant named Cloe.
-
----
-
-## Project Progress
-
-| Stage | Description | Status |
-|-------|-------------|--------|
-| 0 | Project organization | In progress |
-| 1 | Kaggle dataset and EDA | Pending |
-| 2 | Synthetic enrichment | Pending |
-| 3 | Baseline and algorithmic strategy | Pending |
-| 4 | Offline evaluation and golden set | Pending |
-| 5 | Demonstrable service or interface | Pending |
-| 6 | MVP and target Azure architecture | Drafted in `architecture.md` |
-| 7 | MLOps lifecycle | Pending |
-| 8 | Governance, Demo Day, and reports | Pending |
+ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending financial offers, messages, or next-best actions in digital channels. The project uses the public Kaggle Bank Marketing dataset as a factual base, simulates offer rewards offline, tracks experiments locally, and keeps the first deployable architecture intentionally small.
 
 ---
 
-## Problem Overview
+## 🚀 Capabilities
 
-Digital financial institutions often rely on static rules or long A/B tests to decide which offer should be shown to each customer. This wastes traffic, slows learning, and makes responsible personalization harder to operate.
+| Capability | Description |
+|:---|:---|
+| 🧪 **Offline experimentation** | Uses Kaggle customer/campaign rows as an offline simulation environment. |
+| 🎯 **Adaptive recommendation** | Compares Baseline, Epsilon-Greedy, UCB, and Thompson Sampling policies. |
+| 📊 **Evaluation-first delivery** | Measures conversion rate, cumulative reward, regret, and exploration rate before selecting a policy. |
+| 🧾 **Golden Set validation** | Plans 5 deterministic customer examples for explainable Demo Day validation. |
+| ⚙️ **Local MLOps** | Uses local MLflow tracking for parameters, metrics, and evaluation artifacts. |
+| 💸 **Low-consumption architecture** | Prioritizes local execution and small Azure services instead of enterprise infrastructure. |
 
-**ECloe** proposes a decision engine that learns from each interaction, with Cloe acting as an LLM assistant that explains and summarizes experiments:
+---
+
+## 🧩 Business Problem
+
+Digital financial institutions need to decide which offer, message, or next-best action should be shown to each eligible customer. Static rules and long A/B tests can waste traffic, react slowly to behavior changes, and make responsible personalization harder to operate.
+
+ECloe frames this as an adaptive experimentation problem: explore enough to learn, exploit the best known option when evidence is strong, and keep sensitive financial decisions under human governance.
+
+---
+
+## 🏗️ Architecture
 
 ![Decision flow](docs/decision-flow.svg)
 
-The project does not simulate a real bank. Its goal is to demonstrate **ML Engineering maturity**: framing the problem, building baselines, versioning data, serving decisions, evaluating quality, and governing the lifecycle with support from an explainable LLM assistant.
+The MVP flow is intentionally simple: Kaggle data is downloaded and processed locally, offline policies are evaluated against the same simulated customer sequence, and the winning policy can later be exposed through a script, notebook, or lightweight API. See [`Architecture.md`](./Architecture.md) for the full component breakdown, target Azure architecture, and pipeline flow.
+
+Supporting diagrams:
+
+- [`docs/decision-flow.svg`](./docs/decision-flow.svg) — decision and reward loop.
+- [`docs/azure-architecture-flow.svg`](./docs/azure-architecture-flow.svg) — target Azure service map.
+- [`docs/mlops-lifecycle.svg`](./docs/mlops-lifecycle.svg) — offline evaluation and promotion lifecycle.
 
 ---
 
-## Design Choices
+## 📦 Dataset
 
-### Reference Dataset
+The main dataset is Kaggle [`bank-marketing` by henriqueyamahata](https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing).
 
-The project uses the Kaggle [`bank-marketing` dataset by henriqueyamahata](https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing) as its factual foundation because it is aligned with banking campaigns and conversion propensity. The `duration` column is excluded because it causes temporal leakage, as it is only known after contact.
+Usage rules:
 
-### Algorithms
+- `y` is the observed conversion signal.
+- `duration` is removed because it is only known after contact and causes temporal leakage.
+- Real customer identifiers, income, wealth, gender, race, and private business rules are not used.
+- Any synthetic offer or reward layer must be documented and reproducible.
 
-| Policy | Role | Rationale |
-|--------|------|-----------|
-| Thompson Sampling | Main policy | Bayesian exploration with explicit uncertainty, suitable for binary rewards |
-| Nilos-UCB | Technical comparison | UCB-family policy with documented formula and trade-off analysis |
-| Deterministic baseline | Control | Historical best arm used as a reference for measuring gain and regret |
+The default dataset is configured in [`.env.example`](.env.example):
 
-### Synthetic Data and LGPD
-
-**No real personal data is used.** The system operates entirely on synthetic data derived from the Kaggle dataset, following the challenge constraint.
-
-In a future production scenario, the platform would require a documented privacy plan covering legal basis, data minimization, retention, and incident response. In this repository context, the LLM assistant only queries synthetic data and synthetic internal policies through RAG; no real identifier is indexed.
-
-The hypothetical production privacy approach is documented in [`docs/lgpd-plan.md`](docs/lgpd-plan.md).
+```text
+KAGGLE_DATASET=henriqueyamahata/bank-marketing
+```
 
 ---
 
-## Repository Structure
+## 🧠 Stage 3 Training Strategy
+
+Bandit policies are not trained like a traditional classifier. ECloe uses the Kaggle dataset as an offline simulation environment:
+
+1. Each row represents a customer/context.
+2. The policy chooses one simulated offer.
+3. The simulator returns reward `1` for success or `0` for failure.
+4. The policy updates its statistics after each round.
+5. All policies are compared on the same customer order and reward assumptions.
+
+Simulated MVP offers:
+
+| Offer ID | Description |
+|:---|:---|
+| `credit_limit` | Credit limit increase or pre-approved credit |
+| `personal_loan` | Personal loan offer |
+| `cashback_investment` | Cashback or investment incentive |
+
+Policy comparison:
+
+| Policy | Role | Expected evidence |
+|:---|:---|:---|
+| Deterministic baseline | Control policy | Reference conversion and regret metrics. |
+| Epsilon-Greedy | Simple adaptive policy | Exploration/exploitation trade-off with configurable `epsilon`. |
+| UCB | Optimistic adaptive policy | Controlled exploration through an uncertainty bonus. |
+| Thompson Sampling | Recommended main policy | Bayesian exploration with Beta priors for binary rewards. |
+
+The algorithms are compared, not merged into one model. Thompson Sampling is the initial candidate for the final policy if offline results beat or technically tie the alternatives.
+
+---
+
+## 🗂️ Project Structure
 
 ```text
 .
-+-- docs/
-|   +-- api-contract.md
-|   +-- azure-architecture-flow.svg
-|   +-- data-generation.md
-|   +-- demo-script.md
-|   +-- decision-flow.svg
-|   +-- evaluation-plan.md
-|   +-- glossary.md
-|   +-- governance.md
-|   +-- lgpd-plan.md
-|   +-- model-card.md
-|   +-- mlops-lifecycle.svg
-|   +-- system-card.md
-+-- architecture.md
-+-- README.md
-+-- .gitignore
-+-- LICENSE
+├── data/
+│   ├── raw/              # Original Kaggle files, ignored by git
+│   ├── processed/        # Cleaned datasets, ignored by git
+│   └── golden_set/       # Simplified evaluation cases
+├── docs/                 # SVG diagrams and supporting documentation
+├── reports/              # Reports, metrics, and experiment outputs
+├── src/
+│   ├── core/             # Settings and environment variable loading
+│   ├── data/             # Kaggle download and dataset processing
+│   └── storage/          # Azure settings and expected document shapes
+├── tests/                # Automated tests
+├── Architecture.md       # Detailed architecture and pipeline documentation
+├── pyproject.toml        # Dependencies and package configuration
+├── .env.example          # Environment variable template
+└── README.md             # Central project documentation
 ```
 
-The structure above reflects the current documentation-focused state of the repository. The planned MVP implementation structure is:
-
-```text
-src/
-  api/
-    main.py
-    schemas.py
-  bandits/
-    thompson.py
-    nilos_ucb.py
-    baseline.py
-  data/
-    download.py
-    process.py
-    synthetic.py
-  evaluation/
-    run.py
-    metrics.py
-  storage/
-    cosmos.py
-    blob.py
-tests/
-  test_bandits.py
-  test_api_contract.py
-  test_metrics.py
-infra/
-  azure/
-    main.bicep
-    parameters.dev.json
-.env.example
-pyproject.toml
-Dockerfile
-```
+The current structure is consistent for a Python data/ML MVP. Future implementation work should add `src/bandits/`, `src/evaluation/`, `src/demo/`, and `notebooks/` when those components are created.
 
 ---
 
-## Documentation Index
+## ⚙️ Getting Started
 
-| Document | Purpose |
-|----------|---------|
-| [`architecture.md`](architecture.md) | MVP-first Azure architecture, target enterprise architecture, and deployment considerations |
-| [`docs/api-contract.md`](docs/api-contract.md) | Planned Decision API and reward event payloads |
-| [`docs/data-generation.md`](docs/data-generation.md) | Synthetic data generation approach and validation checks |
-| [`docs/evaluation-plan.md`](docs/evaluation-plan.md) | Offline evaluation, golden set, metrics, and approval criteria |
-| [`docs/governance.md`](docs/governance.md) | Release approval, rollback, audit, ownership, and compliance checkpoints |
-| [`docs/lgpd-plan.md`](docs/lgpd-plan.md) | Hypothetical production privacy and LGPD plan |
-| [`docs/model-card.md`](docs/model-card.md) | Policy intent, metrics, risks, fairness, and approval criteria |
-| [`docs/system-card.md`](docs/system-card.md) | System behavior, Cloe/RAG boundaries, guardrails, and monitoring |
-| [`docs/demo-script.md`](docs/demo-script.md) | Suggested Demo Day presentation flow |
-| [`docs/glossary.md`](docs/glossary.md) | Definitions of project terms |
+### Prerequisites
 
----
+- Python 3.11 or newer.
+- Kaggle account and API token.
+- Local virtual environment recommended.
 
-## Local Execution
-
-The implementation is not available yet. When the codebase is added, the expected local workflow is:
+### Install
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/<org>/datathon-7mlet-ecloe-grupo-XX.git
-cd datathon-7mlet-ecloe-grupo-XX
-
-# 2. Install dependencies
 pip install -e ".[dev]"
+```
 
-# 3. Configure environment variables
+Optional Azure dependencies:
+
+```bash
+pip install -e ".[azure]"
+```
+
+MLflow should be added when Stage 7 is implemented.
+
+### Configure `.env`
+
+```bash
 cp .env.example .env
+```
 
-# 4. Download and prepare Kaggle data
+Required Kaggle variables:
+
+```text
+KAGGLE_USERNAME=
+KAGGLE_KEY=
+```
+
+### Download and process data
+
+```bash
 python -m src.data.download
 python -m src.data.process
+```
 
-# 5. Generate synthetic enrichment
-python -m src.data.synthetic --seed 42
+The current processor normalizes column names, removes `duration`, maps `y` to `1`/`0`, and removes duplicates.
 
-# 6. Run offline evaluation
-python -m src.evaluation.run --golden-set data/golden_set/evaluation_cases.jsonl
+### Run tests
 
-# 7. Start the local Decision API
-uvicorn src.api.main:app --reload
+```bash
+python -m pytest
+```
+
+### Planned experiment commands
+
+```bash
+python -m src.evaluation.run
+python -m src.demo.recommend --input data/golden_set/customer_001.json
+mlflow ui
 ```
 
 ---
 
-## Components
+## 📈 Evaluation Metrics
 
-| Component | Responsibility |
-|-----------|----------------|
-| Decision API | Receives context, validates the contract, and returns a recommended offer with reason codes |
-| Bandit service | Runs Thompson Sampling, Nilos-UCB, and the control baseline |
-| Reward tracker | Records clicks, conversions, and delayed rewards |
-| MLOps pipeline | Trains, evaluates, versions, and approves new policies |
-| Cloe LLM assistant | Explains decisions and summarizes experiments through RAG over synthetic data |
-| Observability | Monitors latency, drift, regret, conversion, and fairness |
-
----
-
-## Evaluation Metrics
-
-| Metric | Description |
-|--------|-------------|
-| Conversion rate | Conversion by offer, segment, and period |
-| Cumulative regret | Accumulated gap between the selected policy and the estimated optimal policy |
-| Exploration ratio | Share of exploratory decisions |
-| Reward latency | Average time until reward observation |
-| Fairness index | Relative exposure across synthetic segments |
-| API latency p95 | Decision engine response time at the 95th percentile |
+| Metric | Purpose |
+|:---|:---|
+| Conversion rate | Measures positive rewards divided by total decisions. |
+| Cumulative reward | Tracks total successful simulated outcomes. |
+| Cumulative regret | Estimates the loss versus the best available alternative. |
+| Exploration rate | Shows how often a policy selected uncertain alternatives. |
+| Demo latency | Keeps the practical interface lightweight. |
+| Operational consumption | Confirms the MVP avoids expensive infrastructure. |
 
 ---
 
-## Azure Architecture
+## 🧾 Golden Set
 
-The Azure plan is documented in [`architecture.md`](architecture.md) as a phased strategy. ECloe keeps a target enterprise architecture, but the first implementation should be a smaller MVP to reduce cost, complexity, and delivery risk.
+Stage 4 must include 5 customer examples with context, recommended offer, policy, and a short business justification. The Golden Set should be generated from the processed dataset or from documented synthetic examples.
 
-![Azure architecture flow](docs/azure-architecture-flow.svg)
-
-The first infrastructure version should prioritize:
-
-- FastAPI Decision API.
-- Thompson Sampling policy.
-- Deterministic baseline.
-- Reward tracking.
-- Azure Blob Storage for datasets, golden sets, model artifacts, and reports.
-- Cosmos DB Serverless for decision events, reward events, and policy versions.
-- Key Vault and Managed Identity when possible.
-- Basic observability with Application Insights.
-- Synthetic-only data.
-
-Recommended MVP deployment:
-
-- Frontend/demo: Vercel, Streamlit, Hugging Face Space, or a simple local dashboard.
-- Runtime: Azure Container Apps or Azure App Service. Avoid AKS in the first version.
-- Data: Blob Storage and Cosmos DB Serverless.
-- Security: Key Vault, Managed Identity when possible, no hardcoded credentials, and no real personal data.
-- Observability: API latency, error rate, decision count, reward count, and policy version tracking.
-
-The target enterprise architecture remains relevant for later phases. It covers:
-
-- Azure API Management as the entry gateway.
-- AKS for the Decision API, bandit service, and LLM assistant.
-- Azure Machine Learning for tracking, pipelines, and model registry.
-- Cosmos DB for offer and reward events.
-- Blob Storage for datasets and artifacts.
-- Azure AI Search for the RAG index over synthetic data.
-- Key Vault and Managed Identity for secrets and credentials.
-- Application Insights and Log Analytics for observability.
+| Case | Short context | Recommended offer | Policy |
+|:---|:---|:---|:---|
+| 1 | Digital customer with positive campaign evidence | `cashback_investment` | Thompson Sampling |
+| 2 | Customer with credit-oriented context | `personal_loan` | Thompson Sampling |
+| 3 | Segment with limited evidence | `credit_limit` | Thompson Sampling |
+| 4 | Recurring digital-channel customer | `cashback_investment` | Thompson Sampling |
+| 5 | Less-observed segment | `personal_loan` | Thompson Sampling |
 
 ---
 
-## MLOps Lifecycle
+## 🚢 Deployment Strategy
 
-![MLOps lifecycle](docs/mlops-lifecycle.svg)
+The MVP should run locally first. A cloud demonstration should use a low-consumption Azure setup:
 
-The lifecycle separates offline experimentation from serving. Policies are promoted only after metric validation, human approval, and registry versioning.
+| Layer | Suggested service |
+|:---|:---|
+| Runtime | Azure App Service or Azure Container Apps |
+| Artifacts | Azure Blob Storage |
+| Events | Cosmos DB Serverless or small PostgreSQL |
+| Secrets | Azure Key Vault |
+| Observability | Application Insights |
 
----
-
-## Governance
-
-- Auditable logs for each decision, including minimized context, offer, policy, and version.
-- Reason codes for each recommendation.
-- Separation between identity systems and behavioral model features.
-- Human approval before promoting policies to production.
-- Documented rollback for degraded policies.
-- Monitoring for drift, latency, errors, and fairness.
-- Secrets managed through Key Vault and Managed Identity.
-- Privacy controls and LGPD assumptions documented in [`docs/lgpd-plan.md`](docs/lgpd-plan.md).
+AKS, Azure Machine Learning, API Management, and Azure AI Search remain future options, not MVP prerequisites.
 
 ---
 
-## Known Limitations
+## 📋 Related Docs
 
-- The repository is in a documentation and planning phase; most implementation components are not present yet.
-- Data is synthetic or derived from a public Kaggle dataset and does not represent real customer behavior.
-- Azure cost estimates are qualitative and must be recalculated based on region, volume, and final SLA.
-- The solution must not be used in regulated production without full risk, suitability, security, and privacy validation.
+- [`Architecture.md`](./Architecture.md) — Architecture, components, pipeline, and trade-offs.
+- [`docs/api-contract.md`](./docs/api-contract.md) — Planned Decision API and reward payloads.
+- [`docs/data-structure.md`](./docs/data-structure.md) — Local data folders and cloud storage conventions.
+- [`docs/evaluation-plan.md`](./docs/evaluation-plan.md) — Offline evaluation and Golden Set expectations.
+- [`docs/model-card.md`](./docs/model-card.md) — Policy intent, metrics, risks, and approval criteria.
+- [`docs/system-card.md`](./docs/system-card.md) — System behavior, boundaries, and guardrails.
+- [`docs/demo-script.md`](./docs/demo-script.md) — Demo Day presentation flow.
+- [`docs/`](./docs) — SVG diagrams and supporting documentation.
 
 ---
 
-## License
+## ⚠️ Limitations
+
+- The Kaggle dataset is public and does not represent real customers from a financial institution.
+- MVP offers are simulated to enable policy comparison.
+- Offline rewards approximate a real environment but do not replace controlled production testing.
+- Sensitive decisions would require human review, regulatory validation, security, privacy, and continuous monitoring.
+- The cloud architecture is a target deployment, not a requirement for running the local MVP.
+
+---
+
+## 📜 License
 
 MIT License. See [LICENSE](LICENSE).

@@ -2,63 +2,56 @@
 
 ## System Purpose
 
-ECloe is a documented target system for adaptive offer experimentation in digital financial channels. It combines a Decision API, multi-armed bandit policies, reward tracking, MLOps controls, observability, governance, and an explainable LLM assistant named Cloe.
-
-The repository is currently documentation-first. The described runtime services, datasets, and pipelines are target components for future implementation.
+ECloe is a low-cost adaptive experimentation MVP for recommending financial offers, messages, or next-best actions in digital channels. It combines Kaggle-based data preparation, offline bandit policy evaluation, Golden Set validation, local MLOps tracking, and a future lightweight demo interface.
 
 ## Main Components
 
 | Component | Responsibility |
 |-----------|----------------|
-| Decision API | Receives context, validates the contract, and returns the selected offer |
-| Bandit service | Applies Thompson Sampling, Nilos-UCB, or deterministic baseline policy |
-| Reward tracker | Records click, conversion, and delayed reward events |
-| MLOps pipeline | Trains, evaluates, versions, and promotes policy versions |
-| Cloe assistant | Explains decisions and summarizes experiments using RAG |
-| Observability layer | Tracks latency, errors, drift, regret, conversion, and fairness |
+| Data preparation | Downloads and processes the Kaggle Bank Marketing dataset |
+| Offline simulator | Uses customer/context rows and binary rewards to compare policies |
+| Bandit policies | Compare deterministic baseline, Epsilon-Greedy, UCB, and Thompson Sampling |
+| Evaluation layer | Calculates conversion, reward, regret, and exploration metrics |
+| Golden Set | Provides 5 explainable customer examples for Demo Day |
+| Demo interface | Planned script, notebook, or simple API returning a recommended offer |
+| Observability and MLOps | Uses local MLflow and lightweight operational metrics |
 
 ## Operating Flow
 
-1. A channel sends minimized context and eligible offers to the Decision API.
-2. The Decision API validates the request and calls the active policy.
-3. The Bandit service returns one offer and reason codes.
-4. The decision is logged with policy and version metadata.
-5. Later reward events are attached to the original `decision_id`.
-6. Offline evaluation recalculates metrics and informs future policy releases.
+1. Kaggle data is downloaded to `data/raw/`.
+2. Processing removes leakage fields and normalizes the target.
+3. The simulator presents customer contexts to each policy.
+4. Each policy chooses one simulated offer.
+5. The simulator returns a binary reward.
+6. Metrics are calculated and logged.
+7. The selected policy is demonstrated with the Golden Set.
 
 The visual flow is available in [`decision-flow.svg`](decision-flow.svg).
 
-## Cloe and RAG Boundaries
-
-Cloe is intended to help users understand decisions, experiments, and operational metrics. It should query only synthetic data, anonymized aggregates, internal policy documentation, model cards, system cards, and experiment summaries.
-
-Cloe must not access CRM systems, raw identifiers, financial balances, income, precise location, or protected attributes. When explaining a decision, Cloe should use reason codes and policy metadata rather than personal or sensitive data.
-
 ## Guardrails
 
-- No real personal data is used in the Datathon context.
-- No credit, blocking, or eligibility decision is made exclusively by the model.
-- Sensitive decisions require human review.
-- Policy versions require offline validation before promotion.
-- Secrets are handled through Key Vault and Managed Identity in the target Azure design.
+- No real customer data is used in the Datathon context.
+- No credit, blocking, fraud, or eligibility decision is made by the MVP.
+- Sensitive production decisions would require human review.
+- Policy selection requires offline validation before any production-like use.
 - Logs must not contain direct identifiers or sensitive attributes.
+- Cloud deployment should remain low-consumption unless scale requirements justify more services.
 
 ## Expected Failure Modes
 
 | Failure mode | Expected handling |
 |--------------|-------------------|
-| Invalid API payload | Reject with a structured validation error |
-| No eligible offers | Return a no-decision response or configured fallback |
-| Policy service unavailable | Use the deterministic baseline if approved for fallback |
-| Reward arrives late | Store it as a delayed reward and evaluate separately |
-| Drift alert triggered | Freeze promotion and require review |
-| Cloe lacks evidence | Respond with uncertainty and point to available documentation |
+| Missing Kaggle credentials | Fail with a clear setup message |
+| No raw CSV file found | Ask the user to download or configure the dataset |
+| Leakage field present | Remove `duration` before modeling |
+| No eligible offers | Return a no-decision response or deterministic fallback |
+| Policy underperforms baseline | Keep the baseline or select another adaptive policy |
+| Reward assumptions are unclear | Document the simulation logic and seed |
 
 ## Monitoring
 
-Technical monitoring should include latency, error rate, throughput, event write time, and service availability. Model monitoring should include conversion rate, cumulative regret, exploration ratio, reward latency, drift, and fairness index.
+MVP monitoring should focus on conversion rate, cumulative reward, cumulative regret, exploration rate, demo latency, and local MLflow tracking completeness. Future cloud monitoring can add API error rate, event write failures, and policy version observability.
 
 ## Operational Boundaries
 
-ECloe is not production-ready in the current repository state. A real deployment would require implementation, security review, legal review, data protection approval, incident response testing, and regulated financial suitability validation.
-
+ECloe is not production-ready in the current repository state. A real deployment would require implemented policies, security review, legal review, data protection approval, incident response testing, and regulated financial suitability validation.

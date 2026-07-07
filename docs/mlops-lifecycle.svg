@@ -1,64 +1,162 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="420" viewBox="0 0 1120 420" role="img" aria-labelledby="title desc">
-  <title id="title">ECloe MLOps lifecycle</title>
-  <desc id="desc">Flowchart showing data preparation, training, evaluation, approval, registry promotion, deployment, monitoring, and rollback.</desc>
+<svg viewBox="0 0 1240 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ECloe lightweight MLOps lifecycle</title>
+  <desc id="desc">Six-step ECloe lightweight MLOps lifecycle. The pipeline prepares data, evaluates policies, logs MLflow runs, validates the Golden Set, selects a demo policy, and performs a light deployment. A dashed feedback loop returns validation learnings to data preparation.</desc>
   <defs>
-    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M2,2 L10,6 L2,10 Z" fill="#334155"/>
+    <linearGradient id="neutralCard" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f6f8fa"/>
+    </linearGradient>
+    <linearGradient id="blueCard" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-25%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#1f2328" flood-opacity="0.12"/>
+    </filter>
+    <filter id="finalShadow" x="-24%" y="-30%" width="148%" height="170%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#2563eb" flood-opacity="0.18"/>
+    </filter>
+    <marker id="arrowGray" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#57606a"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#2563eb"/>
     </marker>
     <style>
-      .bg{fill:#f8fafc}
-      .box{fill:#ffffff;stroke:#0f766e;stroke-width:2;rx:10}
-      .gate{fill:#fffbeb;stroke:#d97706;stroke-width:2;rx:10}
-      .deploy{fill:#eef2ff;stroke:#4f46e5;stroke-width:2;rx:10}
-      .text{font-family:Arial,Helvetica,sans-serif;fill:#0f172a;font-size:17px;font-weight:700}
-      .sub{font-family:Arial,Helvetica,sans-serif;fill:#475569;font-size:13px}
-      .line{stroke:#334155;stroke-width:2.2;fill:none;marker-end:url(#arrow)}
-      .loop{stroke:#64748b;stroke-width:2;fill:none;stroke-dasharray:7 6;marker-end:url(#arrow)}
+      .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-weight: 700; }
+      .sectionText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 13px; font-weight: 700; }
+      .bodyText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; }
+      .cardTitle { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-size: 15px; font-weight: 700; }
+      .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; }
+      .badgeText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #ffffff; font-size: 12px; font-weight: 700; }
+      .icon { fill: none; stroke: #57606a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .iconBlue { fill: none; stroke: #2563eb; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
     </style>
   </defs>
-  <rect class="bg" width="1120" height="420"/>
-  <text x="40" y="44" class="text" style="font-size:24px">MLOps Lifecycle</text>
-  <text x="40" y="69" class="sub">Policy releases move through controlled validation before they reach the serving layer.</text>
 
-  <rect class="box" x="40" y="125" width="145" height="80"/>
-  <text class="text" x="112.5" y="156" text-anchor="middle">Prepare Data</text>
-  <text class="sub" x="112.5" y="179" text-anchor="middle">synthetic events</text>
+  <rect width="1240" height="520" fill="#ffffff"/>
+  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Ciclo de Vida MLOps Leve</text>
+  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Pipeline local-first para rastrear, validar e promover uma politica demonstravel com baixo custo operacional.</text>
 
-  <rect class="box" x="230" y="125" width="145" height="80"/>
-  <text class="text" x="302.5" y="156" text-anchor="middle">Train Policy</text>
-  <text class="sub" x="302.5" y="179" text-anchor="middle">offline pipeline</text>
+  <rect x="40" y="112" width="1160" height="288" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="70" y="140" class="sectionText">Pipeline de avaliacao e promocao</text>
 
-  <rect class="box" x="420" y="125" width="145" height="80"/>
-  <text class="text" x="492.5" y="156" text-anchor="middle">Evaluate</text>
-  <text class="sub" x="492.5" y="179" text-anchor="middle">regret, fairness</text>
+  <path d="M 240 254 C 258 238, 274 238, 292 254" fill="none" stroke="#57606a" stroke-width="2.3" marker-end="url(#arrowGray)"/>
+  <path d="M 422 254 C 440 236, 456 236, 474 254" fill="none" stroke="#4f79c9" stroke-width="2.7" marker-end="url(#arrowBlue)" opacity="0.78"/>
+  <path d="M 604 254 C 622 234, 638 234, 656 254" fill="none" stroke="#3c6fd3" stroke-width="2.9" marker-end="url(#arrowBlue)" opacity="0.84"/>
+  <path d="M 786 254 C 804 232, 820 232, 838 254" fill="none" stroke="#3268d0" stroke-width="3.1" marker-end="url(#arrowBlue)" opacity="0.92"/>
+  <path d="M 968 254 C 986 230, 1002 230, 1020 254" fill="none" stroke="#2563eb" stroke-width="3.3" marker-end="url(#arrowBlue)"/>
 
-  <rect class="gate" x="610" y="125" width="145" height="80"/>
-  <text class="text" x="682.5" y="156" text-anchor="middle">Approve</text>
-  <text class="sub" x="682.5" y="179" text-anchor="middle">human gate</text>
+  <g transform="translate(76 168)" filter="url(#softShadow)">
+    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#d0d7de"/>
+    <circle cx="25" cy="25" r="15" fill="#57606a"/>
+    <text x="25" y="29" text-anchor="middle" class="badgeText">1</text>
+    <g class="icon" transform="translate(58 18)">
+      <ellipse cx="24" cy="10" rx="24" ry="8"/>
+      <path d="M 0 10 v32 c0 4.4 10.7 8 24 8 s24 -3.6 24 -8 V10"/>
+      <path d="M 0 26 c0 4.4 10.7 8 24 8 s24 -3.6 24 -8"/>
+    </g>
+    <text x="82" y="82" text-anchor="middle" class="cardTitle">Prepare Data</text>
+    <text x="82" y="106" text-anchor="middle" class="cardSub">Kaggle source cleaned</text>
+    <text x="82" y="124" text-anchor="middle" class="cardSub">and leakage-checked</text>
+    <text x="82" y="142" text-anchor="middle" class="cardSub">for local evaluation.</text>
+  </g>
 
-  <rect class="deploy" x="800" y="125" width="145" height="80"/>
-  <text class="text" x="872.5" y="156" text-anchor="middle">Promote</text>
-  <text class="sub" x="872.5" y="179" text-anchor="middle">model registry</text>
+  <g transform="translate(258 168)" filter="url(#softShadow)">
+    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#c6d6f4"/>
+    <circle cx="25" cy="25" r="15" fill="#4f6f9d"/>
+    <text x="25" y="29" text-anchor="middle" class="badgeText">2</text>
+    <g class="icon" transform="translate(56 18)">
+      <path d="M 26 4 v48"/>
+      <path d="M 10 16 h32"/>
+      <path d="M 15 16 l-9 20 h18 z"/>
+      <path d="M 37 16 l-9 20 h18 z"/>
+      <path d="M 12 52 h28"/>
+      <path d="M 49 10 l5 5 l10 -11" stroke="#2563eb"/>
+    </g>
+    <text x="82" y="82" text-anchor="middle" class="cardTitle">
+      <tspan x="82" dy="0">Evaluate</tspan>
+      <tspan x="82" dy="18">Policies</tspan>
+    </text>
+    <text x="82" y="122" text-anchor="middle" class="cardSub">Compare baseline and</text>
+    <text x="82" y="140" text-anchor="middle" class="cardSub">adaptive candidates.</text>
+  </g>
 
-  <rect class="deploy" x="610" y="285" width="145" height="80"/>
-  <text class="text" x="682.5" y="316" text-anchor="middle">Deploy</text>
-  <text class="sub" x="682.5" y="339" text-anchor="middle">AKS rollout</text>
+  <g transform="translate(440 168)" filter="url(#softShadow)">
+    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#bcd2f3"/>
+    <circle cx="25" cy="25" r="15" fill="#3f71c8"/>
+    <text x="25" y="29" text-anchor="middle" class="badgeText">3</text>
+    <g class="icon" transform="translate(57 20)">
+      <path d="M 7 47 h48"/>
+      <rect x="11" y="27" width="9" height="20" rx="2"/>
+      <rect x="27" y="15" width="9" height="32" rx="2"/>
+      <rect x="43" y="6" width="9" height="41" rx="2"/>
+      <path d="M 7 12 c13 0 15 10 25 10 c8 0 11 -7 23 -7" stroke="#2563eb"/>
+    </g>
+    <text x="82" y="82" text-anchor="middle" class="cardTitle">Log MLflow</text>
+    <text x="82" y="106" text-anchor="middle" class="cardSub">Track params, metrics,</text>
+    <text x="82" y="124" text-anchor="middle" class="cardSub">artifacts, and run</text>
+    <text x="82" y="142" text-anchor="middle" class="cardSub">metadata locally.</text>
+  </g>
 
-  <rect class="box" x="420" y="285" width="145" height="80"/>
-  <text class="text" x="492.5" y="316" text-anchor="middle">Monitor</text>
-  <text class="sub" x="492.5" y="339" text-anchor="middle">drift, latency</text>
+  <g transform="translate(622 168)" filter="url(#softShadow)">
+    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#aac7f4"/>
+    <circle cx="25" cy="25" r="15" fill="#326ad7"/>
+    <text x="25" y="29" text-anchor="middle" class="badgeText">4</text>
+    <g class="iconBlue" transform="translate(56 18)">
+      <path d="M 27 4 l6 13 l14 2 l-10 10 l2 14 l-12 -7 l-12 7 l2 -14 l-10 -10 l14 -2 z"/>
+      <path d="M 52 11 h10"/>
+      <path d="M 52 24 h10"/>
+      <path d="M 52 37 h10"/>
+    </g>
+    <text x="82" y="82" text-anchor="middle" class="cardTitle">Golden Set</text>
+    <text x="82" y="106" text-anchor="middle" class="cardSub">Validate five stable</text>
+    <text x="82" y="124" text-anchor="middle" class="cardSub">cases with reason</text>
+    <text x="82" y="142" text-anchor="middle" class="cardSub">codes for review.</text>
+  </g>
 
-  <rect class="gate" x="230" y="285" width="145" height="80"/>
-  <text class="text" x="302.5" y="316" text-anchor="middle">Rollback</text>
-  <text class="sub" x="302.5" y="339" text-anchor="middle">previous version</text>
+  <g transform="translate(804 168)" filter="url(#softShadow)">
+    <rect width="164" height="156" rx="11" fill="url(#blueCard)" stroke="#8fb5f1"/>
+    <circle cx="25" cy="25" r="15" fill="#2563eb"/>
+    <text x="25" y="29" text-anchor="middle" class="badgeText">5</text>
+    <g class="iconBlue" transform="translate(58 18)">
+      <path d="M 10 7 l30 22 l-14 3 l-5 13 z"/>
+      <path d="M 34 35 l12 12"/>
+      <rect x="43" y="43" width="15" height="10" rx="2"/>
+    </g>
+    <text x="82" y="82" text-anchor="middle" class="cardTitle">
+      <tspan x="82" dy="0">Select Demo</tspan>
+      <tspan x="82" dy="18">Policy</tspan>
+    </text>
+    <text x="82" y="122" text-anchor="middle" class="cardSub">Promote the best</text>
+    <text x="82" y="140" text-anchor="middle" class="cardSub">explainable option.</text>
+  </g>
 
-  <path class="line" d="M185 165 H228"/>
-  <path class="line" d="M375 165 H418"/>
-  <path class="line" d="M565 165 H608"/>
-  <path class="line" d="M755 165 H798"/>
-  <path class="line" d="M872 205 C872 260 755 270 715 285"/>
-  <path class="line" d="M610 325 H567"/>
-  <path class="loop" d="M420 325 H377"/>
-  <path class="loop" d="M302 285 C302 245 492 234 492 207"/>
-  <path class="loop" d="M492 365 C492 392 112 392 112 208"/>
+  <g transform="translate(986 160)" filter="url(#finalShadow)">
+    <rect width="178" height="172" rx="12" fill="url(#blueCard)" stroke="#2563eb" stroke-width="2.4"/>
+    <circle cx="28" cy="28" r="16" fill="#2563eb"/>
+    <text x="28" y="32" text-anchor="middle" class="badgeText">6</text>
+    <g class="iconBlue" transform="translate(66 20)">
+      <path d="M 12 40 c-7 0 -12 -5 -12 -11 c0 -5 4 -10 10 -11 c3 -9 11 -15 21 -15 c11 0 20 8 22 19 c6 1 10 6 10 12 c0 8 -6 14 -15 14 H12"/>
+      <path d="M 31 48 v19"/>
+      <path d="M 23 58 l8 9 l8 -9"/>
+    </g>
+    <text x="89" y="88" text-anchor="middle" class="cardTitle">Light Deploy</text>
+    <text x="89" y="113" text-anchor="middle" class="cardSub">Expose selected policy</text>
+    <text x="89" y="132" text-anchor="middle" class="cardSub">through script, API,</text>
+    <text x="89" y="151" text-anchor="middle" class="cardSub">or notebook demo.</text>
+  </g>
+
+  <path d="M 706 342 C 650 382, 260 382, 158 342" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="7 7" marker-end="url(#arrowBlue)" opacity="0.72"/>
+  <rect x="438" y="350" width="262" height="28" rx="14" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="569" y="369" text-anchor="middle" class="bodyText" font-size="12">feedback loop: refine data and assumptions</text>
+
+  <g transform="translate(160 432)">
+    <rect width="920" height="48" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
+    <circle cx="28" cy="24" r="6" fill="#2563eb"/>
+    <text x="46" y="21" class="bodyText">MLflow: rastreamento de experimentos, metricas e artefatos.</text>
+    <circle cx="486" cy="24" r="6" fill="#57606a"/>
+    <text x="504" y="21" class="bodyText">Golden Set: casos deterministas para validacao explicavel.</text>
+    <text x="46" y="38" class="bodyText">Fluxo principal em azul; seta tracejada indica aprendizado offline.</text>
+  </g>
 </svg>

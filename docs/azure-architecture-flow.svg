@@ -1,95 +1,161 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="620" viewBox="0 0 1200 620" role="img" aria-labelledby="title desc">
-  <title id="title">ECloe target Azure architecture</title>
-  <desc id="desc">Flowchart showing channels, API Management, AKS runtime, Azure Machine Learning, data services, security, and observability.</desc>
+<svg viewBox="0 0 1240 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ECloe low-consumption Azure target architecture</title>
+  <desc id="desc">Low-consumption target Azure architecture for ECloe. A demo client calls a light runtime in Azure App Service or Container Apps. The runtime reads artifacts from Blob Storage, writes decision and reward events to Cosmos DB Serverless or PostgreSQL, uses Key Vault for secrets, and emits telemetry to Application Insights.</desc>
   <defs>
-    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
-      <path d="M2,2 L10,6 L2,10 Z" fill="#334155"/>
+    <linearGradient id="neutralCard" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f6f8fa"/>
+    </linearGradient>
+    <linearGradient id="blueCard" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-25%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#1f2328" flood-opacity="0.12"/>
+    </filter>
+    <filter id="primaryShadow" x="-24%" y="-30%" width="148%" height="170%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#2563eb" flood-opacity="0.18"/>
+    </filter>
+    <marker id="arrowGray" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#57606a"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#2563eb"/>
     </marker>
     <style>
-      .bg{fill:#f8fafc}
-      .group{fill:#ffffff;stroke:#cbd5e1;stroke-width:2;rx:12}
-      .runtime{fill:#eef2ff;stroke:#4f46e5;stroke-width:2;rx:10}
-      .data{fill:#ecfdf5;stroke:#059669;stroke-width:2;rx:10}
-      .security{fill:#fff7ed;stroke:#ea580c;stroke-width:2;rx:10}
-      .obs{fill:#fef2f2;stroke:#dc2626;stroke-width:2;rx:10}
-      .ml{fill:#f0fdfa;stroke:#0f766e;stroke-width:2;rx:10}
-      .text{font-family:Arial,Helvetica,sans-serif;fill:#0f172a;font-size:16px;font-weight:700}
-      .sub{font-family:Arial,Helvetica,sans-serif;fill:#475569;font-size:12px}
-      .head{font-family:Arial,Helvetica,sans-serif;fill:#334155;font-size:14px;font-weight:700}
-      .line{stroke:#334155;stroke-width:2;fill:none;marker-end:url(#arrow)}
-      .dash{stroke:#64748b;stroke-width:2;fill:none;stroke-dasharray:7 6;marker-end:url(#arrow)}
+      .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-weight: 700; }
+      .sectionText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 13px; font-weight: 700; }
+      .bodyText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; }
+      .cardTitle { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-size: 15px; font-weight: 700; }
+      .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; }
+      .pillText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; font-weight: 700; }
+      .labelText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; font-weight: 700; }
+      .icon { fill: none; stroke: #57606a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .iconBlue { fill: none; stroke: #2563eb; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
     </style>
   </defs>
-  <rect class="bg" width="1200" height="620"/>
-  <text x="40" y="44" class="text" style="font-size:26px">Target Azure Architecture</text>
-  <text x="40" y="70" class="sub">Runtime decisions, offline learning, security, and observability are separated into explicit layers.</text>
 
-  <rect class="group" x="40" y="105" width="180" height="255"/>
-  <text x="65" y="133" class="head">Channels</text>
-  <rect class="runtime" x="65" y="155" width="130" height="45"/>
-  <text class="text" x="130" y="183" text-anchor="middle">Web App</text>
-  <rect class="runtime" x="65" y="220" width="130" height="45"/>
-  <text class="text" x="130" y="248" text-anchor="middle">Browser Ext.</text>
-  <rect class="runtime" x="65" y="285" width="130" height="45"/>
-  <text class="text" x="130" y="313" text-anchor="middle">Mobile App</text>
+  <rect width="1240" height="640" fill="#ffffff"/>
+  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Arquitetura Azure de Baixo Consumo</text>
+  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Arquitetura alvo para demo: runtime pequeno, estado gerenciado, segredos fora do codigo e telemetria essencial.</text>
 
-  <rect class="group" x="270" y="145" width="180" height="130"/>
-  <text x="295" y="173" class="head">Gateway</text>
-  <rect class="runtime" x="300" y="195" width="120" height="55"/>
-  <text class="text" x="360" y="217" text-anchor="middle">API Mgmt</text>
-  <text class="sub" x="360" y="237" text-anchor="middle">auth, throttle</text>
+  <rect x="40" y="112" width="226" height="356" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="70" y="140" class="sectionText">Local / Demo</text>
 
-  <rect class="group" x="500" y="105" width="210" height="255"/>
-  <text x="525" y="133" class="head">AKS Runtime</text>
-  <rect class="runtime" x="535" y="155" width="140" height="48"/>
-  <text class="text" x="605" y="184" text-anchor="middle">Decision API</text>
-  <rect class="runtime" x="535" y="225" width="140" height="48"/>
-  <text class="text" x="605" y="254" text-anchor="middle">Bandit Service</text>
-  <rect class="runtime" x="535" y="295" width="140" height="48"/>
-  <text class="text" x="605" y="324" text-anchor="middle">LLM Assistant</text>
+  <rect x="326" y="112" width="250" height="356" rx="18" fill="#f8fbff" stroke="#c6d6f4"/>
+  <text x="356" y="140" class="sectionText">Serving Layer</text>
 
-  <rect class="group" x="770" y="105" width="180" height="255"/>
-  <text x="795" y="133" class="head">Data Layer</text>
-  <rect class="data" x="800" y="155" width="120" height="48"/>
-  <text class="text" x="860" y="184" text-anchor="middle">Cosmos DB</text>
-  <rect class="data" x="800" y="225" width="120" height="48"/>
-  <text class="text" x="860" y="254" text-anchor="middle">Blob Storage</text>
-  <rect class="data" x="800" y="295" width="120" height="48"/>
-  <text class="text" x="860" y="324" text-anchor="middle">AI Search</text>
+  <rect x="636" y="112" width="304" height="356" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="666" y="140" class="sectionText">Managed State and Controls</text>
 
-  <rect class="group" x="1000" y="105" width="160" height="255"/>
-  <text x="1025" y="133" class="head">Azure ML</text>
-  <rect class="ml" x="1025" y="155" width="110" height="48"/>
-  <text class="text" x="1080" y="184" text-anchor="middle">Pipeline</text>
-  <rect class="ml" x="1025" y="225" width="110" height="48"/>
-  <text class="text" x="1080" y="254" text-anchor="middle">Registry</text>
-  <rect class="ml" x="1025" y="295" width="110" height="48"/>
-  <text class="text" x="1080" y="324" text-anchor="middle">Monitoring</text>
+  <rect x="1000" y="112" width="200" height="356" rx="18" fill="#f8fbff" stroke="#c6d6f4"/>
+  <text x="1030" y="140" class="sectionText">Observability</text>
 
-  <rect class="group" x="270" y="430" width="300" height="130"/>
-  <text x="295" y="458" class="head">Security and Identity</text>
-  <rect class="security" x="300" y="480" width="100" height="48"/>
-  <text class="text" x="350" y="509" text-anchor="middle">Entra ID</text>
-  <rect class="security" x="430" y="480" width="110" height="48"/>
-  <text class="text" x="485" y="509" text-anchor="middle">Key Vault</text>
+  <path d="M 266 288 C 286 268, 306 268, 326 288" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <text x="296" y="260" text-anchor="middle" class="labelText">HTTPS request</text>
 
-  <rect class="group" x="640" y="430" width="320" height="130"/>
-  <text x="665" y="458" class="head">Observability</text>
-  <rect class="obs" x="670" y="480" width="120" height="48"/>
-  <text class="text" x="730" y="509" text-anchor="middle">App Insights</text>
-  <rect class="obs" x="820" y="480" width="110" height="48"/>
-  <text class="text" x="875" y="509" text-anchor="middle">Log Analytics</text>
+  <path d="M 576 234 C 600 204, 612 194, 636 190" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrowGray)"/>
+  <path d="M 576 292 C 598 292, 614 292, 636 292" fill="none" stroke="#2563eb" stroke-width="2.8" marker-end="url(#arrowBlue)"/>
+  <path d="M 576 350 C 600 382, 612 392, 636 396" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrowGray)"/>
+  <path d="M 940 292 C 962 292, 978 292, 1000 292" fill="none" stroke="#2563eb" stroke-width="2.8" marker-end="url(#arrowBlue)"/>
 
-  <path class="line" d="M220 232 H268"/>
-  <path class="line" d="M450 222 H498"/>
-  <path class="line" d="M675 179 H798"/>
-  <path class="line" d="M675 249 H798"/>
-  <path class="line" d="M675 319 H798"/>
-  <path class="line" d="M920 249 H1023"/>
-  <path class="line" d="M1025 249 H922"/>
-  <path class="dash" d="M1080 295 C1080 390 880 400 875 478"/>
-  <path class="dash" d="M360 480 C360 390 360 300 360 252"/>
-  <path class="dash" d="M485 480 C485 390 560 385 605 345"/>
-  <path class="dash" d="M605 345 C605 415 700 430 730 478"/>
-  <path class="dash" d="M605 273 C605 390 805 395 875 478"/>
+  <text x="606" y="182" text-anchor="middle" class="labelText">artifacts</text>
+  <text x="606" y="280" text-anchor="middle" class="labelText">events</text>
+  <text x="606" y="418" text-anchor="middle" class="labelText">secrets</text>
+  <text x="970" y="280" text-anchor="middle" class="labelText">telemetry</text>
+
+  <g transform="translate(72 186)" filter="url(#softShadow)">
+    <rect width="162" height="202" rx="12" fill="url(#blueCard)" stroke="#8fb5f1"/>
+    <g class="iconBlue" transform="translate(52 24)">
+      <rect x="4" y="11" width="46" height="34" rx="5"/>
+      <path d="M 15 53 h24"/>
+      <path d="M 27 45 v8"/>
+      <path d="M 13 24 h28"/>
+      <path d="M 18 34 h18"/>
+    </g>
+    <text x="81" y="96" text-anchor="middle" class="cardTitle">Demo Client</text>
+    <text x="81" y="122" text-anchor="middle" class="cardSub">script, notebook,</text>
+    <text x="81" y="140" text-anchor="middle" class="cardSub">or lightweight API</text>
+    <text x="81" y="158" text-anchor="middle" class="cardSub">used in Demo Day</text>
+    <rect x="35" y="172" width="92" height="22" rx="11" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="81" y="187" text-anchor="middle" class="pillText">entry point</text>
+  </g>
+
+  <g transform="translate(358 176)" filter="url(#primaryShadow)">
+    <rect width="186" height="222" rx="12" fill="url(#blueCard)" stroke="#2563eb" stroke-width="2.4"/>
+    <g class="iconBlue" transform="translate(62 24)">
+      <path d="M 10 42 c-7 0 -12 -5 -12 -11 c0 -5 4 -10 10 -11 c3 -9 11 -15 21 -15 c11 0 20 8 22 19 c6 1 10 6 10 12 c0 8 -6 14 -15 14 H10"/>
+      <path d="M 29 50 v22"/>
+      <path d="M 18 63 h22"/>
+      <path d="M 42 17 c5 4 7 10 7 17"/>
+    </g>
+    <text x="93" y="104" text-anchor="middle" class="cardTitle">Light Runtime</text>
+    <text x="93" y="130" text-anchor="middle" class="cardSub">Azure App Service</text>
+    <text x="93" y="148" text-anchor="middle" class="cardSub">or Container Apps</text>
+    <text x="93" y="166" text-anchor="middle" class="cardSub">serves the active</text>
+    <text x="93" y="184" text-anchor="middle" class="cardSub">policy contract.</text>
+    <rect x="42" y="196" width="102" height="22" rx="11" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="93" y="211" text-anchor="middle" class="pillText">low footprint</text>
+  </g>
+
+  <g transform="translate(676 174)" filter="url(#softShadow)">
+    <rect width="224" height="72" rx="11" fill="url(#neutralCard)" stroke="#d0d7de"/>
+    <g class="icon" transform="translate(20 12)">
+      <path d="M 7 14 h33 l6 9 v28 H7 z"/>
+      <path d="M 40 14 v9 h6"/>
+      <path d="M 14 33 h25"/>
+      <path d="M 14 43 h17"/>
+    </g>
+    <text x="134" y="28" text-anchor="middle" class="cardTitle">Blob Storage</text>
+    <text x="134" y="51" text-anchor="middle" class="cardSub">datasets, metrics, artifacts</text>
+  </g>
+
+  <g transform="translate(676 268)" filter="url(#softShadow)">
+    <rect width="224" height="72" rx="11" fill="url(#neutralCard)" stroke="#d0d7de"/>
+    <g class="iconBlue" transform="translate(20 12)">
+      <ellipse cx="25" cy="9" rx="24" ry="8"/>
+      <path d="M 1 9 v31 c0 4.4 10.7 8 24 8 s24 -3.6 24 -8 V9"/>
+      <path d="M 1 25 c0 4.4 10.7 8 24 8 s24 -3.6 24 -8"/>
+    </g>
+    <text x="134" y="28" text-anchor="middle" class="cardTitle">Event Store</text>
+    <text x="134" y="51" text-anchor="middle" class="cardSub">Cosmos DB or PostgreSQL</text>
+  </g>
+
+  <g transform="translate(676 362)" filter="url(#softShadow)">
+    <rect width="224" height="72" rx="11" fill="url(#neutralCard)" stroke="#d0d7de"/>
+    <g class="icon" transform="translate(21 11)">
+      <circle cx="17" cy="20" r="12"/>
+      <path d="M 29 20 h25"/>
+      <path d="M 43 20 v9"/>
+      <path d="M 52 20 v7"/>
+      <path d="M 13 20 h8"/>
+    </g>
+    <text x="134" y="28" text-anchor="middle" class="cardTitle">Key Vault</text>
+    <text x="134" y="51" text-anchor="middle" class="cardSub">credentials and runtime secrets</text>
+  </g>
+
+  <g transform="translate(1028 202)" filter="url(#primaryShadow)">
+    <rect width="144" height="180" rx="12" fill="url(#blueCard)" stroke="#2563eb" stroke-width="2.2"/>
+    <g class="iconBlue" transform="translate(44 24)">
+      <path d="M 7 49 h47"/>
+      <rect x="12" y="29" width="7" height="20" rx="2"/>
+      <rect x="25" y="18" width="7" height="31" rx="2"/>
+      <rect x="38" y="8" width="7" height="41" rx="2"/>
+      <path d="M 7 15 c12 0 16 8 25 8 c7 0 11 -5 22 -5"/>
+    </g>
+    <text x="72" y="92" text-anchor="middle" class="cardTitle">Application</text>
+    <text x="72" y="110" text-anchor="middle" class="cardTitle">Insights</text>
+    <text x="72" y="137" text-anchor="middle" class="cardSub">latency, errors,</text>
+    <text x="72" y="155" text-anchor="middle" class="cardSub">decision counts,</text>
+    <text x="72" y="173" text-anchor="middle" class="cardSub">reward counts</text>
+  </g>
+
+  <g transform="translate(120 520)">
+    <rect width="1000" height="50" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
+    <circle cx="28" cy="25" r="6" fill="#2563eb"/>
+    <text x="46" y="22" class="bodyText">MVP path favors managed, serverless, and small-footprint services.</text>
+    <circle cx="502" cy="25" r="6" fill="#57606a"/>
+    <text x="520" y="22" class="bodyText">Azure ML, AKS, API Management, and AI Search remain future options.</text>
+    <text x="46" y="39" class="bodyText">Primary blue arrows represent runtime-critical request, event, and telemetry flows.</text>
+  </g>
 </svg>

@@ -2,28 +2,34 @@
 
 ## Overview
 
-ECloe uses adaptive decision policies to select financial offers in a synthetic experimentation environment. The current repository documents the target behavior; it does not contain a trained production model or live experiment results.
+ECloe evaluates adaptive decision policies for recommending financial offers in an offline experimentation environment. The current repository includes data processing code and planned policy documentation; it does not yet contain trained production artifacts or executed experiment results.
 
 | Field | Value |
 |-------|-------|
-| Model family | Contextual multi-armed bandit policy |
-| Main policy | Thompson Sampling |
-| Comparison policy | Nilos-UCB |
-| Control policy | Deterministic historical best arm |
+| Model family | Multi-armed bandit policy |
+| Main candidate policy | Thompson Sampling |
+| Comparison policies | Epsilon-Greedy and UCB |
+| Control policy | Deterministic baseline |
 | Reward type | Binary reward, such as click or conversion |
-| Status | Planned and documented, not production deployed |
+| Status | MVP design and implementation plan, not production deployed |
 
 ## Intended Use
 
-The policy is intended to recommend one eligible offer for a synthetic customer session, using minimized behavioral and contextual features. It is designed for ML Engineering demonstration, offline evaluation, and future API implementation.
+The policy is intended to recommend one eligible offer for a simulated or anonymized customer context in a Datathon MVP. It supports offline evaluation, Golden Set validation, and a future script, notebook, or simple API demo.
 
 The policy is not intended for credit approval, account blocking, product eligibility, fraud decisions, or any decision that creates legal or similarly significant effects without human review.
 
 ## Data Assumptions
 
-The factual foundation is the public Kaggle `bank-marketing` dataset. Synthetic enrichment is planned to create offer catalogs, decision events, and delayed reward examples.
+The factual foundation is the public Kaggle `bank-marketing` dataset by henriqueyamahata. The `duration` column is excluded because it is only known after contact and would create temporal leakage.
 
-Direct identifiers, sensitive attributes, income, wealth, and precise location are excluded from the decision policy. The `duration` column from the Kaggle dataset is excluded because it is only known after contact and would create temporal leakage.
+The MVP uses three documented simulated offers:
+
+- `credit_limit`
+- `personal_loan`
+- `cashback_investment`
+
+Direct identifiers, sensitive attributes, income, wealth, and precise location are excluded from the decision policy.
 
 ## Inputs and Outputs
 
@@ -49,36 +55,35 @@ The canonical payloads are documented in [`api-contract.md`](api-contract.md).
 
 | Metric | Purpose |
 |--------|---------|
-| Conversion rate | Measures observed reward by offer and segment |
+| Conversion rate | Measures observed binary reward by offer and policy |
+| Cumulative reward | Tracks total successful simulated outcomes |
 | Cumulative regret | Estimates the loss against the best available policy |
-| Exploration ratio | Tracks how often the policy explores uncertain offers |
-| Reward latency | Measures time between decision and reward observation |
-| Fairness index | Compares exposure across synthetic segments |
-| API latency p95 | Tracks serving performance for the future API |
+| Exploration rate | Tracks how often the policy explores uncertain offers |
+| Demo latency | Tracks serving performance for a future script or API |
+| Operational consumption | Confirms the MVP remains low-cost and easy to run |
 
 ## Fairness and Governance
 
-Fairness monitoring is based on synthetic segments, not protected real-world groups. The system must not infer or collect gender, race, ethnicity, religion, health data, or other sensitive attributes for policy optimization.
+Fairness monitoring is based on synthetic or source-derived segments, not protected real-world groups. The system must not infer or collect gender, race, ethnicity, religion, health data, or other sensitive attributes for policy optimization.
 
-Policy promotion requires offline evaluation, metric validation, documented review, and human approval. Privacy assumptions are documented in [`lgpd-plan.md`](lgpd-plan.md), and release controls are documented in [`governance.md`](governance.md).
+Policy selection requires offline evaluation, metric validation, documented review, and human approval before any production-like use. Privacy assumptions are documented in [`lgpd-plan.md`](lgpd-plan.md), and release controls are documented in [`governance.md`](governance.md).
 
 ## Risks and Limitations
 
 | Risk | Mitigation |
 |------|------------|
-| Synthetic behavior does not match real customers | Label results as synthetic and avoid production claims |
-| Delayed rewards distort policy learning | Separate immediate events from delayed reward processing |
-| Exploration exposes users unevenly | Monitor exploration ratio and exposure by segment |
-| Data leakage inflates offline performance | Exclude post-contact fields such as `duration` |
-| Policy becomes stale | Monitor drift and require controlled retraining |
+| Offline simulation does not match real customers | Label results as offline/simulated and avoid production claims |
+| Reward assumptions favor one offer | Document the simulation logic and compare policies on the same sequence |
+| Exploration exposes users unevenly | Monitor exploration rate and exposure by segment |
+| Data leakage inflates performance | Exclude post-contact fields such as `duration` |
+| Policy becomes stale | Monitor drift and require controlled retraining before promotion |
 
 ## Approval Criteria
 
-A policy version should only be promoted when it:
+A policy version should only be selected for the demo when it:
 
-- Beats the deterministic baseline on primary offline metrics.
-- Does not degrade fairness index beyond the documented threshold for the experiment.
-- Produces auditable reason codes.
-- Has reproducible artifacts, configuration, and data version references.
-- Has a documented rollback path.
-
+- Performs better than or equal to the deterministic baseline on the selected primary metric.
+- Has reproducible configuration and data version references.
+- Emits auditable reason codes.
+- Is evaluated on the Golden Set.
+- Has a documented rollback or fallback path to the baseline.

@@ -6,7 +6,6 @@
 | Arm | One available option in a bandit problem, such as a financial offer |
 | Bandit | Algorithmic framework that balances exploration and exploitation across arms |
 | Baseline | Reference policy used to compare policy performance |
-| Cloe | ECloe LLM assistant for explanations and experiment summaries |
 | Context | Minimized session information used for decisioning, such as segment and channel |
 | Conversion rate | Share of decisions that produce a conversion reward |
 | Cumulative regret | Accumulated difference between selected actions and the estimated best action |
@@ -15,17 +14,16 @@
 | Delayed reward | Reward observed after the initial decision window |
 | Drift | Change in data or behavior patterns over time |
 | Eligible offer | Offer already allowed by upstream business or compliance rules |
+| Epsilon-Greedy | Adaptive policy that explores randomly with probability `epsilon` and otherwise exploits the best known arm |
 | Exploration | Selecting an uncertain option to learn about its reward |
 | Exploitation | Selecting the option currently estimated to perform best |
-| Fairness index | Metric used to compare relative exposure across synthetic segments |
-| Golden set | Curated deterministic cases used for validation |
-| LLM | Large language model |
+| Fairness index | Metric used to compare relative exposure across synthetic or source-derived segments |
+| Golden Set | Small curated set of deterministic validation cases used for Demo Day explanation |
+| MLflow | Experiment tracking tool planned for local MLOps logging |
 | MLOps | Practices for versioning, evaluating, deploying, and monitoring ML systems |
-| Nilos-UCB | UCB-family comparison policy planned for technical evaluation |
 | Policy | Decision strategy used to select an offer |
 | Policy version | Version identifier for the active policy configuration or artifact |
-| RAG | Retrieval-augmented generation, used by Cloe to answer from approved documents |
 | Reason code | Auditable explanation tag attached to a decision |
 | Reward | Numeric feedback signal such as click or conversion |
-| Thompson Sampling | Bayesian bandit policy planned as ECloe's main policy |
-
+| Thompson Sampling | Bayesian bandit policy planned as ECloe's main candidate policy |
+| UCB | Upper Confidence Bound policy that adds an uncertainty bonus to average reward estimates |

@@ -22,7 +22,7 @@ ECloe performs adaptive experimentation for financial offers across digital chan
 - Select, in real time, the most appropriate offer for the eligible customer context.
 - Record interactions for continuous learning of the decision policy.
 - Monitor quality, fairness, and drift in the recommendation model.
-- Explain decisions to customers and internal teams through the Cloe assistant.
+- Explain recommendations to customers and internal teams through reason codes, model cards, and approved documentation.
 
 Secondary purposes, such as auditing and model improvement, are separated from the primary purpose and documented individually.
 
@@ -72,18 +72,18 @@ Income, balance                     segment, channel, context
 Registration data                   binary reward: click/conversion
 ```
 
-Pseudonymization is applied before any data reaches the Bandit service or the Cloe RAG index.
+Pseudonymization is applied before any data reaches the bandit service, evaluation layer, or future explainability interface.
 
 ---
 
-## 5. Cloe Assistant and RAG
+## 5. Explainability Interface
 
-Cloe queries a RAG index hosted in Azure AI Search. In production:
+The Datathon MVP does not require an LLM assistant or RAG index. If an explainability interface is added in a future production scenario:
 
-- The index contains **only synthetic data, internal policies, and experiment documents**; never individual customer records.
-- Indexed decision logs are aggregated and anonymized before indexing.
-- Cloe has no direct access to CRM systems or databases with identifiers.
-- Cloe responses that reference decision data always refer to anonymous sessions.
+- It must use **only synthetic data, internal policies, model cards, system cards, and experiment summaries**.
+- Any indexed decision logs must be aggregated and anonymized before indexing.
+- It must not access CRM systems or databases with identifiers.
+- Responses that reference decision data must refer only to anonymous sessions or aggregate cohorts.
 
 ---
 
@@ -94,7 +94,7 @@ Cloe queries a RAG index hosted in Azure AI Search. In production:
 | Offer events, including impression and click | 2 years | Experiment audit and retraining | Anonymization after 6 months; deletion after 2 years |
 | Decision logs, including reason codes and policy version | 5 years | Regulatory obligation | Deletion after the legal period |
 | Session features | 90 days | Delayed reward horizon | Automatic deletion |
-| RAG index data | Experiment duration plus 1 year | Audit reproducibility | Deletion when the cycle closes |
+| Explainability index data, if implemented | Experiment duration plus 1 year | Audit reproducibility | Deletion when the cycle closes |
 
 ---
 
@@ -133,7 +133,7 @@ In production, ECloe would support the rights provided under LGPD Art. 18:
 | Deletion | `session_id` and associated events are deleted; the model is retrained without the data |
 | Portability | Interaction history is exported in an open JSON format |
 | Objection to processing | Customer opts out of adaptive personalization and receives the deterministic baseline |
-| Automated decision review | Cloe explains reason codes; human escalation is available |
+| Automated decision review | Reason codes and model documentation are available; human escalation is required |
 
 ---
 
