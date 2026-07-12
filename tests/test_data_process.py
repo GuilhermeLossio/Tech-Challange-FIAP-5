@@ -1,20 +1,63 @@
+from __future__ import annotations
+
 import pandas as pd
+import pytest
 
-from src.data.process import process_bank_marketing
+from src.data.process import process_dataset
 
 
-def test_process_bank_marketing_removes_leakage_and_maps_target() -> None:
-    raw = pd.DataFrame(
+def hillstrom_dataframe() -> pd.DataFrame:
+    return pd.DataFrame(
         {
-            "Age": [35, 42, 35],
-            "Job": ["admin.", "technician", "admin."],
-            "Duration": [120, 80, 120],
-            "Y": ["yes", "no", "yes"],
+            "recency": [2, 4, 3],
+            "history_segment": ["1) Low", "2) Medium", "3) High"],
+            "history": [50.0, 100.0, 200.0],
+            "mens": [1, 0, 1],
+            "womens": [0, 1, 1],
+            "zip_code": ["Urban", "Rural", "Suburban"],
+            "newbie": [1, 0, 0],
+            "channel": ["Web", "Phone", "Multichannel"],
+            "segment": ["Mens E-Mail", "Womens E-Mail", "No E-Mail"],
+            "visit": [1, 0, 1],
+            "conversion": [1, 0, 0],
+            "spend": [50.0, 0.0, 0.0],
         }
     )
 
-    processed = process_bank_marketing(raw)
 
-    assert "duration" not in processed.columns
-    assert processed["y"].tolist() == [1, 0]
-    assert processed.columns.tolist() == ["age", "job", "y"]
+def test_process_dataset_creates_minimized_action_and_reward_columns() -> None:
+    result = process_dataset(hillstrom_dataframe())
+
+    assert result["action"].tolist() == ["mens_email", "womens_email", "no_email"]
+    assert result["reward"].tolist() == [1, 0, 0]
+    assert result["row_id"].is_unique
+    assert "history" not in result.columns
+    assert "zip_code" not in result.columns
+    assert result.columns.tolist() == [
+        "row_id",
+        "recency",
+        "history_segment",
+        "mens",
+        "womens",
+        "newbie",
+        "channel",
+        "action",
+        "reward",
+        "visit",
+        "spend",
+    ]
+
+
+def test_process_dataset_rejects_unknown_segment() -> None:
+    dataframe = hillstrom_dataframe()
+    dataframe.loc[0, "segment"] = "Unknown"
+
+    with pytest.raises(ValueError, match="Unknown campaign actions"):
+        process_dataset(dataframe)
+
+
+def test_process_dataset_rejects_missing_required_columns() -> None:
+    dataframe = hillstrom_dataframe().drop(columns=["conversion"])
+
+    with pytest.raises(ValueError, match="Missing required columns"):
+        process_dataset(dataframe)

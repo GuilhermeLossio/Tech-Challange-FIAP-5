@@ -21,7 +21,7 @@ The policy is not intended for credit approval, account blocking, product eligib
 
 ## Data Assumptions
 
-The factual foundation is the public Kaggle `bank-marketing` dataset by henriqueyamahata. The `duration` column is excluded because it is only known after contact and would create temporal leakage.
+The factual foundation is the public Kaggle Hillstrom email-campaign dataset by bofulee. The processed dataset maps `segment` to the observed action and `conversion` to the binary reward. Raw monetary `history` and `zip_code` are excluded from the modeling dataset for minimization.
 
 The MVP uses three documented simulated offers:
 
@@ -75,7 +75,7 @@ Policy selection requires offline evaluation, metric validation, documented revi
 | Offline simulation does not match real customers | Label results as offline/simulated and avoid production claims |
 | Reward assumptions favor one offer | Document the simulation logic and compare policies on the same sequence |
 | Exploration exposes users unevenly | Monitor exploration rate and exposure by segment |
-| Data leakage inflates performance | Exclude post-contact fields such as `duration` |
+| Blocked or over-specific fields inflate performance or privacy risk | Exclude direct identifiers, raw monetary `history`, `zip_code`, income, and wealth |
 | Policy becomes stale | Monitor drift and require controlled retraining before promotion |
 
 ## Approval Criteria

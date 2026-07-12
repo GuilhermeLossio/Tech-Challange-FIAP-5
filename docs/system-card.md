@@ -8,7 +8,7 @@ ECloe is a low-cost adaptive experimentation MVP for recommending financial offe
 
 | Component | Responsibility |
 |-----------|----------------|
-| Data preparation | Downloads and processes the Kaggle Bank Marketing dataset |
+| Data preparation | Downloads and processes the Kaggle Hillstrom email-campaign dataset |
 | Offline simulator | Uses customer/context rows and binary rewards to compare policies |
 | Bandit policies | Compare deterministic baseline, Epsilon-Greedy, UCB, and Thompson Sampling |
 | Evaluation layer | Calculates conversion, reward, regret, and exploration metrics |
@@ -19,7 +19,7 @@ ECloe is a low-cost adaptive experimentation MVP for recommending financial offe
 ## Operating Flow
 
 1. Kaggle data is downloaded to `data/raw/`.
-2. Processing removes leakage fields and normalizes the target.
+2. Processing maps `segment -> action`, maps `conversion -> reward`, and minimizes context fields.
 3. The simulator presents customer contexts to each policy.
 4. Each policy chooses one simulated offer.
 5. The simulator returns a binary reward.
@@ -43,7 +43,7 @@ The visual flow is available in [`decision-flow.svg`](decision-flow.svg).
 |--------------|-------------------|
 | Missing Kaggle credentials | Fail with a clear setup message |
 | No raw CSV file found | Ask the user to download or configure the dataset |
-| Leakage field present | Remove `duration` before modeling |
+| Blocked field present | Fail validation and remove the field before modeling |
 | No eligible offers | Return a no-decision response or deterministic fallback |
 | Policy underperforms baseline | Keep the baseline or select another adaptive policy |
 | Reward assumptions are unclear | Document the simulation logic and seed |

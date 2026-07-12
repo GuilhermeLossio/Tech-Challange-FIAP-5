@@ -1,77 +1,73 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 from pathlib import Path
 
 import pandas as pd
 
-from src.data.paths import ensure_data_dirs
+from src.core.config import load_settings
+from src.data.schemas import MODEL_CONTEXT_COLUMNS, REQUIRED_COLUMNS
 
 
-TARGET_COLUMN = "y"
-LEAKAGE_COLUMNS = ("duration",)
+ACTION_MAP = {
+    "Mens E-Mail": "mens_email",
+    "Womens E-Mail": "womens_email",
+    "No E-Mail": "no_email",
+}
 
 
-def find_bank_marketing_file(raw_dir: Path) -> Path:
-    candidates = sorted(raw_dir.glob("*.csv"))
-    if not candidates:
-        raise FileNotFoundError(f"No CSV files found in {raw_dir}")
-
-    preferred = [
-        file
-        for file in candidates
-        if file.name.lower() in {"bank-full.csv", "bank.csv", "bank-additional-full.csv"}
-    ]
-    return preferred[0] if preferred else candidates[0]
-
-
-def read_bank_marketing_csv(path: Path) -> pd.DataFrame:
-    return pd.read_csv(path, sep=None, engine="python")
+def normalize_column_name(column: str) -> str:
+    return column.strip().lower().replace(" ", "_").replace("-", "_")
 
 
 def normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    cleaned = df.copy()
-    cleaned.columns = (
-        cleaned.columns.str.strip()
-        .str.lower()
-        .str.replace(" ", "_", regex=False)
-        .str.replace(".", "_", regex=False)
-    )
-    return cleaned
-
-
-def process_bank_marketing(df: pd.DataFrame) -> pd.DataFrame:
-    processed = normalize_columns(df)
-
-    for column in LEAKAGE_COLUMNS:
-        if column in processed.columns:
-            processed = processed.drop(columns=column)
-
-    if TARGET_COLUMN not in processed.columns:
-        raise KeyError(f"Expected target column '{TARGET_COLUMN}' was not found.")
-
-    processed[TARGET_COLUMN] = (
-        processed[TARGET_COLUMN]
-        .astype(str)
-        .str.strip()
-        .str.lower()
-        .map({"yes": 1, "no": 0})
-    )
-
-    if processed[TARGET_COLUMN].isna().any():
-        raise ValueError("Target column contains values different from yes/no.")
-
-    processed = processed.drop_duplicates().reset_index(drop=True)
+    processed = df.copy()
+    processed.columns = [normalize_column_name(column) for column in processed.columns]
     return processed
 
 
-def build_processed_dataset(input_file: Path | None = None, output_file: Path | None = None) -> Path:
-    paths = ensure_data_dirs()
-    source = input_file or find_bank_marketing_file(paths["raw"])
-    destination = output_file or paths["processed"] / "bank_marketing_processed.csv"
+def create_row_id(index: int) -> str:
+    settings = load_settings()
+    raw_value = f"ecloe-{settings.random_seed}-{index}"
+    return hashlib.sha256(raw_value.encode()).hexdigest()[:16]
 
-    df = read_bank_marketing_csv(source)
-    processed = process_bank_marketing(df)
+
+def process_dataset(df: pd.DataFrame) -> pd.DataFrame:
+    processed = normalize_columns(df)
+
+    missing_columns = set(REQUIRED_COLUMNS) - set(processed.columns)
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {sorted(missing_columns)}")
+
+    processed = processed.drop_duplicates().reset_index(drop=True)
+    processed["action"] = processed["segment"].map(ACTION_MAP)
+
+    if processed["action"].isna().any():
+        invalid_actions = processed.loc[processed["action"].isna(), "segment"].unique()
+        raise ValueError(f"Unknown campaign actions: {invalid_actions.tolist()}")
+
+    processed["reward"] = processed["conversion"].astype(int).clip(lower=0, upper=1)
+    processed["row_id"] = [create_row_id(index) for index in processed.index]
+
+    selected_columns = [
+        "row_id",
+        *MODEL_CONTEXT_COLUMNS,
+        "action",
+        "reward",
+        "visit",
+        "spend",
+    ]
+    return processed[selected_columns]
+
+
+def build_processed_dataset(input_file: Path | None = None, output_file: Path | None = None) -> Path:
+    settings = load_settings()
+    source = input_file or settings.raw_file
+    destination = output_file or settings.processed_file
+
+    dataframe = pd.read_csv(source)
+    processed = process_dataset(dataframe)
     destination.parent.mkdir(parents=True, exist_ok=True)
     processed.to_csv(destination, index=False)
 
@@ -79,8 +75,8 @@ def build_processed_dataset(input_file: Path | None = None, output_file: Path | 
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Process the Bank Marketing dataset.")
-    parser.add_argument("--input-file", type=Path, default=None, help="Raw CSV file.")
+    parser = argparse.ArgumentParser(description="Process the Hillstrom campaign dataset.")
+    parser.add_argument("--input-file", type=Path, default=None, help="Raw Hillstrom CSV file.")
     parser.add_argument("--output-file", type=Path, default=None, help="Processed CSV file.")
     args = parser.parse_args()
 

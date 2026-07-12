@@ -28,6 +28,23 @@ KAGGLE_KEY=
 
 The code also accepts `KAGGLE_API_KEY` as a local alias for `KAGGLE_KEY`, but `KAGGLE_KEY` is the recommended Kaggle API name.
 
+Default dataset configuration:
+
+```text
+KAGGLE_DATASET=bofulee/kevin-hillstrom-minethatdata-e-mailanalytics
+RAW_FILENAME=hillstrom.csv
+PROCESSED_FILENAME=hillstrom_processed.csv
+REPORTS_DIR=reports
+```
+
+Etapa 1 writes:
+
+```text
+data/raw/hillstrom.csv
+data/processed/hillstrom_processed.csv
+reports/data_validation.json
+```
+
 ## Azure Blob Storage
 
 Recommended containers:

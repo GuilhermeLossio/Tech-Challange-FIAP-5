@@ -8,7 +8,7 @@ This document defines how ECloe policies should be evaluated for the Datathon MV
 
 | Layer | Goal |
 |-------|------|
-| Data validation | Confirm `duration` is removed, `y` is binary, and no direct identifiers are used |
+| Data validation | Confirm Hillstrom action/reward mapping, binary rewards, minimized context, and no blocked columns |
 | Offline policy evaluation | Compare Baseline, Epsilon-Greedy, UCB, and Thompson Sampling |
 | Golden Set validation | Explain 5 customer examples and the recommended offer for each one |
 | MLOps tracking | Log parameters, metrics, and artifacts locally with MLflow |
@@ -49,7 +49,7 @@ A policy passes evaluation when:
 
 A policy fails evaluation when:
 
-- It relies on `duration` or another leakage field.
+- It relies on blocked fields such as direct identifiers, raw monetary `history`, `zip_code`, income, or wealth.
 - It cannot be reproduced.
 - It materially worsens reward or regret versus the baseline without a clear trade-off.
 - It lacks a documented reward update strategy.

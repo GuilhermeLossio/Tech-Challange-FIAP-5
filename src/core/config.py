@@ -43,6 +43,10 @@ class Settings:
     data_dir: Path
     raw_data_dir: Path
     processed_data_dir: Path
+    reports_dir: Path
+    raw_filename: str
+    processed_filename: str
+    random_seed: int
     azure_storage_connection_string: str
     azure_blob_container_raw: str
     azure_blob_container_processed: str
@@ -53,6 +57,14 @@ class Settings:
     azure_cosmos_container_rewards: str
     azure_cosmos_container_policies: str
 
+    @property
+    def raw_file(self) -> Path:
+        return self.raw_data_dir / self.raw_filename
+
+    @property
+    def processed_file(self) -> Path:
+        return self.processed_data_dir / self.processed_filename
+
 
 def load_settings() -> Settings:
     _load_env_file(ROOT_DIR / ".env")
@@ -60,14 +72,22 @@ def load_settings() -> Settings:
     data_dir = ROOT_DIR / _env("DATA_DIR", "data")
     raw_data_dir = ROOT_DIR / _env("RAW_DATA_DIR", "data/raw")
     processed_data_dir = ROOT_DIR / _env("PROCESSED_DATA_DIR", "data/processed")
+    reports_dir = ROOT_DIR / _env("REPORTS_DIR", "reports")
 
     return Settings(
-        kaggle_dataset=_env("KAGGLE_DATASET", "henriqueyamahata/bank-marketing"),
+        kaggle_dataset=_env(
+            "KAGGLE_DATASET",
+            "bofulee/kevin-hillstrom-minethatdata-e-mailanalytics",
+        ),
         kaggle_username=_env("KAGGLE_USERNAME"),
         kaggle_key=_env("KAGGLE_KEY") or _env("KAGGLE_API_KEY"),
         data_dir=data_dir,
         raw_data_dir=raw_data_dir,
         processed_data_dir=processed_data_dir,
+        reports_dir=reports_dir,
+        raw_filename=_env("RAW_FILENAME", "hillstrom.csv"),
+        processed_filename=_env("PROCESSED_FILENAME", "hillstrom_processed.csv"),
+        random_seed=int(_env("RANDOM_SEED", "42")),
         azure_storage_connection_string=_env("AZURE_STORAGE_CONNECTION_STRING"),
         azure_blob_container_raw=_env("AZURE_BLOB_CONTAINER_RAW", "ecloe-raw"),
         azure_blob_container_processed=_env("AZURE_BLOB_CONTAINER_PROCESSED", "ecloe-processed"),
@@ -78,3 +98,6 @@ def load_settings() -> Settings:
         azure_cosmos_container_rewards=_env("AZURE_COSMOS_CONTAINER_REWARDS", "rewards"),
         azure_cosmos_container_policies=_env("AZURE_COSMOS_CONTAINER_POLICIES", "policy_versions"),
     )
+
+
+settings = load_settings()

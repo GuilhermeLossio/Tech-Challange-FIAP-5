@@ -6,9 +6,9 @@ This document defines the lightweight synthetic layer needed for ECloe's Datatho
 
 ## Source Dataset
 
-The factual seed is the public Kaggle `bank-marketing` dataset by henriqueyamahata. It resembles banking campaign interactions and contains a conversion-like outcome suitable for offline experimentation.
+The factual seed is the public Kaggle `kevin-hillstrom-minethatdata-e-mailanalytics` dataset by bofulee. It contains randomized email campaign actions and conversion outcomes suitable for offline experimentation.
 
-The `duration` column must be removed before modeling because it is known only after contact and would create temporal leakage.
+The processed modeling dataset maps `segment` into the observed action and `conversion` into the binary reward. It keeps coarse campaign context such as `history_segment`, while excluding raw monetary `history` and `zip_code` from the policy input.
 
 ## Synthetic Offer Layer
 
@@ -31,7 +31,7 @@ Synthetic generation should only add what the source dataset does not contain:
 
 | Entity | Expected file | Description |
 |--------|---------------|-------------|
-| Processed customer contexts | `data/processed/` | Cleaned source-derived rows without leakage fields |
+| Processed customer contexts | `data/processed/hillstrom_processed.csv` | Cleaned source-derived rows with minimized context, action, and reward fields |
 | Offer catalog | `data/processed/offer_catalog.json` | Three synthetic MVP offers |
 | Simulation results | `reports/` | Policy metrics and comparison outputs |
 | Golden Set | `data/golden_set/evaluation_cases.jsonl` | Five deterministic examples for policy explanation |
@@ -52,7 +52,7 @@ Generated data should pass these checks before use:
 
 - No direct identifiers such as name, national taxpayer ID, email, or phone number.
 - No sensitive attributes such as gender, race, religion, or health data.
-- No leakage columns such as `duration`.
+- No blocked columns such as direct identifiers, raw monetary `history`, `zip_code`, income, or wealth.
 - Every selected `offer_id` exists in the offer catalog.
 - Reward values are binary or within the documented reward range.
 - Segment exposure can be calculated for evaluation.

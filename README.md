@@ -1,24 +1,24 @@
-# 🚀 ECloe - Datathon 7MLET
+# ECloe - Datathon 7MLET
 > **Low-cost adaptive experimentation platform for financial next-best-action recommendations.**
 
-ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending financial offers, messages, or next-best actions in digital channels. The project uses the public Kaggle Bank Marketing dataset as a factual base, simulates offer rewards offline, tracks experiments locally, and keeps the first deployable architecture intentionally small.
+ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending financial offers, messages, or next-best actions in digital channels. The active Etapa 1 data foundation is the public Kaggle Hillstrom email-campaign dataset, processed into minimized context, action, and reward columns for offline bandit evaluation.
 
 ---
 
-## 🚀 Capabilities
+## Capabilities
 
 | Capability | Description |
 |:---|:---|
-| 🧪 **Offline experimentation** | Uses Kaggle customer/campaign rows as an offline simulation environment. |
-| 🎯 **Adaptive recommendation** | Compares Baseline, Epsilon-Greedy, UCB, and Thompson Sampling policies. |
-| 📊 **Evaluation-first delivery** | Measures conversion rate, cumulative reward, regret, and exploration rate before selecting a policy. |
-| 🧾 **Golden Set validation** | Plans 5 deterministic customer examples for explainable Demo Day validation. |
-| ⚙️ **Local MLOps** | Uses local MLflow tracking for parameters, metrics, and evaluation artifacts. |
-| 💸 **Low-consumption architecture** | Prioritizes local execution and small Azure services instead of enterprise infrastructure. |
+| Offline experimentation | Uses Kaggle campaign rows as an offline simulation environment. |
+| Data minimization | Drops raw purchase amount and ZIP-level fields from the modeling dataset. |
+| Adaptive recommendation | Compares Baseline, Epsilon-Greedy, UCB, and Thompson Sampling policies. |
+| Evaluation-first delivery | Measures conversion rate, cumulative reward, regret, and exploration rate before selecting a policy. |
+| Golden Set validation | Plans 5 deterministic examples for explainable Demo Day validation. |
+| Low-consumption architecture | Prioritizes local execution and small Azure services instead of enterprise infrastructure. |
 
 ---
 
-## 🧩 Business Problem
+## Business Problem
 
 Digital financial institutions need to decide which offer, message, or next-best action should be shown to each eligible customer. Static rules and long A/B tests can waste traffic, react slowly to behavior changes, and make responsible personalization harder to operate.
 
@@ -26,7 +26,7 @@ ECloe frames this as an adaptive experimentation problem: explore enough to lear
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ![Decision flow](docs/decision-flow.svg)
 
@@ -34,48 +34,43 @@ The MVP flow is intentionally simple: Kaggle data is downloaded and processed lo
 
 Supporting diagrams:
 
-- [`docs/decision-flow.svg`](./docs/decision-flow.svg) — decision and reward loop.
-- [`docs/azure-architecture-flow.svg`](./docs/azure-architecture-flow.svg) — target Azure service map.
-- [`docs/mlops-lifecycle.svg`](./docs/mlops-lifecycle.svg) — offline evaluation and promotion lifecycle.
+- [`docs/decision-flow.svg`](./docs/decision-flow.svg) - decision and reward loop.
+- [`docs/azure-architecture-flow.svg`](./docs/azure-architecture-flow.svg) - target Azure service map.
+- [`docs/mlops-lifecycle.svg`](./docs/mlops-lifecycle.svg) - offline evaluation and promotion lifecycle.
 
 ---
 
-## 📦 Dataset
+## Dataset
 
-The main dataset is Kaggle [`bank-marketing` by henriqueyamahata](https://www.kaggle.com/datasets/henriqueyamahata/bank-marketing).
+The main dataset is Kaggle [`kevin-hillstrom-minethatdata-e-mailanalytics` by bofulee](https://www.kaggle.com/datasets/bofulee/kevin-hillstrom-minethatdata-e-mailanalytics).
 
-Usage rules:
+Etapa 1 usage rules:
 
-- `y` is the observed conversion signal.
-- `duration` is removed because it is only known after contact and causes temporal leakage.
-- Real customer identifiers, income, wealth, gender, race, and private business rules are not used.
-- Any synthetic offer or reward layer must be documented and reproducible.
+- `segment` is mapped to the decision action: `mens_email`, `womens_email`, or `no_email`.
+- `conversion` is mapped to the binary reward used by the offline policies.
+- `history_segment` is retained as a coarse context field.
+- Raw monetary `history` and `zip_code` are excluded from the processed modeling dataset.
+- Direct identifiers, income, wealth, gender, race, and private business rules are not used.
 
 The default dataset is configured in [`.env.example`](.env.example):
 
 ```text
-KAGGLE_DATASET=henriqueyamahata/bank-marketing
+KAGGLE_DATASET=bofulee/kevin-hillstrom-minethatdata-e-mailanalytics
+RAW_FILENAME=hillstrom.csv
+PROCESSED_FILENAME=hillstrom_processed.csv
 ```
 
 ---
 
-## 🧠 Stage 3 Training Strategy
+## Stage 3 Training Strategy
 
-Bandit policies are not trained like a traditional classifier. ECloe uses the Kaggle dataset as an offline simulation environment:
+Bandit policies are not trained like a traditional classifier. ECloe uses the processed Hillstrom dataset as an offline simulation environment:
 
-1. Each row represents a customer/context.
-2. The policy chooses one simulated offer.
-3. The simulator returns reward `1` for success or `0` for failure.
+1. Each row represents a minimized campaign context.
+2. The policy chooses one eligible action or simulated offer.
+3. The simulator returns reward `1` for conversion or `0` otherwise.
 4. The policy updates its statistics after each round.
-5. All policies are compared on the same customer order and reward assumptions.
-
-Simulated MVP offers:
-
-| Offer ID | Description |
-|:---|:---|
-| `credit_limit` | Credit limit increase or pre-approved credit |
-| `personal_loan` | Personal loan offer |
-| `cashback_investment` | Cashback or investment incentive |
+5. All policies are compared on the same row order and reward assumptions.
 
 Policy comparison:
 
@@ -90,7 +85,7 @@ The algorithms are compared, not merged into one model. Thompson Sampling is the
 
 ---
 
-## 🗂️ Project Structure
+## Project Structure
 
 ```text
 .
@@ -102,7 +97,7 @@ The algorithms are compared, not merged into one model. Thompson Sampling is the
 ├── reports/              # Reports, metrics, and experiment outputs
 ├── src/
 │   ├── core/             # Settings and environment variable loading
-│   ├── data/             # Kaggle download and dataset processing
+│   ├── data/             # Kaggle download, schema, processing, and validation
 │   └── storage/          # Azure settings and expected document shapes
 ├── tests/                # Automated tests
 ├── Architecture.md       # Detailed architecture and pipeline documentation
@@ -115,7 +110,7 @@ The current structure is consistent for a Python data/ML MVP. Future implementat
 
 ---
 
-## ⚙️ Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -150,14 +145,23 @@ KAGGLE_USERNAME=
 KAGGLE_KEY=
 ```
 
-### Download and process data
+### Run Etapa 1
 
 ```bash
 python -m src.data.download
 python -m src.data.process
+python -m src.data.validate
 ```
 
-The current processor normalizes column names, removes `duration`, maps `y` to `1`/`0`, and removes duplicates.
+Expected local outputs:
+
+```text
+data/raw/hillstrom.csv
+data/processed/hillstrom_processed.csv
+reports/data_validation.json
+```
+
+The processor normalizes column names, validates the Hillstrom schema, removes duplicate rows, maps `segment -> action`, maps `conversion -> reward`, creates deterministic non-linkable `row_id` values, and writes a minimized modeling dataset.
 
 ### Run tests
 
@@ -175,7 +179,7 @@ mlflow ui
 
 ---
 
-## 📈 Evaluation Metrics
+## Evaluation Metrics
 
 | Metric | Purpose |
 |:---|:---|
@@ -188,9 +192,9 @@ mlflow ui
 
 ---
 
-## 🧾 Golden Set
+## Golden Set
 
-Stage 4 must include 5 customer examples with context, recommended offer, policy, and a short business justification. The Golden Set should be generated from the processed dataset or from documented synthetic examples.
+Stage 4 must include 5 examples with context, recommended action or offer, policy, and a short business justification. The Golden Set should be generated from the processed dataset or from documented synthetic examples.
 
 | Case | Short context | Recommended offer | Policy |
 |:---|:---|:---|:---|
@@ -202,7 +206,7 @@ Stage 4 must include 5 customer examples with context, recommended offer, policy
 
 ---
 
-## 🚢 Deployment Strategy
+## Deployment Strategy
 
 The MVP should run locally first. A cloud demonstration should use a low-consumption Azure setup:
 
@@ -218,29 +222,29 @@ AKS, Azure Machine Learning, API Management, and Azure AI Search remain future o
 
 ---
 
-## 📋 Related Docs
+## Related Docs
 
-- [`Architecture.md`](./Architecture.md) — Architecture, components, pipeline, and trade-offs.
-- [`docs/api-contract.md`](./docs/api-contract.md) — Planned Decision API and reward payloads.
-- [`docs/data-structure.md`](./docs/data-structure.md) — Local data folders and cloud storage conventions.
-- [`docs/evaluation-plan.md`](./docs/evaluation-plan.md) — Offline evaluation and Golden Set expectations.
-- [`docs/model-card.md`](./docs/model-card.md) — Policy intent, metrics, risks, and approval criteria.
-- [`docs/system-card.md`](./docs/system-card.md) — System behavior, boundaries, and guardrails.
-- [`docs/demo-script.md`](./docs/demo-script.md) — Demo Day presentation flow.
-- [`docs/`](./docs) — SVG diagrams and supporting documentation.
+- [`Architecture.md`](./Architecture.md) - Architecture, components, pipeline, and trade-offs.
+- [`docs/api-contract.md`](./docs/api-contract.md) - Planned Decision API and reward payloads.
+- [`docs/data-structure.md`](./docs/data-structure.md) - Local data folders and cloud storage conventions.
+- [`docs/evaluation-plan.md`](./docs/evaluation-plan.md) - Offline evaluation and Golden Set expectations.
+- [`docs/model-card.md`](./docs/model-card.md) - Policy intent, metrics, risks, and approval criteria.
+- [`docs/system-card.md`](./docs/system-card.md) - System behavior, boundaries, and guardrails.
+- [`docs/demo-script.md`](./docs/demo-script.md) - Demo Day presentation flow.
+- [`docs/`](./docs) - SVG diagrams and supporting documentation.
 
 ---
 
-## ⚠️ Limitations
+## Limitations
 
 - The Kaggle dataset is public and does not represent real customers from a financial institution.
-- MVP offers are simulated to enable policy comparison.
+- MVP offers and future reward assumptions are simulated to enable policy comparison.
 - Offline rewards approximate a real environment but do not replace controlled production testing.
 - Sensitive decisions would require human review, regulatory validation, security, privacy, and continuous monitoring.
 - The cloud architecture is a target deployment, not a requirement for running the local MVP.
 
 ---
 
-## 📜 License
+## License
 
 MIT License. See [LICENSE](LICENSE).

@@ -12,7 +12,7 @@ def ensure_data_dirs() -> dict[str, Path]:
         "raw": settings.raw_data_dir,
         "processed": settings.processed_data_dir,
         "golden_set": settings.data_dir / "golden_set",
-        "reports": settings.data_dir.parent / "reports",
+        "reports": settings.reports_dir,
     }
 
     for path in paths.values():

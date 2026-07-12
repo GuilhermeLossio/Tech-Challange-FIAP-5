@@ -49,10 +49,10 @@ The model receives only **anonymized behavioral and contextual features**. Direc
 
 | Feature | Type | Usage justification |
 |---------|------|---------------------|
-| Synthetic segment | Categorical | Groups profiles without identifying individuals |
+| Hillstrom campaign segment / coarse history segment | Categorical | Groups profiles without identifying individuals |
 | Access channel | Categorical | Provides decision context, such as app or web |
-| Session time | Numeric | Captures aggregate behavioral patterns |
-| Aggregated interaction history | Numeric | Estimates propensity without individual records |
+| Recency | Numeric | Captures campaign timing without direct identity |
+| Prior channel flags | Numeric | Represents campaign eligibility signals without direct identity |
 
 ### 4.2 Data Excluded from the Model
 
@@ -68,7 +68,7 @@ The model receives only **anonymized behavioral and contextual features**. Direc
 Identity layer (CRM)                Feature layer (bandit)
 --------------------                ----------------------
 Tax ID, name, account     --hash--> anonymous session_id
-Income, balance                     segment, channel, context
+Income, balance                     segment, channel, minimized context
 Registration data                   binary reward: click/conversion
 ```
 

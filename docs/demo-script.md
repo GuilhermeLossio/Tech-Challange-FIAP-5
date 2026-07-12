@@ -12,7 +12,7 @@ Digital financial channels often choose offers using static rules or long A/B te
 
 ### 2. Dataset and Preparation
 
-Show that the project uses the public Kaggle `bank-marketing` dataset. Explain that `duration` is removed because it would leak post-contact information, and that `y` is treated as the observed conversion signal.
+Show that the project uses the public Kaggle Hillstrom email-campaign dataset. Explain that `segment` is mapped to the observed action, `conversion` is mapped to the binary reward, and the processed policy input keeps minimized context only.
 
 ### 3. Stage 3 Algorithm Strategy
 
