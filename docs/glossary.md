@@ -19,11 +19,16 @@
 | Exploitation | Selecting the option currently estimated to perform best |
 | Fairness index | Metric used to compare relative exposure across synthetic or source-derived segments |
 | Golden Set | Small curated set of deterministic validation cases used for Demo Day explanation |
+| Marketplace-finance | Integrated marketplace and digital wallet scenario where commerce behavior informs eligible financial actions |
+| Marketplace segment | Coarse, anonymized behavior group derived from purchase or checkout patterns |
 | MLflow | Experiment tracking tool planned for local MLOps logging |
 | MLOps | Practices for versioning, evaluating, deploying, and monitoring ML systems |
+| Next-best action | The eligible message, offer, benefit, or content selected for the current context |
 | Policy | Decision strategy used to select an offer |
 | Policy version | Version identifier for the active policy configuration or artifact |
+| Purchase habit | Aggregated behavior signal, such as recurring category or high-value checkout pattern |
 | Reason code | Auditable explanation tag attached to a decision |
 | Reward | Numeric feedback signal such as click or conversion |
 | Thompson Sampling | Bayesian bandit policy planned as ECloe's main candidate policy |
 | UCB | Upper Confidence Bound policy that adds an uncertainty bonus to average reward estimates |
+| Wallet engagement | Coarse digital account or payment-account usage band |

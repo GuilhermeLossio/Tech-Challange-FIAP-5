@@ -4,6 +4,8 @@
 
 This document defines governance expectations for ECloe policy releases, auditability, rollback, human review, and compliance checkpoints. It applies to the target production architecture and future implementation work.
 
+The target product context is an integrated marketplace and digital wallet ecosystem. ECloe ranks eligible actions; it does not approve credit, define eligibility, price financial products, or make fraud decisions.
+
 ## Release Approval
 
 A new policy version can be promoted only after:
@@ -24,6 +26,7 @@ A new policy version can be promoted only after:
 | Security | Secret handling, access review, logging controls, and incident response |
 | DPO and legal | LGPD review, legitimate interest assessment, and privacy sign-off |
 | Product owner | Business objective, acceptable experiment boundaries, and release approval |
+| Eligibility owner | Marketplace, wallet, risk, and compliance rules that define eligible actions before ECloe ranks them |
 
 ## Audit Logging
 
@@ -37,6 +40,7 @@ Each decision log should include:
 - Timestamp.
 
 Logs must not include direct identifiers, sensitive attributes, income, wealth, or precise location.
+Raw item-level purchase history should not be logged by ECloe; use aggregated marketplace and wallet behavior bands.
 
 ## Human Review
 
@@ -58,6 +62,7 @@ Rollback should restore the last approved policy version and preserve decision l
 |------------|-------------------|
 | Data processing | Data source, generation config, validation report |
 | Privacy | LGPD plan alignment and minimization review |
+| Eligibility boundary | Evidence that eligible actions are filtered before ECloe decisioning |
 | Model release | Model card, evaluation report, approval record |
 | API release | Contract tests and fallback behavior |
 | Operations | Monitoring dashboard and incident response path |
@@ -65,4 +70,3 @@ Rollback should restore the last approved policy version and preserve decision l
 ## Documentation Updates
 
 The model card, system card, LGPD plan, API contract, and evaluation plan must be reviewed whenever the policy behavior, data flow, or production assumptions change.
-

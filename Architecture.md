@@ -1,12 +1,12 @@
 # Architecture - ECloe
 
-ECloe is a low-cost adaptive experimentation MVP for financial next-best-action recommendations. It currently contains Hillstrom data ingestion/processing code, validation reports, storage configuration shapes, tests, and documentation for planned offline policy evaluation and a demo interface.
+ECloe is a low-cost adaptive experimentation MVP for next-best-action recommendations in an integrated marketplace and digital wallet ecosystem. It currently contains Hillstrom data ingestion/processing code, offline policy evaluation, validation reports, storage configuration shapes, tests, notebooks, and documentation for a future demo interface.
 
 ## Overview
 
 ![Decision flow](docs/decision-flow.svg)
 
-The system starts with the public Kaggle Hillstrom email-campaign dataset, processes it into a minimized local dataset, evaluates multiple recommendation policies offline, and prepares the selected policy for a small demonstrable interface. The decision flow above shows the intended runtime loop: a channel sends minimized context and eligible offers, the policy selects one action, the decision is logged, and later rewards are linked back to the original `decision_id`.
+The system starts with the public Kaggle Hillstrom email-campaign dataset, processes it into a minimized local dataset, evaluates multiple recommendation policies offline, and prepares the selected policy for a small demonstrable interface. Hillstrom is used as a public proxy for the pattern ECloe needs: context, action, and reward. In the target product, marketplace behavior and digital wallet context produce minimized signals, upstream systems provide eligible actions, ECloe selects one next best action, the decision is logged, and later rewards are linked back to the original `decision_id`.
 
 ## Components
 
@@ -20,7 +20,7 @@ The system starts with the public Kaggle Hillstrom email-campaign dataset, proce
 | Storage contracts | Defines target Azure settings and Cosmos DB document shapes for future decision/reward storage. | `src/storage/` |
 | Offline policy layer | Implements Baseline, Epsilon-Greedy, UCB, and Thompson Sampling evaluation. | `src/bandits/`, `src/evaluation/` |
 | Notebooks | Reproduce the essential data, validation, training, evaluation, and cloud-reference stages. | `notebooks/` |
-| Demo interface | Planned script, notebook, or simple API that returns a recommended offer for a customer context. | Planned `src/demo/` or `src/api/` |
+| Marketplace-finance demo | Planned app simulation showing marketplace behavior, wallet context, eligible actions, recommendations, and reward events. | Planned `src/demo/` or `src/api/` |
 | Documentation | Central delivery documentation, diagrams, contracts, governance, model card, and demo script. | `README.md`, `docs/` |
 
 ## Data / ML Pipeline Flow
@@ -32,7 +32,7 @@ The MVP pipeline is intentionally small:
 1. Download the Kaggle Hillstrom email-campaign dataset.
 2. Process the dataset into minimized context, action, and reward columns.
 3. Validate that no blocked columns are present in the processed dataset.
-4. Simulate offer choices and binary rewards for offline policy comparison.
+4. Interpret the rows as a public proxy for marketplace-finance context, eligible action, and reward.
 5. Run the deterministic baseline and adaptive policies on the same offline sequence.
 6. Write local policy metrics and artifacts under `reports/policy_training/`.
 7. Select the policy for the Golden Set and demo interface.
@@ -57,12 +57,14 @@ The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](
 
 ## API and Event Contracts
 
-The planned Decision API and reward payloads are documented in [`docs/api-contract.md`](docs/api-contract.md). The MVP now includes a local policy training script documented in [`docs/training-workflow.md`](docs/training-workflow.md), and can later expose the same request/response shape through FastAPI if needed for Demo Day.
+The planned Decision API and reward payloads are documented in [`docs/api-contract.md`](docs/api-contract.md). The practical marketplace-finance scenario is documented in [`docs/marketplace-finance-use-case.md`](docs/marketplace-finance-use-case.md). The MVP now includes a local policy training script documented in [`docs/training-workflow.md`](docs/training-workflow.md), and can later expose the same request/response shape through FastAPI if needed for Demo Day.
 
 ## Key Design Decisions
 
 - **Local-first execution** - keeps the project easy to run and avoids unnecessary cloud cost during the Datathon.
 - **Public Kaggle data only** - avoids real customer data and makes the experiment reproducible.
+- **Marketplace-finance framing** - positions ECloe as the decision layer connecting commerce behavior and digital wallet actions.
+- **Eligibility stays upstream** - ECloe only ranks actions already allowed by marketplace, wallet, risk, and compliance systems.
 - **Minimized Hillstrom context** - keeps `history_segment` but drops raw monetary `history` and `zip_code` from the modeling dataset.
 - **Explicit action/reward mapping** - uses `segment` as the observed campaign action and `conversion` as the binary reward.
 - **Compare policies instead of merging them** - Baseline, Epsilon-Greedy, UCB, and Thompson Sampling are evaluated as separate strategies.
@@ -95,7 +97,7 @@ The planned Decision API and reward payloads are documented in [`docs/api-contra
 
 ## Limitations
 
-- The repository does not yet include MLflow runs or a demo interface.
+- The repository does not yet include MLflow runs or the marketplace-finance demo interface.
 - The target Azure services are architectural guidance, not deployed infrastructure.
 - Offline simulation is useful for engineering validation, but it is not production evidence.
 - A regulated production deployment would require legal, security, privacy, model risk, and operational reviews.

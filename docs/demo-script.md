@@ -2,17 +2,23 @@
 
 ## Goal
 
-Use this script to present ECloe as a practical ML Engineering MVP for adaptive financial offer experimentation. The demo should emphasize low-cost execution, offline evaluation, and a working recommendation flow rather than enterprise infrastructure.
+Use this script to present ECloe as a practical ML Engineering MVP for adaptive marketplace-finance experimentation. The demo should emphasize low-cost execution, offline evaluation, and a working next-best-action flow rather than enterprise infrastructure.
 
 ## Suggested Flow
 
 ### 1. Business Problem
 
-Digital financial channels often choose offers using static rules or long A/B tests. ECloe reframes the problem as adaptive experimentation so the system can learn from each interaction while preserving governance and auditability.
+Marketplace and digital wallet channels often choose offers using static rules or long A/B tests. ECloe reframes the problem as adaptive experimentation so the system can learn from each interaction while preserving governance and auditability.
+
+Use the product analogy:
+
+```text
+Marketplace behavior + digital wallet context -> next best eligible action
+```
 
 ### 2. Dataset and Preparation
 
-Show that the project uses the public Kaggle Hillstrom email-campaign dataset. Explain that `segment` is mapped to the observed action, `conversion` is mapped to the binary reward, and the processed policy input keeps minimized context only.
+Show that the project uses the public Kaggle Hillstrom email-campaign dataset. Explain that `segment` is mapped to the observed action, `conversion` is mapped to the binary reward, and the processed policy input keeps minimized context only. Then explain that Hillstrom is a proxy for the marketplace-finance pattern: context, eligible action, and reward.
 
 ### 3. Stage 3 Algorithm Strategy
 
@@ -27,7 +33,7 @@ The same customer order and reward assumptions are used for all policies so the 
 
 ### 4. Decision Flow
 
-Show [`decision-flow.svg`](decision-flow.svg). Explain that a future channel or demo interface sends minimized context and eligible offers, the active policy returns one offer with reason codes, and later reward events update evaluation metrics.
+Show [`decision-flow.svg`](decision-flow.svg). Explain that a future marketplace-wallet demo sends minimized context and eligible actions, the active policy returns one action with reason codes, and later reward events update evaluation metrics.
 
 ### 5. Golden Set
 
@@ -42,7 +48,7 @@ This is the clearest Demo Day evidence that the recommendation flow is understan
 
 ### 6. MLOps and Metrics
 
-Use [`evaluation-plan.md`](evaluation-plan.md) to describe conversion rate, cumulative reward, cumulative regret, exploration rate, and local MLflow tracking. The goal is to prove the evaluation loop, not to claim production performance.
+Use [`evaluation-plan.md`](evaluation-plan.md) to describe conversion rate, cumulative reward, cumulative regret, exploration rate, and local policy reports. The goal is to prove the evaluation loop, not to claim production performance.
 
 ### 7. Low-Cost Architecture
 
@@ -63,9 +69,10 @@ Close with the main limitations:
 
 - The dataset is public and not real customer data.
 - Offers and reward assumptions are simulated for the MVP.
+- ECloe does not approve credit, set eligibility, or make regulated financial decisions.
 - Offline results are not production evidence.
 - Regulated production use would require security, privacy, legal, and model risk reviews.
 
 ## Suggested Closing
 
-ECloe demonstrates how a financial recommendation engine can be designed as a practical, low-consumption ML Engineering MVP with offline evaluation, explainability, and governance from the start.
+ECloe demonstrates how a marketplace-finance next-best-action engine can be designed as a practical, low-consumption ML Engineering MVP with offline evaluation, explainability, and governance from the start.

@@ -2,7 +2,7 @@
 
 ## System Purpose
 
-ECloe is a low-cost adaptive experimentation MVP for recommending financial offers, messages, or next-best actions in digital channels. It combines Kaggle-based data preparation, offline bandit policy evaluation, Golden Set validation, local MLOps tracking, and a future lightweight demo interface.
+ECloe is a low-cost adaptive experimentation MVP for recommending next-best eligible actions in an integrated marketplace and digital wallet ecosystem. It combines Kaggle-based data preparation, offline bandit policy evaluation, Golden Set validation, local reports, and a future lightweight demo interface.
 
 ## Main Components
 
@@ -13,15 +13,15 @@ ECloe is a low-cost adaptive experimentation MVP for recommending financial offe
 | Bandit policies | Compare deterministic baseline, Epsilon-Greedy, UCB, and Thompson Sampling |
 | Evaluation layer | Calculates conversion, reward, regret, and exploration metrics |
 | Golden Set | Provides 5 explainable customer examples for Demo Day |
-| Demo interface | Planned script, notebook, or simple API returning a recommended offer |
-| Observability and MLOps | Uses local MLflow and lightweight operational metrics |
+| Marketplace-finance demo | Planned app simulation connecting marketplace behavior, wallet context, eligible actions, and rewards |
+| Observability and reporting | Uses local reports and lightweight operational metrics |
 
 ## Operating Flow
 
 1. Kaggle data is downloaded to `data/raw/`.
 2. Processing maps `segment -> action`, maps `conversion -> reward`, and minimizes context fields.
 3. The simulator presents customer contexts to each policy.
-4. Each policy chooses one simulated offer.
+4. Each policy chooses one simulated eligible marketplace-finance action.
 5. The simulator returns a binary reward.
 6. Metrics are calculated and logged.
 7. The selected policy is demonstrated with the Golden Set.
@@ -32,6 +32,8 @@ The visual flow is available in [`decision-flow.svg`](decision-flow.svg).
 
 - No real customer data is used in the Datathon context.
 - No credit, blocking, fraud, or eligibility decision is made by the MVP.
+- Eligibility is determined upstream by marketplace, wallet, risk, and compliance rules.
+- Raw item-level purchase history must be aggregated before reaching the decision engine.
 - Sensitive production decisions would require human review.
 - Policy selection requires offline validation before any production-like use.
 - Logs must not contain direct identifiers or sensitive attributes.
@@ -50,8 +52,8 @@ The visual flow is available in [`decision-flow.svg`](decision-flow.svg).
 
 ## Monitoring
 
-MVP monitoring should focus on conversion rate, cumulative reward, cumulative regret, exploration rate, demo latency, and local MLflow tracking completeness. Future cloud monitoring can add API error rate, event write failures, and policy version observability.
+MVP monitoring should focus on conversion rate, cumulative reward, cumulative regret, exploration rate, demo latency, and local report completeness. Future cloud monitoring can add API error rate, event write failures, and policy version observability.
 
 ## Operational Boundaries
 
-ECloe is not production-ready in the current repository state. A real deployment would require implemented policies, security review, legal review, data protection approval, incident response testing, and regulated financial suitability validation.
+ECloe is not production-ready in the current repository state. A real deployment would require security review, legal review, data protection approval, incident response testing, and regulated financial suitability validation.

@@ -2,7 +2,7 @@
 
 ## Overview
 
-ECloe evaluates adaptive decision policies for recommending financial offers in an offline experimentation environment. The current repository includes data processing code, implemented offline policy simulation, local reports, and policy documentation. It does not contain production-trained artifacts.
+ECloe evaluates adaptive decision policies for recommending eligible marketplace-finance actions in an offline experimentation environment. The current repository includes data processing code, implemented offline policy simulation, local reports, and policy documentation. It does not contain production-trained artifacts.
 
 | Field | Value |
 |-------|-------|
@@ -15,27 +15,31 @@ ECloe evaluates adaptive decision policies for recommending financial offers in 
 
 ## Intended Use
 
-The policy is intended to recommend one eligible offer for a simulated or anonymized customer context in a Datathon MVP. It supports offline evaluation, Golden Set validation, notebooks, and a future simple API demo.
+The policy is intended to recommend one eligible action for a simulated or anonymized marketplace and digital wallet context in a Datathon MVP. It supports offline evaluation, Golden Set validation, notebooks, and a future simple API or demo app.
 
-The policy is not intended for credit approval, account blocking, product eligibility, fraud decisions, or any decision that creates legal or similarly significant effects without human review.
+The policy is not intended for credit approval, account blocking, product eligibility, fraud decisions, product pricing, or any decision that creates legal or similarly significant effects without human review.
 
 ## Data Assumptions
 
-The factual foundation is the public Kaggle Hillstrom email-campaign dataset by bofulee. The processed dataset maps `segment` to the observed action and `conversion` to the binary reward. Raw monetary `history` and `zip_code` are excluded from the modeling dataset for minimization.
+The factual foundation is the public Kaggle Hillstrom email-campaign dataset by bofulee. The processed dataset maps `segment` to the observed action and `conversion` to the binary reward. In the product narrative, this is a proxy for marketplace behavior, digital wallet context, eligible action, and observed reward. Raw monetary `history` and `zip_code` are excluded from the modeling dataset for minimization.
 
-The MVP uses three documented simulated offers:
+The MVP can map campaign actions to simulated marketplace-finance actions such as:
 
-- `credit_limit`
-- `personal_loan`
-- `cashback_investment`
+- `cashback_recurring_purchase`
+- `savings_goal`
+- `financial_education`
+- `account_upgrade`
+- `installment_education`
 
-Direct identifiers, sensitive attributes, income, wealth, and precise location are excluded from the decision policy.
+Direct identifiers, sensitive attributes, income, wealth, precise location, raw account balance, detailed credit score, and raw item-level purchase history are excluded from the decision policy.
 
 ## Inputs and Outputs
 
 Expected inputs:
 
-- `customer_context.segment`
+- `customer_context.marketplace_segment`
+- `customer_context.purchase_habit`
+- `customer_context.wallet_engagement`
 - `customer_context.channel`
 - `customer_context.risk_band`
 - `eligible_offers`
@@ -73,6 +77,7 @@ Policy selection requires offline evaluation, metric validation, documented revi
 | Risk | Mitigation |
 |------|------------|
 | Offline simulation does not match real customers | Label results as offline/simulated and avoid production claims |
+| Marketplace signals are over-specific | Aggregate purchase behavior into coarse categories before decisioning |
 | Reward assumptions favor one offer | Document the simulation logic and compare policies on the same sequence |
 | Exploration exposes users unevenly | Monitor exploration rate and exposure by segment |
 | Blocked or over-specific fields inflate performance or privacy risk | Exclude direct identifiers, raw monetary `history`, `zip_code`, income, and wealth |

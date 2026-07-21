@@ -17,9 +17,9 @@
 
 ## 2. Processing Purpose
 
-ECloe performs adaptive experimentation for financial offers across digital channels. In production, personal data processing would have the following purposes:
+ECloe performs adaptive experimentation for eligible marketplace-finance actions across digital channels. In production, personal data processing would have the following purposes:
 
-- Select, in real time, the most appropriate offer for the eligible customer context.
+- Select, in real time, the most appropriate eligible action for the customer context.
 - Record interactions for continuous learning of the decision policy.
 - Monitor quality, fairness, and drift in the recommendation model.
 - Explain recommendations to customers and internal teams through reason codes, model cards, and approved documentation.
@@ -32,7 +32,7 @@ Secondary purposes, such as auditing and model improvement, are separated from t
 
 | Purpose | Legal basis under LGPD | Note |
 |---------|------------------------|------|
-| Offer personalization | Art. 7, IX - legitimate interest | Requires a documented Legitimate Interest Assessment; customers must have an opt-out channel |
+| Offer and action personalization | Art. 7, IX - legitimate interest | Requires a documented Legitimate Interest Assessment; customers must have an opt-out channel |
 | Execution of a financial product contract | Art. 7, V - contract execution | Applies when the customer already has an active relationship |
 | Audit and regulatory compliance | Art. 7, II - legal obligation | Minimum retention required by Banco Central and CVM rules |
 | Model improvement and retraining | Art. 7, IX - legitimate interest | Anonymized or pseudonymized data; periodic necessity assessment |
@@ -53,11 +53,16 @@ The model receives only **anonymized behavioral and contextual features**. Direc
 | Access channel | Categorical | Provides decision context, such as app or web |
 | Recency | Numeric | Captures campaign timing without direct identity |
 | Prior channel flags | Numeric | Represents campaign eligibility signals without direct identity |
+| Marketplace segment | Categorical | Represents aggregated commerce behavior, not raw item history |
+| Purchase habit band | Categorical | Captures coarse behavior such as recurring category or checkout pattern |
+| Wallet engagement band | Categorical | Captures digital wallet usage without exposing balance or account identifiers |
 
 ### 4.2 Data Excluded from the Model
 
 - Name, national taxpayer ID, email, phone number.
 - Income, wealth, balance.
+- Raw item-level purchase history, full basket contents, or raw search history.
+- Detailed credit score or automated credit decision variables.
 - Gender, race, religion, health data.
 - Precise location such as GPS coordinates.
 - Identifiable browsing data.
@@ -69,6 +74,7 @@ Identity layer (CRM)                Feature layer (bandit)
 --------------------                ----------------------
 Tax ID, name, account     --hash--> anonymous session_id
 Income, balance                     segment, channel, minimized context
+Raw purchase history                purchase habit band, wallet engagement band
 Registration data                   binary reward: click/conversion
 ```
 
@@ -106,6 +112,8 @@ The Datathon MVP does not require an LLM assistant or RAG index. If an explainab
 | Gender | Sensitive personal data under Art. 11 | Not collected or inferred |
 | Race / ethnicity | Sensitive personal data under Art. 11 | Not collected or inferred |
 | Income / wealth | Financial personal data | Does not enter the bandit; used only in eligibility rules external to the model |
+| Raw purchase history | Personal data | Converted into coarse behavior bands before decisioning |
+| Wallet balance | Financial personal data | Does not enter the bandit; eligibility and suitability remain upstream |
 | Location | Personal data | Only aggregated region or state; never GPS |
 
 The fairness index monitored by ECloe evaluates relative exposure across **synthetic segments**, not across real protected groups.

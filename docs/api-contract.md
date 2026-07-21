@@ -2,18 +2,24 @@
 
 ## Scope
 
-This document defines the planned Decision API payloads for ECloe. The MVP can start with a local script or notebook, but any future API should preserve this request, response, and reward shape.
+This document defines the planned Decision API payloads for ECloe. The target use case is an integrated marketplace and digital wallet channel where upstream systems provide eligible actions and ECloe selects the next best action. The MVP can start with a local script or notebook, but any future API should preserve this request, response, and reward shape.
 
 ## Decision Request
 
 ```json
 {
   "customer_context": {
-    "segment": "digital_high_engagement",
-    "channel": "web",
-    "risk_band": "low"
+    "marketplace_segment": "recurring_buyer",
+    "purchase_habit": "frequent_grocery",
+    "wallet_engagement": "high",
+    "channel": "mobile_app",
+    "risk_band": "eligible_low_risk"
   },
-  "eligible_offers": ["credit_limit", "personal_loan", "cashback_investment"],
+  "eligible_offers": [
+    "cashback_recurring_purchase",
+    "savings_goal",
+    "financial_education"
+  ],
   "request_id": "req_123"
 }
 ```
@@ -21,27 +27,29 @@ This document defines the planned Decision API payloads for ECloe. The MVP can s
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `request_id` | string | Yes | Client-generated request identifier |
-| `customer_context.segment` | string | Yes | Synthetic or anonymized segment |
-| `customer_context.channel` | string | Yes | Channel such as `web`, `app`, or `crm` |
+| `customer_context.marketplace_segment` | string | Yes | Synthetic or anonymized marketplace behavior segment |
+| `customer_context.purchase_habit` | string | Yes | Coarse purchase habit such as recurring category or checkout pattern |
+| `customer_context.wallet_engagement` | string | Yes | Coarse digital wallet engagement band |
+| `customer_context.channel` | string | Yes | Channel such as `mobile_app`, `checkout`, or `crm` |
 | `customer_context.risk_band` | string | Yes | Coarse eligibility context provided by upstream rules |
-| `eligible_offers` | array of strings | Yes | Offers already approved by external eligibility rules |
+| `eligible_offers` | array of strings | Yes | Actions already approved by marketplace, wallet, risk, and compliance rules |
 
 ## Decision Response
 
 ```json
 {
   "decision_id": "dec_123",
-  "offer_id": "cashback_investment",
+  "offer_id": "cashback_recurring_purchase",
   "policy": "thompson_sampling",
   "policy_version": "2026-07-05.1",
-  "reason_codes": ["segment_performance", "exploration_budget"]
+  "reason_codes": ["marketplace_behavior_match", "wallet_engagement_signal"]
 }
 ```
 
 | Field | Type | Description |
 |-------|------|-------------|
 | `decision_id` | string | Identifier used to connect later rewards to the decision |
-| `offer_id` | string | Selected offer from `eligible_offers` |
+| `offer_id` | string | Selected eligible action from `eligible_offers` |
 | `policy` | string | Policy used to make the decision |
 | `policy_version` | string | Version of the policy artifact or configuration |
 | `reason_codes` | array of strings | Auditable explanation codes |
@@ -80,3 +88,5 @@ Error payloads should include a machine-readable code, a human-readable message,
 ## Privacy Constraints
 
 Payloads must not include direct identifiers, sensitive attributes, income, wealth, precise location, or raw browsing data. Upstream systems are responsible for eligibility filtering before calling the Decision API.
+
+Raw item-level purchase history should be transformed into coarse features before reaching ECloe. Examples include `frequent_grocery`, `high_value_cart`, or `recurring_checkout`, not full basket contents.

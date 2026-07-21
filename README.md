@@ -1,7 +1,7 @@
 # ECloe - Datathon 7MLET
-> **Low-cost adaptive experimentation platform for financial next-best-action recommendations.**
+> **Low-cost next-best-action engine for integrated marketplace and digital wallet ecosystems.**
 
-ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending financial offers, messages, or next-best actions in digital channels. The active Etapa 1 data foundation is the public Kaggle Hillstrom email-campaign dataset, processed into minimized context, action, and reward columns for offline bandit evaluation.
+ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending the next best eligible action in a marketplace-finance journey. It simulates how marketplace behavior and digital wallet context can guide offers, messages, or benefits without making credit, fraud, or eligibility decisions. The active Etapa 1 data foundation is the public Kaggle Hillstrom email-campaign dataset, processed into minimized context, action, and reward columns for offline bandit evaluation.
 
 ---
 
@@ -10,6 +10,7 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 | Capability | Description |
 |:---|:---|
 | Offline experimentation | Uses Kaggle campaign rows as an offline simulation environment. |
+| Marketplace-finance framing | Maps commerce behavior and wallet context to eligible financial actions. |
 | Data minimization | Drops raw purchase amount and ZIP-level fields from the modeling dataset. |
 | Adaptive recommendation | Compares Baseline, Epsilon-Greedy, UCB, and Thompson Sampling policies. |
 | Local policy training | Runs deterministic offline policy simulation with local reports. |
@@ -21,9 +22,17 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 
 ## Business Problem
 
-Digital financial institutions need to decide which offer, message, or next-best action should be shown to each eligible customer. Static rules and long A/B tests can waste traffic, react slowly to behavior changes, and make responsible personalization harder to operate.
+Digital marketplaces connected to payment accounts need to decide which eligible financial action should be shown in moments such as home browsing, checkout, wallet engagement, or post-purchase follow-up. Static rules and long A/B tests can waste traffic, react slowly to behavior changes, and make responsible personalization harder to operate.
 
-ECloe frames this as an adaptive experimentation problem: explore enough to learn, exploit the best known option when evidence is strong, and keep sensitive financial decisions under human governance.
+ECloe frames this as an adaptive experimentation problem: explore enough to learn, exploit the best known option when evidence is strong, and keep sensitive financial decisions outside the model. Upstream marketplace, wallet, compliance, and risk systems decide eligibility; ECloe only chooses which eligible action should be shown next.
+
+Target product framing:
+
+```text
+Marketplace behavior + digital wallet context -> ECloe -> next best eligible action
+```
+
+See [`docs/marketplace-finance-use-case.md`](./docs/marketplace-finance-use-case.md) for the practical application scenario.
 
 ---
 
@@ -31,7 +40,7 @@ ECloe frames this as an adaptive experimentation problem: explore enough to lear
 
 ![Decision flow](docs/decision-flow.svg)
 
-The MVP flow is intentionally simple: Kaggle data is downloaded and processed locally, offline policies are evaluated against the same simulated customer sequence, and the winning policy can later be exposed through a script, notebook, or lightweight API. See [`Architecture.md`](./Architecture.md) for the full component breakdown, target Azure architecture, and pipeline flow.
+The MVP flow is intentionally simple: Kaggle data is downloaded and processed locally as a proxy for historical marketplace-finance interactions, offline policies are evaluated against the same simulated customer sequence, and the winning policy can later be exposed through a script, notebook, or lightweight demo interface. See [`Architecture.md`](./Architecture.md) for the full component breakdown, target Azure architecture, and pipeline flow.
 
 Supporting diagrams:
 
@@ -265,6 +274,7 @@ The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](
 
 - [`Architecture.md`](./Architecture.md) - Architecture, components, pipeline, and trade-offs.
 - [`docs/api-contract.md`](./docs/api-contract.md) - Planned Decision API and reward payloads.
+- [`docs/marketplace-finance-use-case.md`](./docs/marketplace-finance-use-case.md) - Practical marketplace and digital wallet use case.
 - [`docs/data-structure.md`](./docs/data-structure.md) - Local data folders and cloud storage conventions.
 - [`docs/evaluation-plan.md`](./docs/evaluation-plan.md) - Offline evaluation and Golden Set expectations.
 - [`docs/training-workflow.md`](./docs/training-workflow.md) - Implemented local policy training workflow.
