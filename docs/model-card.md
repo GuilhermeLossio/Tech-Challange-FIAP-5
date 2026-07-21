@@ -2,7 +2,7 @@
 
 ## Overview
 
-ECloe evaluates adaptive decision policies for recommending financial offers in an offline experimentation environment. The current repository includes data processing code and planned policy documentation; it does not yet contain trained production artifacts or executed experiment results.
+ECloe evaluates adaptive decision policies for recommending financial offers in an offline experimentation environment. The current repository includes data processing code, implemented offline policy simulation, local reports, and policy documentation. It does not contain production-trained artifacts.
 
 | Field | Value |
 |-------|-------|
@@ -11,11 +11,11 @@ ECloe evaluates adaptive decision policies for recommending financial offers in 
 | Comparison policies | Epsilon-Greedy and UCB |
 | Control policy | Deterministic baseline |
 | Reward type | Binary reward, such as click or conversion |
-| Status | MVP design and implementation plan, not production deployed |
+| Status | Local offline evaluation implemented, not production deployed |
 
 ## Intended Use
 
-The policy is intended to recommend one eligible offer for a simulated or anonymized customer context in a Datathon MVP. It supports offline evaluation, Golden Set validation, and a future script, notebook, or simple API demo.
+The policy is intended to recommend one eligible offer for a simulated or anonymized customer context in a Datathon MVP. It supports offline evaluation, Golden Set validation, notebooks, and a future simple API demo.
 
 The policy is not intended for credit approval, account blocking, product eligibility, fraud decisions, or any decision that creates legal or similarly significant effects without human review.
 
@@ -87,3 +87,5 @@ A policy version should only be selected for the demo when it:
 - Emits auditable reason codes.
 - Is evaluated on the Golden Set.
 - Has a documented rollback or fallback path to the baseline.
+
+The local training workflow is documented in [`training-workflow.md`](training-workflow.md).

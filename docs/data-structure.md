@@ -70,8 +70,10 @@ Suggested logical partitioning:
 
 | Store | Partition or index | Purpose |
 |-------|--------------------|---------|
-| `decisions` | `decision_id` or customer/session hash | Decision events returned by the policy |
-| `rewards` | `decision_id` | Click or conversion events linked to a decision |
+| `decisions` | `customer_id` | Decision events returned by the policy |
+| `rewards` | `customer_id` | Click or conversion events linked to a decision |
 | `policy_versions` | `policy_name` | Approved policy metadata and offline metrics |
 
 The Python document shapes for Cosmos DB are defined in `src/storage/cosmos_documents.py`.
+
+The current Azure Cosmos DB Serverless setup is documented in [`cloud-setup.md`](cloud-setup.md).

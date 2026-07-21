@@ -9,9 +9,9 @@ This document defines how ECloe policies should be evaluated for the Datathon MV
 | Layer | Goal |
 |-------|------|
 | Data validation | Confirm Hillstrom action/reward mapping, binary rewards, minimized context, and no blocked columns |
-| Offline policy evaluation | Compare Baseline, Epsilon-Greedy, UCB, and Thompson Sampling |
+| Offline policy evaluation | Compare Baseline, Epsilon-Greedy, UCB, and Thompson Sampling with `python -m src.evaluation.run` |
 | Golden Set validation | Explain 5 customer examples and the recommended offer for each one |
-| MLOps tracking | Log parameters, metrics, and artifacts locally with MLflow |
+| Local reporting | Write deterministic metrics and policy artifacts under `reports/policy_training/` |
 | Operational review | Confirm the demo remains lightweight and executable locally |
 
 ## Primary Metrics
@@ -45,7 +45,7 @@ A policy passes evaluation when:
 - It performs better than or equal to the deterministic baseline on the selected primary metric.
 - It does not rely on leakage fields or unavailable production-time data.
 - It produces interpretable outputs for the Golden Set.
-- Its metrics are logged through the planned local MLflow workflow.
+- Its metrics are written to the local policy training reports.
 
 A policy fails evaluation when:
 
@@ -64,5 +64,9 @@ Each evaluation run should produce:
 - metric table by policy and offer;
 - cumulative reward and regret summary;
 - Golden Set recommendations;
-- MLflow run metadata;
+- local policy report metadata;
 - known limitations and final policy recommendation.
+
+The implemented training workflow is documented in [`training-workflow.md`](training-workflow.md).
+
+Use `python -m src.evaluation.run --prepare-data` when the local processed dataset is missing. Use `--max-rows` for notebook checks or low-consumption experiments.

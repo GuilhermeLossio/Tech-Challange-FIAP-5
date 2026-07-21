@@ -12,6 +12,7 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 | Offline experimentation | Uses Kaggle campaign rows as an offline simulation environment. |
 | Data minimization | Drops raw purchase amount and ZIP-level fields from the modeling dataset. |
 | Adaptive recommendation | Compares Baseline, Epsilon-Greedy, UCB, and Thompson Sampling policies. |
+| Local policy training | Runs deterministic offline policy simulation with local reports. |
 | Evaluation-first delivery | Measures conversion rate, cumulative reward, regret, and exploration rate before selecting a policy. |
 | Golden Set validation | Plans 5 deterministic examples for explainable Demo Day validation. |
 | Low-consumption architecture | Prioritizes local execution and small Azure services instead of enterprise infrastructure. |
@@ -83,6 +84,37 @@ Policy comparison:
 
 The algorithms are compared, not merged into one model. Thompson Sampling is the initial candidate for the final policy if offline results beat or technically tie the alternatives.
 
+Run the local training workflow:
+
+```bash
+python -m src.evaluation.run
+```
+
+Prepare data and train in one command:
+
+```bash
+python -m src.evaluation.run --prepare-data
+```
+
+Run a smaller local experiment:
+
+```bash
+python -m src.evaluation.run --max-rows 5000
+```
+
+Expected training outputs:
+
+```text
+reports/policy_training/metrics.json
+reports/policy_training/metrics.csv
+reports/policy_training/policy_versions.json
+reports/policy_training/selected_policy.json
+reports/policy_training/golden_set_recommendations.json
+reports/policy_training/policy_state_thompson_sampling.json
+```
+
+See [`docs/training-workflow.md`](./docs/training-workflow.md) for the full offline training flow.
+
 ---
 
 ## Project Structure
@@ -94,10 +126,13 @@ The algorithms are compared, not merged into one model. Thompson Sampling is the
 │   ├── processed/        # Cleaned datasets, ignored by git
 │   └── golden_set/       # Simplified evaluation cases
 ├── docs/                 # SVG diagrams and supporting documentation
+├── notebooks/            # Reproducible notebooks for each essential stage
 ├── reports/              # Reports, metrics, and experiment outputs
 ├── src/
+│   ├── bandits/          # Offline decision policies
 │   ├── core/             # Settings and environment variable loading
 │   ├── data/             # Kaggle download, schema, processing, and validation
+│   ├── evaluation/       # Policy training and report generation
 │   └── storage/          # Azure settings and expected document shapes
 ├── tests/                # Automated tests
 ├── Architecture.md       # Detailed architecture and pipeline documentation
@@ -106,7 +141,7 @@ The algorithms are compared, not merged into one model. Thompson Sampling is the
 └── README.md             # Central project documentation
 ```
 
-The current structure is consistent for a Python data/ML MVP. Future implementation work should add `src/bandits/`, `src/evaluation/`, `src/demo/`, and `notebooks/` when those components are created.
+The current structure is consistent for a Python data/ML MVP. The policy training and notebook layers are now implemented; future work should add `src/demo/` when the recommendation interface is created.
 
 ---
 
@@ -177,6 +212,8 @@ python -m src.demo.recommend --input data/golden_set/customer_001.json
 mlflow ui
 ```
 
+`python -m src.evaluation.run` is implemented for local reports. The demo command and MLflow UI remain planned future steps.
+
 ---
 
 ## Evaluation Metrics
@@ -220,6 +257,8 @@ The MVP should run locally first. A cloud demonstration should use a low-consump
 
 AKS, Azure Machine Learning, API Management, and Azure AI Search remain future options, not MVP prerequisites.
 
+The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](./docs/cloud-setup.md).
+
 ---
 
 ## Related Docs
@@ -228,6 +267,8 @@ AKS, Azure Machine Learning, API Management, and Azure AI Search remain future o
 - [`docs/api-contract.md`](./docs/api-contract.md) - Planned Decision API and reward payloads.
 - [`docs/data-structure.md`](./docs/data-structure.md) - Local data folders and cloud storage conventions.
 - [`docs/evaluation-plan.md`](./docs/evaluation-plan.md) - Offline evaluation and Golden Set expectations.
+- [`docs/training-workflow.md`](./docs/training-workflow.md) - Implemented local policy training workflow.
+- [`docs/cloud-setup.md`](./docs/cloud-setup.md) - Current low-consumption Azure Cosmos DB setup.
 - [`docs/model-card.md`](./docs/model-card.md) - Policy intent, metrics, risks, and approval criteria.
 - [`docs/system-card.md`](./docs/system-card.md) - System behavior, boundaries, and guardrails.
 - [`docs/demo-script.md`](./docs/demo-script.md) - Demo Day presentation flow.
