@@ -2,18 +2,21 @@
 
 ## System Purpose
 
-ECloe is a low-cost adaptive experimentation MVP for recommending next-best eligible actions in an integrated marketplace and digital wallet ecosystem. It combines Kaggle-based data preparation, offline bandit policy evaluation, Golden Set validation, local reports, and a future lightweight demo interface.
+ECloe is a low-cost adaptive experimentation MVP for recommending next-best eligible actions in an integrated marketplace and digital wallet ecosystem. The system is framed as ECloe Market for simulated commerce behavior, ECloe Pay for simulated wallet context, and ECloe Engine for adaptive decisioning. It combines Kaggle-based data preparation, offline bandit policy evaluation, Golden Set validation, local reports, and a future lightweight demo interface.
 
 ## Main Components
 
 | Component | Responsibility |
 |-----------|----------------|
+| ECloe Market | Simulates marketplace behavior and intent signals |
+| ECloe Pay | Simulates wallet context and eligible financial actions |
+| ECloe Engine | Selects the next best eligible action |
 | Data preparation | Downloads and processes the Kaggle Hillstrom email-campaign dataset |
 | Offline simulator | Uses customer/context rows and binary rewards to compare policies |
 | Bandit policies | Compare deterministic baseline, Epsilon-Greedy, UCB, and Thompson Sampling |
 | Evaluation layer | Calculates conversion, reward, regret, and exploration metrics |
 | Golden Set | Provides 5 explainable customer examples for Demo Day |
-| Marketplace-finance demo | Planned app simulation connecting marketplace behavior, wallet context, eligible actions, and rewards |
+| Marketplace-finance demo | Planned app simulation connecting ECloe Market behavior, ECloe Pay context, eligible actions, and rewards |
 | Observability and reporting | Uses local reports and lightweight operational metrics |
 
 ## Operating Flow

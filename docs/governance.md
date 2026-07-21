@@ -4,7 +4,7 @@
 
 This document defines governance expectations for ECloe policy releases, auditability, rollback, human review, and compliance checkpoints. It applies to the target production architecture and future implementation work.
 
-The target product context is an integrated marketplace and digital wallet ecosystem. ECloe ranks eligible actions; it does not approve credit, define eligibility, price financial products, or make fraud decisions.
+The target product context is an integrated marketplace and digital wallet ecosystem: ECloe Market produces behavior signals, ECloe Pay provides eligible actions, and ECloe Engine ranks those actions. ECloe does not approve credit, define eligibility, price financial products, or make fraud decisions.
 
 ## Release Approval
 

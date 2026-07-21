@@ -1,7 +1,7 @@
 # ECloe - Datathon 7MLET
 > **Low-cost next-best-action engine for integrated marketplace and digital wallet ecosystems.**
 
-ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending the next best eligible action in a marketplace-finance journey. It simulates how marketplace behavior and digital wallet context can guide offers, messages, or benefits without making credit, fraud, or eligibility decisions. The active Etapa 1 data foundation is the public Kaggle Hillstrom email-campaign dataset, processed into minimized context, action, and reward columns for offline bandit evaluation.
+ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending the next best eligible action in a marketplace-finance journey. The product story is split into **ECloe Market**, a simulated marketplace, **ECloe Pay**, a simulated digital wallet, and **ECloe Engine**, the adaptive decision layer between them. It shows how marketplace behavior and wallet context can guide offers, messages, or benefits without making credit, fraud, or eligibility decisions. The active Etapa 1 data foundation is the public Kaggle Hillstrom email-campaign dataset, processed into minimized context, action, and reward columns for offline bandit evaluation.
 
 ---
 
@@ -10,6 +10,8 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 | Capability | Description |
 |:---|:---|
 | Offline experimentation | Uses Kaggle campaign rows as an offline simulation environment. |
+| ECloe Market | Simulates marketplace behavior such as category interest, cart events, checkout, and recurrence. |
+| ECloe Pay | Simulates wallet context and eligible financial actions such as cashback, savings goals, and account benefits. |
 | Marketplace-finance framing | Maps commerce behavior and wallet context to eligible financial actions. |
 | Data minimization | Drops raw purchase amount and ZIP-level fields from the modeling dataset. |
 | Adaptive recommendation | Compares Baseline, Epsilon-Greedy, UCB, and Thompson Sampling policies. |
@@ -29,7 +31,7 @@ ECloe frames this as an adaptive experimentation problem: explore enough to lear
 Target product framing:
 
 ```text
-Marketplace behavior + digital wallet context -> ECloe -> next best eligible action
+ECloe Market behavior + ECloe Pay context -> ECloe Engine -> next best eligible action
 ```
 
 See [`docs/marketplace-finance-use-case.md`](./docs/marketplace-finance-use-case.md) for the practical application scenario.

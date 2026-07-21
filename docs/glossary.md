@@ -13,6 +13,9 @@
 | Decision ID | Identifier used to link a decision to later reward events |
 | Delayed reward | Reward observed after the initial decision window |
 | Drift | Change in data or behavior patterns over time |
+| ECloe Engine | Adaptive decision layer that chooses the next best eligible action |
+| ECloe Market | Simulated marketplace surface that produces commerce behavior and intent signals |
+| ECloe Pay | Simulated digital wallet surface that provides wallet context and eligible financial actions |
 | Eligible offer | Offer already allowed by upstream business or compliance rules |
 | Epsilon-Greedy | Adaptive policy that explores randomly with probability `epsilon` and otherwise exploits the best known arm |
 | Exploration | Selecting an uncertain option to learn about its reward |

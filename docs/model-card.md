@@ -2,7 +2,7 @@
 
 ## Overview
 
-ECloe evaluates adaptive decision policies for recommending eligible marketplace-finance actions in an offline experimentation environment. The current repository includes data processing code, implemented offline policy simulation, local reports, and policy documentation. It does not contain production-trained artifacts.
+ECloe evaluates adaptive decision policies for recommending eligible marketplace-finance actions in an offline experimentation environment. The product framing uses ECloe Market for commerce behavior, ECloe Pay for wallet context and eligible actions, and ECloe Engine for policy selection. The current repository includes data processing code, implemented offline policy simulation, local reports, and policy documentation. It does not contain production-trained artifacts.
 
 | Field | Value |
 |-------|-------|
@@ -15,7 +15,7 @@ ECloe evaluates adaptive decision policies for recommending eligible marketplace
 
 ## Intended Use
 
-The policy is intended to recommend one eligible action for a simulated or anonymized marketplace and digital wallet context in a Datathon MVP. It supports offline evaluation, Golden Set validation, notebooks, and a future simple API or demo app.
+The policy is intended to recommend one eligible action for a simulated or anonymized ECloe Market and ECloe Pay context in a Datathon MVP. It supports offline evaluation, Golden Set validation, notebooks, and a future simple API or demo app.
 
 The policy is not intended for credit approval, account blocking, product eligibility, fraud decisions, product pricing, or any decision that creates legal or similarly significant effects without human review.
 

@@ -1,18 +1,21 @@
 # Architecture - ECloe
 
-ECloe is a low-cost adaptive experimentation MVP for next-best-action recommendations in an integrated marketplace and digital wallet ecosystem. It currently contains Hillstrom data ingestion/processing code, offline policy evaluation, validation reports, storage configuration shapes, tests, notebooks, and documentation for a future demo interface.
+ECloe is a low-cost adaptive experimentation MVP for next-best-action recommendations in an integrated marketplace and digital wallet ecosystem. The product story is composed of ECloe Market, ECloe Pay, and ECloe Engine. It currently contains Hillstrom data ingestion/processing code, offline policy evaluation, validation reports, storage configuration shapes, tests, notebooks, and documentation for a future demo interface.
 
 ## Overview
 
 ![Decision flow](docs/decision-flow.svg)
 
-The system starts with the public Kaggle Hillstrom email-campaign dataset, processes it into a minimized local dataset, evaluates multiple recommendation policies offline, and prepares the selected policy for a small demonstrable interface. Hillstrom is used as a public proxy for the pattern ECloe needs: context, action, and reward. In the target product, marketplace behavior and digital wallet context produce minimized signals, upstream systems provide eligible actions, ECloe selects one next best action, the decision is logged, and later rewards are linked back to the original `decision_id`.
+The system starts with the public Kaggle Hillstrom email-campaign dataset, processes it into a minimized local dataset, evaluates multiple recommendation policies offline, and prepares the selected policy for a small demonstrable interface. Hillstrom is used as a public proxy for the pattern ECloe needs: context, action, and reward. In the target product, ECloe Market produces commerce behavior signals, ECloe Pay provides wallet context and eligible actions, ECloe Engine selects one next best action, the decision is logged, and later rewards are linked back to the original `decision_id`.
 
 ## Components
 
 | Component | Responsibility | Key files/paths |
 |:---|:---|:---|
 | Configuration | Loads local `.env` settings, data paths, Kaggle dataset slug, file names, seed, and Azure placeholders. | `src/core/config.py`, `.env.example` |
+| ECloe Market | Planned simulated marketplace surface for product browsing, cart, checkout, and purchase-habit signals. | Planned `src/demo/` |
+| ECloe Pay | Planned simulated digital wallet surface for payment context, benefits, and eligible financial actions. | Planned `src/demo/` |
+| ECloe Engine | Adaptive decision layer that ranks eligible actions from ECloe Pay using marketplace-finance context. | `src/bandits/`, `src/evaluation/` |
 | Data ingestion | Downloads the configured Hillstrom Kaggle dataset into `data/raw/hillstrom.csv`. | `src/data/download.py` |
 | Data schema | Defines accepted source columns, minimized context columns, allowed actions, rewards, and blocked columns. | `src/data/schemas.py` |
 | Data processing | Normalizes columns, validates required fields, maps `segment -> action`, maps `conversion -> reward`, removes blocked modeling fields, and writes processed CSV output. | `src/data/process.py`, `tests/test_data_process.py` |
@@ -20,7 +23,7 @@ The system starts with the public Kaggle Hillstrom email-campaign dataset, proce
 | Storage contracts | Defines target Azure settings and Cosmos DB document shapes for future decision/reward storage. | `src/storage/` |
 | Offline policy layer | Implements Baseline, Epsilon-Greedy, UCB, and Thompson Sampling evaluation. | `src/bandits/`, `src/evaluation/` |
 | Notebooks | Reproduce the essential data, validation, training, evaluation, and cloud-reference stages. | `notebooks/` |
-| Marketplace-finance demo | Planned app simulation showing marketplace behavior, wallet context, eligible actions, recommendations, and reward events. | Planned `src/demo/` or `src/api/` |
+| Marketplace-finance demo | Planned app simulation showing ECloe Market behavior, ECloe Pay context, eligible actions, recommendations, and reward events. | Planned `src/demo/` or `src/api/` |
 | Documentation | Central delivery documentation, diagrams, contracts, governance, model card, and demo script. | `README.md`, `docs/` |
 
 ## Data / ML Pipeline Flow
@@ -64,6 +67,7 @@ The planned Decision API and reward payloads are documented in [`docs/api-contra
 - **Local-first execution** - keeps the project easy to run and avoids unnecessary cloud cost during the Datathon.
 - **Public Kaggle data only** - avoids real customer data and makes the experiment reproducible.
 - **Marketplace-finance framing** - positions ECloe as the decision layer connecting commerce behavior and digital wallet actions.
+- **Named product surfaces** - ECloe Market and ECloe Pay make the demo concrete while ECloe Engine remains reusable.
 - **Eligibility stays upstream** - ECloe only ranks actions already allowed by marketplace, wallet, risk, and compliance systems.
 - **Minimized Hillstrom context** - keeps `history_segment` but drops raw monetary `history` and `zip_code` from the modeling dataset.
 - **Explicit action/reward mapping** - uses `segment` as the observed campaign action and `conversion` as the binary reward.

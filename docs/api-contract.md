@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document defines the planned Decision API payloads for ECloe. The target use case is an integrated marketplace and digital wallet channel where upstream systems provide eligible actions and ECloe selects the next best action. The MVP can start with a local script or notebook, but any future API should preserve this request, response, and reward shape.
+This document defines the planned Decision API payloads for ECloe. The target use case is an integrated marketplace and digital wallet channel where **ECloe Market** provides commerce behavior signals, **ECloe Pay** provides wallet context and eligible actions, and **ECloe Engine** selects the next best action. The MVP can start with a local script or notebook, but any future API should preserve this request, response, and reward shape.
 
 ## Decision Request
 

@@ -2,7 +2,11 @@
 
 ## Purpose
 
-ECloe is best positioned as a next-best-action engine for an integrated marketplace and digital wallet ecosystem. The practical scenario is similar to a marketplace app connected to a payment account: marketplace behavior creates intent signals, and the digital wallet exposes eligible financial actions.
+ECloe is best positioned as a next-best-action engine for an integrated marketplace and digital wallet ecosystem. The practical scenario is built around two simulated product surfaces:
+
+- **ECloe Market** - a marketplace app that produces commerce intent signals.
+- **ECloe Pay** - a digital wallet and payment account that exposes eligible financial actions.
+- **ECloe Engine** - the adaptive decision layer that chooses the next best eligible action.
 
 The MVP does not decide credit, eligibility, fraud, or account restrictions. It chooses which already eligible action should be presented first in a digital channel.
 
@@ -35,6 +39,16 @@ Reward event
 | Idle wallet balance | Savings goal or simple investment offer |
 | High app engagement | Account upgrade or premium benefit |
 | Seasonal purchase pattern | Timed partner reward or cashback campaign |
+
+## Product Roles
+
+| Product surface | Role in the MVP | Example signals or actions |
+|:---|:---|:---|
+| ECloe Market | Simulates shopping behavior and purchase intent | Category visits, cart events, checkout recurrence, purchase habit |
+| ECloe Pay | Simulates wallet context and eligible financial actions | Cashback eligibility, savings goal, account benefit, installment education |
+| ECloe Engine | Selects the next best eligible action | Baseline, Epsilon-Greedy, UCB, Thompson Sampling |
+
+This separation keeps the demo concrete without pretending to run a full bank, credit bureau, or regulated payment institution.
 
 ## Minimized Context
 
@@ -80,7 +94,7 @@ The Hillstrom dataset is a public proxy for the marketplace-finance pattern:
 | `history_segment` | Coarse prior engagement segment |
 | Campaign row | One past interaction between context, action, and reward |
 
-This mapping lets the team validate policy behavior safely before any real marketplace or wallet data is used.
+This mapping lets the team validate policy behavior safely before any real ECloe Market or ECloe Pay event stream is used.
 
 ## Product Boundary
 

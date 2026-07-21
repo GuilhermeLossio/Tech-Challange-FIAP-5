@@ -8,12 +8,12 @@ Use this script to present ECloe as a practical ML Engineering MVP for adaptive 
 
 ### 1. Business Problem
 
-Marketplace and digital wallet channels often choose offers using static rules or long A/B tests. ECloe reframes the problem as adaptive experimentation so the system can learn from each interaction while preserving governance and auditability.
+Marketplace and digital wallet channels often choose offers using static rules or long A/B tests. ECloe reframes the problem as adaptive experimentation so the system can learn from each interaction while preserving governance and auditability. Present the demo as three product surfaces: ECloe Market, ECloe Pay, and ECloe Engine.
 
 Use the product analogy:
 
 ```text
-Marketplace behavior + digital wallet context -> next best eligible action
+ECloe Market behavior + ECloe Pay context -> ECloe Engine -> next best eligible action
 ```
 
 ### 2. Dataset and Preparation

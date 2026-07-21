@@ -26,6 +26,8 @@ ECloe performs adaptive experimentation for eligible marketplace-finance actions
 
 Secondary purposes, such as auditing and model improvement, are separated from the primary purpose and documented individually.
 
+The product surfaces are separated by responsibility: ECloe Market would produce aggregated commerce behavior signals, ECloe Pay would provide wallet context and eligible actions, and ECloe Engine would rank only those eligible actions.
+
 ---
 
 ## 3. Legal Basis
