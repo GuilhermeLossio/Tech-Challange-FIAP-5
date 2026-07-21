@@ -1,6 +1,6 @@
 # Architecture - ECloe
 
-ECloe is a low-cost adaptive experimentation MVP for next-best-action recommendations in an integrated marketplace and digital wallet ecosystem. The product story is composed of ECloe Market, ECloe Pay, and ECloe Engine. It currently contains Hillstrom data ingestion/processing code, offline policy evaluation, validation reports, storage configuration shapes, tests, notebooks, and documentation for a future demo interface.
+ECloe is a low-cost adaptive experimentation MVP for next-best-action recommendations in an integrated marketplace and digital wallet ecosystem. The product story is composed of ECloe Market, ECloe Pay, and ECloe Engine. It currently contains Hillstrom data ingestion/processing code, offline policy evaluation, a lightweight purchase-likelihood validator, a local FastAPI service, validation reports, storage configuration shapes, tests, notebooks, and documentation for a future demo interface.
 
 ## Overview
 
@@ -15,7 +15,8 @@ The system starts with the public Kaggle Hillstrom email-campaign dataset, proce
 | Configuration | Loads local `.env` settings, data paths, Kaggle dataset slug, file names, seed, and Azure placeholders. | `src/core/config.py`, `.env.example` |
 | ECloe Market | Planned simulated marketplace surface for product browsing, cart, checkout, and purchase-habit signals. | Planned `src/demo/` |
 | ECloe Pay | Planned simulated digital wallet surface for payment context, benefits, and eligible financial actions. | Planned `src/demo/` |
-| ECloe Engine | Adaptive decision layer that ranks eligible actions from ECloe Pay using marketplace-finance context. | `src/bandits/`, `src/evaluation/` |
+| ECloe Engine | Adaptive decision layer that ranks eligible actions from ECloe Pay using marketplace-finance context and simulated conversion likelihood. | `src/bandits/`, `src/evaluation/`, `src/engine/` |
+| Local Engine API | Exposes the implemented health, policy, purchase-likelihood, and decision endpoints. | `src/api/` |
 | Data ingestion | Downloads the configured Hillstrom Kaggle dataset into `data/raw/hillstrom.csv`. | `src/data/download.py` |
 | Data schema | Defines accepted source columns, minimized context columns, allowed actions, rewards, and blocked columns. | `src/data/schemas.py` |
 | Data processing | Normalizes columns, validates required fields, maps `segment -> action`, maps `conversion -> reward`, removes blocked modeling fields, and writes processed CSV output. | `src/data/process.py`, `tests/test_data_process.py` |
@@ -38,7 +39,8 @@ The MVP pipeline is intentionally small:
 4. Interpret the rows as a public proxy for marketplace-finance context, eligible action, and reward.
 5. Run the deterministic baseline and adaptive policies on the same offline sequence.
 6. Write local policy metrics and artifacts under `reports/policy_training/`.
-7. Select the policy for the Golden Set and demo interface.
+7. Train the lightweight purchase-likelihood validator.
+8. Select the policy for the Golden Set and local Engine API.
 
 ## Target Azure Architecture
 
@@ -60,7 +62,7 @@ The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](
 
 ## API and Event Contracts
 
-The planned Decision API and reward payloads are documented in [`docs/api-contract.md`](docs/api-contract.md). The practical marketplace-finance scenario is documented in [`docs/marketplace-finance-use-case.md`](docs/marketplace-finance-use-case.md). The MVP now includes a local policy training script documented in [`docs/training-workflow.md`](docs/training-workflow.md), and can later expose the same request/response shape through FastAPI if needed for Demo Day.
+The implemented local Engine API, planned reward payloads, and privacy boundaries are documented in [`docs/api-contract.md`](docs/api-contract.md). The practical marketplace-finance scenario is documented in [`docs/marketplace-finance-use-case.md`](docs/marketplace-finance-use-case.md). The MVP includes local policy training and purchase-likelihood artifact generation documented in [`docs/training-workflow.md`](docs/training-workflow.md).
 
 ## Key Design Decisions
 
@@ -73,6 +75,7 @@ The planned Decision API and reward payloads are documented in [`docs/api-contra
 - **Explicit action/reward mapping** - uses `segment` as the observed campaign action and `conversion` as the binary reward.
 - **Compare policies instead of merging them** - Baseline, Epsilon-Greedy, UCB, and Thompson Sampling are evaluated as separate strategies.
 - **Use Thompson Sampling as the initial candidate** - it fits binary rewards and handles uncertainty with documented Beta priors.
+- **Estimate likelihood lightly** - purchase probability uses smoothed offline conversion rates and fallbacks instead of a heavy classifier.
 - **Keep cloud as a target architecture** - small Azure services are enough for a demo; enterprise services remain future work.
 
 ## Project Structure
@@ -87,9 +90,11 @@ The planned Decision API and reward payloads are documented in [`docs/api-contra
 ├── notebooks/            # Reproducible notebooks for each essential stage
 ├── reports/              # Reports, metrics, and experiment outputs
 ├── src/
+│   ├── api/              # Local FastAPI surface for ECloe Engine
 │   ├── bandits/          # Offline decision policies
 │   ├── core/             # Settings and environment variable loading
 │   ├── data/             # Kaggle download, schema, processing, and validation
+│   ├── engine/           # Purchase likelihood and decision services
 │   ├── evaluation/       # Policy training and report generation
 │   └── storage/          # Azure settings and expected document shapes
 ├── tests/                # Automated tests
@@ -101,7 +106,8 @@ The planned Decision API and reward payloads are documented in [`docs/api-contra
 
 ## Limitations
 
-- The repository does not yet include MLflow runs or the marketplace-finance demo interface.
+- The repository does not yet include MLflow runs or a full marketplace-finance user interface.
 - The target Azure services are architectural guidance, not deployed infrastructure.
 - Offline simulation is useful for engineering validation, but it is not production evidence.
+- Purchase likelihood is based on public proxy data and should not be interpreted as real banking purchase propensity.
 - A regulated production deployment would require legal, security, privacy, model risk, and operational reviews.

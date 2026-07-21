@@ -11,6 +11,7 @@ import pandas as pd
 
 from src.bandits import ACTIONS, DeterministicBaseline, EpsilonGreedy, ThompsonSampling, UCB1
 from src.bandits.policies import BanditPolicy
+from src.engine.likelihood import train_likelihood_model
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -270,6 +271,10 @@ def run_evaluation(
     golden_set = build_golden_set(selected["policy"], evaluation_df, selected)
 
     write_outputs(output_dir, metrics, selected, reward_rates, golden_set)
+    train_likelihood_model(
+        input_file=input_file,
+        output_file=output_dir / "purchase_likelihood_model.json",
+    )
 
     return {
         "input_file": str(input_file),

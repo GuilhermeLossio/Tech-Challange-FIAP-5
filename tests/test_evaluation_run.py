@@ -43,6 +43,7 @@ def test_run_evaluation_writes_expected_artifacts(tmp_path) -> None:
         "selected_policy.json",
         "golden_set_recommendations.json",
         "policy_state_thompson_sampling.json",
+        "purchase_likelihood_model.json",
     }
     assert expected_files == {path.name for path in output_dir.iterdir()}
 

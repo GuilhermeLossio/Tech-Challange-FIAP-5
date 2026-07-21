@@ -16,9 +16,9 @@ The MVP uses three documented offers:
 
 | Offer ID | Description |
 |----------|-------------|
-| `credit_limit` | Credit limit increase or pre-approved credit |
-| `personal_loan` | Personal loan offer |
-| `cashback_investment` | Cashback or investment incentive |
+| `cashback_recurring_purchase` | Cashback incentive for recurring marketplace purchase behavior |
+| `savings_goal` | Wallet savings goal or account benefit |
+| `financial_education` | Educational action for safer wallet or installment usage |
 
 Synthetic generation should only add what the source dataset does not contain:
 
@@ -34,6 +34,7 @@ Synthetic generation should only add what the source dataset does not contain:
 | Processed customer contexts | `data/processed/hillstrom_processed.csv` | Cleaned source-derived rows with minimized context, action, and reward fields |
 | Offer catalog | `data/processed/offer_catalog.json` | Three synthetic MVP offers |
 | Simulation results | `reports/` | Policy metrics and comparison outputs |
+| Purchase likelihood artifact | `reports/policy_training/purchase_likelihood_model.json` | Smoothed offline conversion-rate validator for the local API |
 | Golden Set | `data/golden_set/evaluation_cases.jsonl` | Five deterministic examples for policy explanation |
 
 These paths are target outputs for the next implementation stages.

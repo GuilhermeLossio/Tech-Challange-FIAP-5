@@ -2,7 +2,16 @@
 
 ## Scope
 
-This document defines the planned Decision API payloads for ECloe. The target use case is an integrated marketplace and digital wallet channel where **ECloe Market** provides commerce behavior signals, **ECloe Pay** provides wallet context and eligible actions, and **ECloe Engine** selects the next best action. The MVP can start with a local script or notebook, but any future API should preserve this request, response, and reward shape.
+This document defines the local Decision API payloads for ECloe. The target use case is an integrated marketplace and digital wallet channel where **ECloe Market** provides commerce behavior signals, **ECloe Pay** provides wallet context and eligible actions, and **ECloe Engine** selects the next best action. The MVP exposes these contracts through FastAPI and keeps reward storage as a future integration.
+
+## Implemented Endpoints
+
+| Method | Path | Description |
+|:---|:---|:---|
+| `GET` | `/health` | Returns local service health. |
+| `GET` | `/v1/policy` | Returns selected policy metadata when available. |
+| `POST` | `/v1/purchase-likelihood` | Estimates purchase or conversion probability for eligible offers. |
+| `POST` | `/v1/decisions` | Selects one eligible offer and returns likelihood, policy, and reason codes. |
 
 ## Decision Request
 
@@ -40,6 +49,7 @@ This document defines the planned Decision API payloads for ECloe. The target us
 {
   "decision_id": "dec_123",
   "offer_id": "cashback_recurring_purchase",
+  "purchase_likelihood": 0.1375,
   "policy": "thompson_sampling",
   "policy_version": "2026-07-05.1",
   "reason_codes": ["marketplace_behavior_match", "wallet_engagement_signal"]
@@ -50,9 +60,33 @@ This document defines the planned Decision API payloads for ECloe. The target us
 |-------|------|-------------|
 | `decision_id` | string | Identifier used to connect later rewards to the decision |
 | `offer_id` | string | Selected eligible action from `eligible_offers` |
+| `purchase_likelihood` | number | Offline estimated probability of purchase or conversion for the selected offer |
 | `policy` | string | Policy used to make the decision |
 | `policy_version` | string | Version of the policy artifact or configuration |
 | `reason_codes` | array of strings | Auditable explanation codes |
+
+## Purchase Likelihood Response
+
+```json
+{
+  "request_id": "req_123",
+  "estimates": [
+    {
+      "offer_id": "cashback_recurring_purchase",
+      "proxy_action": "womens_email",
+      "purchase_likelihood": 0.1375,
+      "confidence": "medium",
+      "fallback_level": "action_rate",
+      "sample_count": 1200,
+      "reason_codes": ["action_conversion_rate", "context_fallback"],
+      "warnings": []
+    }
+  ],
+  "warnings": []
+}
+```
+
+The probability is an offline simulated estimate derived from public proxy data. It must not be presented as proof of real customer intent.
 
 ## Reward Event
 

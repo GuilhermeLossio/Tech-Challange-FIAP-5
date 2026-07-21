@@ -16,6 +16,8 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 | Data minimization | Drops raw purchase amount and ZIP-level fields from the modeling dataset. |
 | Adaptive recommendation | Compares Baseline, Epsilon-Greedy, UCB, and Thompson Sampling policies. |
 | Local policy training | Runs deterministic offline policy simulation with local reports. |
+| Purchase likelihood validator | Estimates simulated conversion probability for eligible offers through ECloe Engine. |
+| Local Engine API | Exposes health, policy, purchase-likelihood, and decision endpoints with FastAPI. |
 | Evaluation-first delivery | Measures conversion rate, cumulative reward, regret, and exploration rate before selecting a policy. |
 | Golden Set validation | Plans 5 deterministic examples for explainable Demo Day validation. |
 | Low-consumption architecture | Prioritizes local execution and small Azure services instead of enterprise infrastructure. |
@@ -122,9 +124,31 @@ reports/policy_training/policy_versions.json
 reports/policy_training/selected_policy.json
 reports/policy_training/golden_set_recommendations.json
 reports/policy_training/policy_state_thompson_sampling.json
+reports/policy_training/purchase_likelihood_model.json
 ```
 
 See [`docs/training-workflow.md`](./docs/training-workflow.md) for the full offline training flow.
+
+Generate only the lightweight purchase-likelihood validator:
+
+```bash
+python -m src.engine.train_likelihood
+```
+
+Run the local ECloe Engine API after the training artifacts exist:
+
+```bash
+python -m src.api.main
+```
+
+Local endpoints:
+
+| Method | Path | Purpose |
+|:---|:---|:---|
+| `GET` | `/health` | Service health check. |
+| `GET` | `/v1/policy` | Current selected policy metadata. |
+| `POST` | `/v1/purchase-likelihood` | Estimated purchase/conversion probability by eligible offer. |
+| `POST` | `/v1/decisions` | Recommended eligible offer with likelihood, policy, and reason codes. |
 
 ---
 
@@ -140,9 +164,11 @@ See [`docs/training-workflow.md`](./docs/training-workflow.md) for the full offl
 ├── notebooks/            # Reproducible notebooks for each essential stage
 ├── reports/              # Reports, metrics, and experiment outputs
 ├── src/
+│   ├── api/              # Local FastAPI surface for ECloe Engine
 │   ├── bandits/          # Offline decision policies
 │   ├── core/             # Settings and environment variable loading
 │   ├── data/             # Kaggle download, schema, processing, and validation
+│   ├── engine/           # Purchase likelihood and decision services
 │   ├── evaluation/       # Policy training and report generation
 │   └── storage/          # Azure settings and expected document shapes
 ├── tests/                # Automated tests
@@ -219,11 +245,12 @@ python -m pytest
 
 ```bash
 python -m src.evaluation.run
-python -m src.demo.recommend --input data/golden_set/customer_001.json
+python -m src.engine.train_likelihood
+python -m src.api.main
 mlflow ui
 ```
 
-`python -m src.evaluation.run` is implemented for local reports. The demo command and MLflow UI remain planned future steps.
+`python -m src.evaluation.run`, `python -m src.engine.train_likelihood`, and `python -m src.api.main` are implemented for local reports and serving. MLflow UI remains a planned future step.
 
 ---
 
@@ -293,6 +320,7 @@ The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](
 - The Kaggle dataset is public and does not represent real customers from a financial institution.
 - MVP offers and future reward assumptions are simulated to enable policy comparison.
 - Offline rewards approximate a real environment but do not replace controlled production testing.
+- Purchase likelihood is an offline simulated estimate, not production evidence of real customer purchase intent.
 - Sensitive decisions would require human review, regulatory validation, security, privacy, and continuous monitoring.
 - The cloud architecture is a target deployment, not a requirement for running the local MVP.
 

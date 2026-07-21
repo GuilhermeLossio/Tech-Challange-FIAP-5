@@ -82,10 +82,23 @@ Generated files:
 | `selected_policy.json` | Winning policy and selection rule |
 | `golden_set_recommendations.json` | Five deterministic examples for Demo Day review |
 | `policy_state_thompson_sampling.json` | Thompson Sampling alpha/beta state |
+| `purchase_likelihood_model.json` | Smoothed conversion-rate artifact used by the local ECloe Engine API |
 
 ## Interpreting `selected_policy.json`
 
 `selected_policy.json` is the local promotion candidate. It identifies the policy selected by the offline comparison and records the metrics used for that selection. It is not production approval evidence by itself; it should be reviewed together with the Golden Set, model card, governance notes, and known limitations.
+
+## Purchase Likelihood Validator
+
+The command below trains only the lightweight purchase-likelihood validator:
+
+```bash
+python -m src.engine.train_likelihood
+```
+
+The validator is not a supervised classifier. It estimates purchase or conversion likelihood from smoothed offline rates by action and by available context. If an exact context is not available, it falls back from contextual rates to action rates and then to the global conversion rate.
+
+The local API uses this artifact to return likelihood estimates for eligible offers and to support the `/v1/decisions` endpoint.
 
 ## MLflow
 

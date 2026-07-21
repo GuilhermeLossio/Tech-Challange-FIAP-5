@@ -11,7 +11,7 @@ ECloe evaluates adaptive decision policies for recommending eligible marketplace
 | Comparison policies | Epsilon-Greedy and UCB |
 | Control policy | Deterministic baseline |
 | Reward type | Binary reward, such as click or conversion |
-| Status | Local offline evaluation implemented, not production deployed |
+| Status | Local offline evaluation, purchase-likelihood validation, and FastAPI serving implemented; not production deployed |
 
 ## Intended Use
 
@@ -49,6 +49,7 @@ Expected outputs:
 
 - `decision_id`
 - `offer_id`
+- `purchase_likelihood`
 - `policy`
 - `policy_version`
 - `reason_codes`
@@ -65,6 +66,8 @@ The canonical payloads are documented in [`api-contract.md`](api-contract.md).
 | Exploration rate | Tracks how often the policy explores uncertain offers |
 | Demo latency | Tracks serving performance for a future script or API |
 | Operational consumption | Confirms the MVP remains low-cost and easy to run |
+
+The purchase-likelihood validator uses smoothed offline conversion rates by action and available context. It is intentionally lightweight and should be interpreted as simulated propensity evidence, not as a production prediction model.
 
 ## Fairness and Governance
 

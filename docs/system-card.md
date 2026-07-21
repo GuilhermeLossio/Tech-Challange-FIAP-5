@@ -2,7 +2,7 @@
 
 ## System Purpose
 
-ECloe is a low-cost adaptive experimentation MVP for recommending next-best eligible actions in an integrated marketplace and digital wallet ecosystem. The system is framed as ECloe Market for simulated commerce behavior, ECloe Pay for simulated wallet context, and ECloe Engine for adaptive decisioning. It combines Kaggle-based data preparation, offline bandit policy evaluation, Golden Set validation, local reports, and a future lightweight demo interface.
+ECloe is a low-cost adaptive experimentation MVP for recommending next-best eligible actions in an integrated marketplace and digital wallet ecosystem. The system is framed as ECloe Market for simulated commerce behavior, ECloe Pay for simulated wallet context, and ECloe Engine for adaptive decisioning. It combines Kaggle-based data preparation, offline bandit policy evaluation, purchase-likelihood validation, Golden Set validation, local reports, and a lightweight local API.
 
 ## Main Components
 
@@ -11,6 +11,7 @@ ECloe is a low-cost adaptive experimentation MVP for recommending next-best elig
 | ECloe Market | Simulates marketplace behavior and intent signals |
 | ECloe Pay | Simulates wallet context and eligible financial actions |
 | ECloe Engine | Selects the next best eligible action |
+| Local FastAPI service | Exposes health, policy, purchase-likelihood, and decision endpoints |
 | Data preparation | Downloads and processes the Kaggle Hillstrom email-campaign dataset |
 | Offline simulator | Uses customer/context rows and binary rewards to compare policies |
 | Bandit policies | Compare deterministic baseline, Epsilon-Greedy, UCB, and Thompson Sampling |
@@ -27,7 +28,8 @@ ECloe is a low-cost adaptive experimentation MVP for recommending next-best elig
 4. Each policy chooses one simulated eligible marketplace-finance action.
 5. The simulator returns a binary reward.
 6. Metrics are calculated and logged.
-7. The selected policy is demonstrated with the Golden Set.
+7. A smoothed purchase-likelihood artifact is generated for local serving.
+8. The selected policy is demonstrated through the Golden Set and local API.
 
 The visual flow is available in [`decision-flow.svg`](decision-flow.svg).
 
@@ -51,6 +53,7 @@ The visual flow is available in [`decision-flow.svg`](decision-flow.svg).
 | Blocked field present | Fail validation and remove the field before modeling |
 | No eligible offers | Return a no-decision response or deterministic fallback |
 | Policy underperforms baseline | Keep the baseline or select another adaptive policy |
+| Purchase likelihood has low evidence | Return fallback level, confidence, and warning fields |
 | Reward assumptions are unclear | Document the simulation logic and seed |
 
 ## Monitoring
