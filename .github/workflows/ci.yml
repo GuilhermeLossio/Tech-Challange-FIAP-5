@@ -34,7 +34,9 @@ jobs:
         run: ruff check src tests
 
       - name: Tests and coverage
-        run: pytest --cov=src --cov-report=term-missing --cov-fail-under=70
+        run: python -m pytest --cov=src --cov-report=term-missing --cov-fail-under=70
+        env:
+          PYTHONPATH: .
 
       - name: Dependency audit
         run: pip-audit --requirement requirements.lock --no-deps --progress-spinner off
