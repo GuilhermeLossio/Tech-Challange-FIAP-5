@@ -18,6 +18,10 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "AUTH_MODE",
         "TRUSTED_HOSTS",
         "AZURE_COSMOS_AUTH_MODE",
+        "SUBJECT_KEY_SALT",
+        "DECISION_EVENT_TTL_SECONDS",
+        "DECISION_REPOSITORY_MODE",
+        "DECISION_EVENTS_FILE",
     ]:
         monkeypatch.delenv(name, raising=False)
 
@@ -32,3 +36,7 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.api_host == "127.0.0.1"
     assert settings.auth_mode == "disabled"
     assert settings.azure_cosmos_auth_mode == "key"
+    assert settings.subject_key_salt == "local-dev-subject-key-salt"
+    assert settings.decision_event_ttl_seconds == 157680000
+    assert settings.decision_repository_mode == "file"
+    assert settings.decision_events_file == ROOT_DIR / "reports" / "decision_events.jsonl"

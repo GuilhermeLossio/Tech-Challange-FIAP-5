@@ -60,6 +60,7 @@ class DecisionRequest(StrictApiModel):
 class DecisionResponse(StrictApiModel):
     request_id: str
     decision_id: str
+    created_at: str
     offer_id: OfferId
     purchase_likelihood: float = Field(ge=0.0, le=1.0)
     policy: Literal["likelihood_ranker", "thompson_sampling"]

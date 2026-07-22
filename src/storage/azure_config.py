@@ -11,6 +11,7 @@ class AzureDataLayout:
     cosmos_database: str
     cosmos_containers: tuple[str, ...]
     cosmos_auth_mode: str
+    decision_event_ttl_seconds: int
 
 
 def get_azure_data_layout() -> AzureDataLayout:
@@ -27,4 +28,5 @@ def get_azure_data_layout() -> AzureDataLayout:
             settings.azure_cosmos_container_policies,
         ),
         cosmos_auth_mode=settings.azure_cosmos_auth_mode,
+        decision_event_ttl_seconds=settings.decision_event_ttl_seconds,
     )

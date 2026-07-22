@@ -46,6 +46,7 @@ Expected inputs:
 Expected outputs:
 
 - `decision_id`
+- `created_at`
 - `offer_id`
 - `purchase_likelihood`
 - `policy`
@@ -57,6 +58,7 @@ Expected outputs:
 - `reason_codes`
 
 The canonical payloads are documented in [`api-contract.md`](api-contract.md).
+Persisted decision events use a pseudonymized `subject_key`, minimized context, artifact hash, and optional idempotency key for duplicate suppression.
 
 ## Metrics
 

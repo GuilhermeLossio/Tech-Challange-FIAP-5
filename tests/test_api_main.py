@@ -20,6 +20,7 @@ from src.api.schemas.errors import ErrorResponse  # noqa: E402
 from src.core.config import load_settings  # noqa: E402
 from src.engine.likelihood import train_likelihood_model  # noqa: E402
 from src.engine.service import DecisionService  # noqa: E402
+from src.storage.decision_repository import InMemoryDecisionRepository  # noqa: E402
 
 
 def processed_dataframe() -> pd.DataFrame:
@@ -69,8 +70,10 @@ def test_api_purchase_likelihood_and_decision(tmp_path) -> None:
         encoding="utf-8",
     )
     service = DecisionService.from_files(model_file, selected_policy_file)
+    repository = InMemoryDecisionRepository()
+    principal = Principal("user-1", frozenset({"decision:write", "decision:read", "policy:read"}), {})
 
-    app = api_main.create_app(service)
+    app = api_main.create_app(service, repository)
     payload = {
         "request_id": "req_1",
         "customer_context": {"channel": "Web", "history_segment": "1) Low", "newbie": 1},
@@ -80,7 +83,22 @@ def test_api_purchase_likelihood_and_decision(tmp_path) -> None:
 
     likelihood = route_endpoint(app, "/v1/likelihood-estimates", "POST")(request, service=service)
     alias = route_endpoint(app, "/v1/purchase-likelihood", "POST")(request, service=service)
-    decision = route_endpoint(app, "/v1/decisions", "POST")(request, service=service)
+    decision = route_endpoint(app, "/v1/decisions", "POST")(
+        request,
+        idempotency_key="idem-1",
+        principal=principal,
+        service=service,
+        repository=repository,
+        settings=load_settings(),
+    )
+    repeated = route_endpoint(app, "/v1/decisions", "POST")(
+        request,
+        idempotency_key="idem-1",
+        principal=principal,
+        service=service,
+        repository=repository,
+        settings=load_settings(),
+    )
     policy = route_endpoint(app, "/v1/policies/current", "GET")(service=service)
 
     assert len(likelihood["estimates"]) == 2
@@ -89,10 +107,75 @@ def test_api_purchase_likelihood_and_decision(tmp_path) -> None:
     assert decision["policy"] == "likelihood_ranker"
     assert decision["policy_version"] == model.version
     assert decision["artifact_version"] == model.version
+    assert decision == repeated
+    assert repository.event_count == 1
+    assert decision["created_at"]
     assert len(decision["artifact_checksum"]) == 64
     assert policy["policy"] == "likelihood_ranker"
     assert policy["artifact_checksum"] == decision["artifact_checksum"]
     assert policy["promoted_offline_policy"]["policy"] == "thompson_sampling"
+    record = repository.records[0]
+    assert record.decision_id == decision["decision_id"]
+    assert record.request_id == "req_1"
+    assert record.selected_offer_id == decision["offer_id"]
+    assert record.policy == "likelihood_ranker"
+    assert record.policy_version == decision["policy_version"]
+    assert record.artifact_checksum == decision["artifact_checksum"]
+    assert record.reason_codes == decision["reason_codes"]
+    assert record.minimized_context == {"channel": "Web", "history_segment": "1) Low", "newbie": 1}
+    assert record.subject_key.startswith("sub_")
+    assert record.subject_key != principal.subject
+    assert record.ttl == load_settings().decision_event_ttl_seconds
+
+
+def test_decision_without_idempotency_key_persists_new_events(tmp_path) -> None:
+    input_file = tmp_path / "processed.csv"
+    model_file = tmp_path / "purchase_likelihood_model.json"
+    selected_policy_file = tmp_path / "selected_policy.json"
+    processed_dataframe().to_csv(input_file, index=False)
+    train_likelihood_model(input_file=input_file, output_file=model_file, min_samples=2)
+    selected_policy_file.write_text(
+        json.dumps(
+            {
+                "schema_version": "selected_policy.v1",
+                "artifact_status": "active",
+                "policy": "thompson_sampling",
+                "version": "offline-v1",
+                "selection_rule": "test fixture",
+                "metrics": {"rounds": 9},
+            }
+        ),
+        encoding="utf-8",
+    )
+    service = DecisionService.from_files(model_file, selected_policy_file)
+    repository = InMemoryDecisionRepository()
+    principal = Principal("user-1", frozenset({"decision:write"}), {})
+    app = api_main.create_app(service, repository)
+    request = DecisionRequest(
+        request_id="req_1",
+        customer_context={"channel": "Web", "history_segment": "1) Low", "newbie": 1},
+        eligible_offers=["cashback_recurring_purchase", "financial_education"],
+    )
+
+    first = route_endpoint(app, "/v1/decisions", "POST")(
+        request,
+        idempotency_key=None,
+        principal=principal,
+        service=service,
+        repository=repository,
+        settings=load_settings(),
+    )
+    second = route_endpoint(app, "/v1/decisions", "POST")(
+        request,
+        idempotency_key=None,
+        principal=principal,
+        service=service,
+        repository=repository,
+        settings=load_settings(),
+    )
+
+    assert first["decision_id"] != second["decision_id"]
+    assert repository.event_count == 2
 
 
 def test_api_startup_fails_when_artifact_is_missing(monkeypatch) -> None:
@@ -282,11 +365,31 @@ def test_cloud_security_rejects_permanent_cosmos_key() -> None:
         entra_tenant_id="tenant",
         entra_client_id="client",
         entra_audience="api://client",
+        subject_key_salt="cloud-secret",
         azure_cosmos_key="permanent-key",
         azure_cosmos_auth_mode="managed_identity",
     )
 
     with pytest.raises(RuntimeError, match="Permanent AZURE_COSMOS_KEY"):
+        validate_security_settings(settings)
+
+
+def test_cloud_security_requires_cosmos_decision_repository() -> None:
+    settings = replace(
+        load_settings(),
+        app_environment="cloud",
+        api_host="0.0.0.0",
+        auth_mode="entra_id",
+        entra_tenant_id="tenant",
+        entra_client_id="client",
+        entra_audience="api://client",
+        subject_key_salt="cloud-secret",
+        azure_cosmos_key="",
+        azure_cosmos_auth_mode="managed_identity",
+        decision_repository_mode="file",
+    )
+
+    with pytest.raises(RuntimeError, match="DECISION_REPOSITORY_MODE=cosmos"):
         validate_security_settings(settings)
 
 

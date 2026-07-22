@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-import hashlib
+from datetime import UTC, datetime
 from pathlib import Path
+from uuid import uuid4
 
 from src.engine.artifacts import SELECTED_POLICY_SCHEMA, ArtifactMetadata, LoadedArtifact, load_json_artifact
 from src.engine.likelihood import DEFAULT_OUTPUT_DIR, PurchaseLikelihoodService
-from src.engine.schemas import DecisionResponse, EngineRequest, LikelihoodEstimate
+from src.engine.schemas import DecisionResponse, EngineRequest
 from src.engine.strategies import DecisionStrategy, LikelihoodRankerStrategy
 
 
@@ -74,10 +75,10 @@ class DecisionService:
         likelihood = self.likelihood_service.estimate(request)
         selected = self.strategy.select(request, likelihood)
         artifact = self.strategy.artifact_metadata
-        decision_id = self._decision_id(request.request_id, selected)
         return DecisionResponse(
             request_id=request.request_id,
-            decision_id=decision_id,
+            decision_id=self._decision_id(),
+            created_at=datetime.now(UTC).isoformat(),
             offer_id=selected.offer_id,
             purchase_likelihood=selected.purchase_likelihood,
             policy=self.strategy.name,
@@ -94,10 +95,8 @@ class DecisionService:
         )
 
     @staticmethod
-    def _decision_id(request_id: str, selected: LikelihoodEstimate) -> str:
-        payload = f"{request_id}:{selected.offer_id}:{selected.purchase_likelihood}"
-        digest = hashlib.sha256(payload.encode()).hexdigest()[:16]
-        return f"dec_{digest}"
+    def _decision_id() -> str:
+        return f"dec_{uuid4()}"
 
 
 def load_selected_policy_artifact(path: Path) -> LoadedArtifact:

@@ -24,6 +24,8 @@ Available scopes:
 - `reward:write` - write future reward events.
 - `policy:read` - read active policy metadata.
 
+`POST /v1/decisions` accepts the optional `Idempotency-Key` header, up to 128 characters. Repeating a decision request with the same authenticated subject and the same `Idempotency-Key` returns the original persisted decision response and does not create a second decision event.
+
 ## Decision Request
 
 ```json
@@ -57,6 +59,7 @@ The API uses an allowlist for `customer_context`. Unknown context fields, unknow
 ```json
 {
   "decision_id": "dec_123",
+  "created_at": "2026-07-22T12:00:00Z",
   "offer_id": "cashback_recurring_purchase",
   "purchase_likelihood": 0.1375,
   "policy": "likelihood_ranker",
@@ -72,6 +75,7 @@ The API uses an allowlist for `customer_context`. Unknown context fields, unknow
 | Field | Type | Description |
 |-------|------|-------------|
 | `decision_id` | string | Identifier used to connect later rewards to the decision |
+| `created_at` | string | UTC timestamp generated when the persisted decision is created |
 | `offer_id` | string | Selected eligible action from `eligible_offers` |
 | `purchase_likelihood` | number | Offline estimated probability of purchase or conversion for the selected offer |
 | `policy` | string | Strategy actually executed to make the decision |

@@ -75,6 +75,10 @@ class Settings:
     rate_limit_requests: int
     rate_limit_window_seconds: int
     azure_cosmos_auth_mode: str
+    subject_key_salt: str
+    decision_event_ttl_seconds: int
+    decision_repository_mode: str
+    decision_events_file: Path
 
     @property
     def raw_file(self) -> Path:
@@ -131,6 +135,10 @@ def load_settings() -> Settings:
         rate_limit_requests=int(_env("RATE_LIMIT_REQUESTS", "120")),
         rate_limit_window_seconds=int(_env("RATE_LIMIT_WINDOW_SECONDS", "60")),
         azure_cosmos_auth_mode=_env("AZURE_COSMOS_AUTH_MODE", "key").lower(),
+        subject_key_salt=_env("SUBJECT_KEY_SALT", "local-dev-subject-key-salt"),
+        decision_event_ttl_seconds=int(_env("DECISION_EVENT_TTL_SECONDS", "157680000")),
+        decision_repository_mode=_env("DECISION_REPOSITORY_MODE", "file").lower(),
+        decision_events_file=ROOT_DIR / _env("DECISION_EVENTS_FILE", "reports/decision_events.jsonl"),
     )
 
 

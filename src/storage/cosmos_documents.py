@@ -12,34 +12,42 @@ def utc_now_iso() -> str:
 
 @dataclass(frozen=True)
 class DecisionEvent:
-    customer_id: str
-    offer_id: str
-    policy_name: str
+    decision_id: str
+    request_id: str
+    subject_key: str
+    selected_offer_id: str
+    policy: str
     policy_version: str
-    context: dict[str, Any]
+    artifact_version: str
+    artifact_checksum: str
     reason_codes: list[str]
+    minimized_context: dict[str, Any]
+    idempotency_key: str | None = None
+    request_hash: str = ""
+    ttl: int = 157680000
     id: str = field(default_factory=lambda: str(uuid4()))
     event_type: str = "decision"
     created_at: str = field(default_factory=utc_now_iso)
 
     @property
     def partition_key(self) -> str:
-        return self.customer_id
+        return self.subject_key
 
 
 @dataclass(frozen=True)
 class RewardEvent:
     decision_id: str
-    customer_id: str
+    subject_key: str
     reward: int
     reward_type: str = "conversion"
+    ttl: int = 157680000
     id: str = field(default_factory=lambda: str(uuid4()))
     event_type: str = "reward"
     created_at: str = field(default_factory=utc_now_iso)
 
     @property
     def partition_key(self) -> str:
-        return self.customer_id
+        return self.subject_key
 
 
 @dataclass(frozen=True)

@@ -153,6 +153,8 @@ Local endpoints:
 | `POST` | `/v1/decisions` | `decision:write` | Recommended eligible offer with likelihood, policy, and reason codes. |
 
 Cloud runtime must use Microsoft Entra ID bearer tokens. `AUTH_MODE=disabled` is accepted only for local loopback execution with `API_HOST=127.0.0.1`.
+`POST /v1/decisions` accepts `Idempotency-Key`; repeating the same key for the same authenticated subject returns the original persisted decision without creating a duplicate event.
+Local development persists decision events to `reports/decision_events.jsonl`; cloud runtime must use Cosmos DB with Managed Identity.
 
 ---
 

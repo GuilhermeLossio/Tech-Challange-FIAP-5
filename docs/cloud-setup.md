@@ -20,9 +20,11 @@ Containers:
 
 | Container | Partition key | Purpose |
 |:---|:---|:---|
-| `decisions` | `/customer_id` | Decision events returned by the policy |
-| `rewards` | `/customer_id` | Conversion or reward events linked to decisions |
+| `decisions` | `/subject_key` | Pseudonymized decision events returned by the executed strategy |
+| `rewards` | `/subject_key` | Conversion or reward events linked to decisions |
 | `policy_versions` | `/policy_name` | Offline metrics and policy approval metadata |
+
+Enable TTL on `decisions` and `rewards`. The MVP default is `DECISION_EVENT_TTL_SECONDS=157680000`, approximately 5 years.
 
 ## Manual Environment Variables
 
@@ -37,6 +39,9 @@ ENTRA_CLIENT_ID=<api-application-client-id>
 ENTRA_AUDIENCE=api://<api-application-client-id>
 CORS_ALLOWED_ORIGINS=https://<approved-client-host>
 TRUSTED_HOSTS=<approved-api-host>
+SUBJECT_KEY_SALT=<non-default-pseudonymization-secret>
+DECISION_EVENT_TTL_SECONDS=157680000
+DECISION_REPOSITORY_MODE=cosmos
 AZURE_COSMOS_ENDPOINT=https://ecloe5cosmos1266cl.documents.azure.com:443/
 AZURE_COSMOS_AUTH_MODE=managed_identity
 AZURE_COSMOS_DATABASE=ecloe

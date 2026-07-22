@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from uuid import UUID
 
 import pandas as pd
 
@@ -126,3 +127,5 @@ def test_decision_service_recommends_only_eligible_offer(tmp_path) -> None:
     assert len(response.artifact_checksum) == 64
     assert response.artifact_status == "active"
     assert response.decision_id.startswith("dec_")
+    UUID(response.decision_id.removeprefix("dec_"))
+    assert response.created_at

@@ -32,12 +32,16 @@ A new policy version can be promoted only after:
 
 Each decision log should include:
 
-- Anonymous `session_id` or request reference.
+- Pseudonymized `subject_key`.
 - `decision_id`.
+- `request_id`.
 - Selected `offer_id`.
 - `policy` and `policy_version`.
+- Artifact version and checksum.
 - `reason_codes`.
 - Timestamp.
+- Optional `Idempotency-Key` for duplicate suppression.
+- Minimized context accepted by the serving schema.
 
 Logs must not include direct identifiers, sensitive attributes, income, wealth, or precise location.
 Raw item-level purchase history should not be logged by ECloe; use aggregated marketplace and wallet behavior bands.

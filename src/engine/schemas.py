@@ -34,6 +34,7 @@ class LikelihoodResponse:
 class DecisionResponse:
     request_id: str
     decision_id: str
+    created_at: str
     offer_id: str
     purchase_likelihood: float
     policy: str

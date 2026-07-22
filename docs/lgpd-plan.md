@@ -74,13 +74,13 @@ The model receives only **anonymized behavioral and contextual features**. Direc
 ```text
 Identity layer (CRM)                Feature layer (bandit)
 --------------------                ----------------------
-Tax ID, name, account     --hash--> anonymous session_id
+Tax ID, name, account     --HMAC--> pseudonymous subject_key
 Income, balance                     segment, channel, minimized context
 Raw purchase history                purchase habit band, wallet engagement band
 Registration data                   binary reward: click/conversion
 ```
 
-Pseudonymization is applied before any data reaches the bandit service, evaluation layer, or future explainability interface.
+Pseudonymization is applied before any data reaches the bandit service, evaluation layer, or future explainability interface. Runtime decision events use `subject_key`, never `customer_id`.
 
 ---
 
@@ -100,7 +100,7 @@ The Datathon MVP does not require an LLM assistant or RAG index. If an explainab
 | Data | Retention | Justification | Disposal |
 |------|-----------|---------------|----------|
 | Offer events, including impression and click | 2 years | Experiment audit and retraining | Anonymization after 6 months; deletion after 2 years |
-| Decision logs, including reason codes and policy version | 5 years | Regulatory obligation | Deletion after the legal period |
+| Decision logs, including reason codes and policy version | 5 years | Regulatory obligation | Cosmos DB TTL deletion after the legal period |
 | Session features | 90 days | Delayed reward horizon | Automatic deletion |
 | Explainability index data, if implemented | Experiment duration plus 1 year | Audit reproducibility | Deletion when the cycle closes |
 
@@ -110,7 +110,7 @@ The Datathon MVP does not require an LLM assistant or RAG index. If an explainab
 
 | Attribute | LGPD classification | ECloe handling |
 |-----------|---------------------|----------------|
-| National taxpayer ID / identity document | Direct personal data | Never enters the model; one-way hash for `session_id` |
+| National taxpayer ID / identity document | Direct personal data | Never enters the model; one-way HMAC for `subject_key` |
 | Gender | Sensitive personal data under Art. 11 | Not collected or inferred |
 | Race / ethnicity | Sensitive personal data under Art. 11 | Not collected or inferred |
 | Income / wealth | Financial personal data | Does not enter the bandit; used only in eligibility rules external to the model |
@@ -124,8 +124,9 @@ The fairness index monitored by ECloe evaluates relative exposure across **synth
 
 ## 8. Logging and Telemetry Policy
 
-- Decision logs record `session_id`, selected offer, policy and version, reason code, and timestamp.
+- Decision logs record `subject_key`, `decision_id`, `request_id`, selected offer, executed policy and version, artifact hash, reason codes, minimized context, timestamp, and optional `Idempotency-Key`.
 - Logs **do not record** data subject identifiers, financial data, or sensitive attributes.
+- Repeated requests with the same `Idempotency-Key` return the original decision and do not create duplicate events.
 - Log access is restricted through Azure RBAC, Managed Identity, and Entra ID.
 - Audit logs are immutable and append-only, stored in Blob Storage with configured retention.
 - Application Insights telemetry is configured without full IP collection, with the last octet masked.
@@ -140,7 +141,7 @@ In production, ECloe would support the rights provided under LGPD Art. 18:
 |-------|---------------------------|
 | Access | Customer portal shows offer history and reason codes |
 | Correction | Registration data is corrected in CRM; features are recalculated in the next session |
-| Deletion | `session_id` and associated events are deleted; the model is retrained without the data |
+| Deletion | `subject_key` and associated events are deleted; the model is retrained without the data |
 | Portability | Interaction history is exported in an open JSON format |
 | Objection to processing | Customer opts out of adaptive personalization and receives the deterministic baseline |
 | Automated decision review | Reason codes and model documentation are available; human escalation is required |
