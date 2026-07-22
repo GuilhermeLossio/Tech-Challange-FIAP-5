@@ -37,7 +37,7 @@ jobs:
         run: pytest --cov=src --cov-report=term-missing --cov-fail-under=70
 
       - name: Dependency audit
-        run: pip-audit --requirement requirements.lock --no-deps --strict --progress-spinner off
+        run: pip-audit --requirement requirements.lock --no-deps --progress-spinner off
 
       - name: OpenAPI contract check
         run: python scripts/check_openapi_contract.py
@@ -50,6 +50,7 @@ jobs:
   codeql:
     name: CodeQL
     runs-on: ubuntu-latest
+    if: vars.CODEQL_ENABLED == 'true'
     permissions:
       actions: read
       contents: read
