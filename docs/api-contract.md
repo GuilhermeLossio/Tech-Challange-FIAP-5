@@ -9,7 +9,7 @@ This document defines the local Decision API payloads for ECloe. The target use 
 | Method | Path | Description |
 |:---|:---|:---|
 | `GET` | `/health` | Returns local service health. |
-| `GET` | `/v1/policy` | Returns selected policy metadata when available. |
+| `GET` | `/v1/policy` | Returns the serving strategy, serving artifact metadata, and promoted offline policy metadata. |
 | `POST` | `/v1/purchase-likelihood` | Estimates purchase or conversion probability for eligible offers. |
 | `POST` | `/v1/decisions` | Selects one eligible offer and returns likelihood, policy, and reason codes. |
 
@@ -50,8 +50,12 @@ This document defines the local Decision API payloads for ECloe. The target use 
   "decision_id": "dec_123",
   "offer_id": "cashback_recurring_purchase",
   "purchase_likelihood": 0.1375,
-  "policy": "thompson_sampling",
-  "policy_version": "2026-07-05.1",
+  "policy": "likelihood_ranker",
+  "policy_version": "likelihood-v1",
+  "artifact_schema": "purchase_likelihood_model.v1",
+  "artifact_version": "likelihood-v1",
+  "artifact_checksum": "64-character-sha256-checksum",
+  "artifact_status": "active",
   "reason_codes": ["marketplace_behavior_match", "wallet_engagement_signal"]
 }
 ```
@@ -61,9 +65,15 @@ This document defines the local Decision API payloads for ECloe. The target use 
 | `decision_id` | string | Identifier used to connect later rewards to the decision |
 | `offer_id` | string | Selected eligible action from `eligible_offers` |
 | `purchase_likelihood` | number | Offline estimated probability of purchase or conversion for the selected offer |
-| `policy` | string | Policy used to make the decision |
-| `policy_version` | string | Version of the policy artifact or configuration |
+| `policy` | string | Strategy actually executed to make the decision |
+| `policy_version` | string | Version of the executed strategy artifact or configuration |
+| `artifact_schema` | string | Schema contract validated for the artifact used by the executed strategy |
+| `artifact_version` | string | Version of the artifact used by the executed strategy |
+| `artifact_checksum` | string | SHA-256 checksum of the artifact used by the executed strategy |
+| `artifact_status` | string | Runtime validation status of the artifact used by the executed strategy |
 | `reason_codes` | array of strings | Auditable explanation codes |
+
+The local serving strategy is currently `likelihood_ranker`, which ranks eligible offers by the purchase-likelihood artifact. The API must not return `thompson_sampling` unless a Thompson Sampling strategy actually selects the offer at request time.
 
 ## Purchase Likelihood Response
 

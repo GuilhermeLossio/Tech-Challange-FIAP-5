@@ -11,6 +11,13 @@ import pandas as pd
 
 from src.bandits import ACTIONS
 from src.data.schemas import MODEL_CONTEXT_COLUMNS
+from src.engine.artifacts import (
+    ARTIFACT_STATUS_ACTIVE,
+    LIKELIHOOD_MODEL_SCHEMA,
+    LoadedArtifact,
+    ArtifactMetadata,
+    load_json_artifact,
+)
 from src.engine.offers import resolve_offer_action
 from src.engine.schemas import EngineRequest, LikelihoodEstimate, LikelihoodResponse
 from src.engine.validation import validate_engine_request
@@ -26,6 +33,8 @@ DEFAULT_SMOOTHING_ALPHA = 2.0
 
 @dataclass(frozen=True)
 class LikelihoodModel:
+    schema_version: str
+    artifact_status: str
     version: str
     generated_at: str
     source_file: str
@@ -39,8 +48,8 @@ class LikelihoodModel:
 
     @classmethod
     def from_json(cls, path: Path) -> "LikelihoodModel":
-        payload = json.loads(path.read_text(encoding="utf-8"))
-        return cls(**payload)
+        artifact = load_likelihood_artifact(path)
+        return cls(**artifact.payload)
 
     def to_json(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -124,6 +133,8 @@ def train_likelihood_model(
                 }
 
     model = LikelihoodModel(
+        schema_version=LIKELIHOOD_MODEL_SCHEMA,
+        artifact_status=ARTIFACT_STATUS_ACTIVE,
         version="likelihood-v1",
         generated_at=datetime.now(UTC).isoformat(),
         source_file=str(input_file),
@@ -140,12 +151,20 @@ def train_likelihood_model(
 
 
 class PurchaseLikelihoodService:
-    def __init__(self, model: LikelihoodModel) -> None:
+    def __init__(self, model: LikelihoodModel, artifact_metadata: ArtifactMetadata | None = None) -> None:
         self.model = model
+        self.artifact_metadata = artifact_metadata or ArtifactMetadata(
+            schema_version=model.schema_version,
+            version=model.version,
+            checksum="in_memory",
+            status=model.artifact_status,
+            path="in_memory",
+        )
 
     @classmethod
     def from_file(cls, path: Path = DEFAULT_LIKELIHOOD_MODEL_FILE) -> "PurchaseLikelihoodService":
-        return cls(LikelihoodModel.from_json(path))
+        artifact = load_likelihood_artifact(path)
+        return cls(LikelihoodModel(**artifact.payload), artifact.metadata)
 
     def estimate(self, request: EngineRequest) -> LikelihoodResponse:
         validate_engine_request(request)
@@ -216,6 +235,25 @@ class PurchaseLikelihoodService:
         if sample_count < self.model.min_samples:
             return ["context_or_action_has_limited_evidence"]
         return []
+
+
+def load_likelihood_artifact(path: Path) -> LoadedArtifact:
+    return load_json_artifact(
+        path,
+        expected_schema=LIKELIHOOD_MODEL_SCHEMA,
+        required_fields={
+            "version",
+            "generated_at",
+            "source_file",
+            "global_conversion_rate",
+            "global_count",
+            "action_rates",
+            "context_rates",
+            "min_samples",
+            "smoothing_alpha",
+            "context_columns",
+        },
+    )
 
 
 def main() -> None:

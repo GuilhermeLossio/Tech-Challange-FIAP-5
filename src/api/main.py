@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from dataclasses import asdict
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
 
-from src.engine import DecisionService, PurchaseLikelihoodService
+from src.engine import DecisionService
+from src.engine.artifacts import ArtifactValidationError
 from src.engine.schemas import EngineRequest
 from src.engine.validation import validate_engine_request
 
@@ -25,8 +27,15 @@ def _engine_request(payload: EngineRequestPayload) -> EngineRequest:
     )
 
 
-def create_app() -> FastAPI:
-    app = FastAPI(title="ECloe Engine API", version="0.1.0")
+def create_app(decision_service: DecisionService | None = None) -> FastAPI:
+    @asynccontextmanager
+    async def lifespan(app: FastAPI):
+        app.state.decision_service = decision_service or DecisionService.from_files()
+        yield
+
+    app = FastAPI(title="ECloe Engine API", version="0.1.0", lifespan=lifespan)
+    if decision_service is not None:
+        app.state.decision_service = decision_service
 
     @app.get("/health")
     def health() -> dict[str, str]:
@@ -35,18 +44,18 @@ def create_app() -> FastAPI:
     @app.get("/v1/policy")
     def policy() -> dict[str, object]:
         try:
-            return DecisionService.from_files().current_policy()
-        except FileNotFoundError as error:
-            raise HTTPException(status_code=503, detail={"code": "artifact_missing", "message": str(error)}) from error
+            return _decision_service(app).current_policy()
+        except (ArtifactValidationError, FileNotFoundError) as error:
+            raise _artifact_unavailable(error) from error
 
     @app.post("/v1/purchase-likelihood")
     def purchase_likelihood(payload: EngineRequestPayload) -> dict[str, object]:
         try:
             request = _engine_request(payload)
             validate_engine_request(request)
-            response = PurchaseLikelihoodService.from_file().estimate(request)
-        except FileNotFoundError as error:
-            raise HTTPException(status_code=503, detail={"code": "artifact_missing", "message": str(error)}) from error
+            response = _decision_service(app).likelihood_service.estimate(request)
+        except (ArtifactValidationError, FileNotFoundError) as error:
+            raise _artifact_unavailable(error) from error
         except ValueError as error:
             raise HTTPException(status_code=400, detail={"code": "invalid_request", "message": str(error)}) from error
         return asdict(response)
@@ -56,14 +65,29 @@ def create_app() -> FastAPI:
         try:
             request = _engine_request(payload)
             validate_engine_request(request)
-            response = DecisionService.from_files().decide(request)
-        except FileNotFoundError as error:
-            raise HTTPException(status_code=503, detail={"code": "artifact_missing", "message": str(error)}) from error
+            response = _decision_service(app).decide(request)
+        except (ArtifactValidationError, FileNotFoundError) as error:
+            raise _artifact_unavailable(error) from error
         except ValueError as error:
             raise HTTPException(status_code=400, detail={"code": "invalid_request", "message": str(error)}) from error
         return asdict(response)
 
     return app
+
+
+def _decision_service(app: FastAPI) -> DecisionService:
+    service = getattr(app.state, "decision_service", None)
+    if service is None:
+        service = DecisionService.from_files()
+        app.state.decision_service = service
+    return service
+
+
+def _artifact_unavailable(error: Exception) -> HTTPException:
+    return HTTPException(
+        status_code=503,
+        detail={"code": "artifact_unavailable", "message": str(error)},
+    )
 
 
 app = create_app()

@@ -11,6 +11,7 @@ import pandas as pd
 
 from src.bandits import ACTIONS, DeterministicBaseline, EpsilonGreedy, ThompsonSampling, UCB1
 from src.bandits.policies import BanditPolicy
+from src.engine.artifacts import ARTIFACT_STATUS_ACTIVE, SELECTED_POLICY_SCHEMA
 from src.engine.likelihood import train_likelihood_model
 
 
@@ -224,6 +225,8 @@ def write_outputs(
     (output_dir / "selected_policy.json").write_text(
         json.dumps(
             {
+                "schema_version": SELECTED_POLICY_SCHEMA,
+                "artifact_status": ARTIFACT_STATUS_ACTIVE,
                 "policy": selected["policy"],
                 "version": "offline-v1",
                 "selection_rule": "max cumulative_reward, then min cumulative_regret, then min exploration_rate",

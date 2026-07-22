@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 
 import pandas as pd
@@ -8,7 +9,7 @@ import pytest
 fastapi = pytest.importorskip("fastapi")
 
 import src.api.main as api_main  # noqa: E402
-from src.engine.likelihood import PurchaseLikelihoodService, train_likelihood_model  # noqa: E402
+from src.engine.likelihood import train_likelihood_model  # noqa: E402
 from src.engine.service import DecisionService  # noqa: E402
 
 
@@ -39,29 +40,28 @@ def test_api_health() -> None:
     assert response["status"] == "ok"
 
 
-def test_api_purchase_likelihood_and_decision(monkeypatch, tmp_path) -> None:
+def test_api_purchase_likelihood_and_decision(tmp_path) -> None:
     input_file = tmp_path / "processed.csv"
     model_file = tmp_path / "purchase_likelihood_model.json"
     selected_policy_file = tmp_path / "selected_policy.json"
     processed_dataframe().to_csv(input_file, index=False)
     model = train_likelihood_model(input_file=input_file, output_file=model_file, min_samples=2)
     selected_policy_file.write_text(
-        json.dumps({"policy": "thompson_sampling", "version": "offline-v1"}),
+        json.dumps(
+            {
+                "schema_version": "selected_policy.v1",
+                "artifact_status": "active",
+                "policy": "thompson_sampling",
+                "version": "offline-v1",
+                "selection_rule": "test fixture",
+                "metrics": {"rounds": 9},
+            }
+        ),
         encoding="utf-8",
     )
+    service = DecisionService.from_files(model_file, selected_policy_file)
 
-    monkeypatch.setattr(
-        api_main.PurchaseLikelihoodService,
-        "from_file",
-        classmethod(lambda cls: PurchaseLikelihoodService(model)),
-    )
-    monkeypatch.setattr(
-        api_main.DecisionService,
-        "from_files",
-        classmethod(lambda cls: DecisionService(PurchaseLikelihoodService(model), selected_policy_file)),
-    )
-
-    app = api_main.create_app()
+    app = api_main.create_app(service)
     payload = {
         "request_id": "req_1",
         "customer_context": {"channel": "Web", "history_segment": "1) Low", "newbie": 1},
@@ -71,9 +71,32 @@ def test_api_purchase_likelihood_and_decision(monkeypatch, tmp_path) -> None:
 
     likelihood = route_endpoint(app, "/v1/purchase-likelihood", "POST")(request)
     decision = route_endpoint(app, "/v1/decisions", "POST")(request)
+    policy = route_endpoint(app, "/v1/policy", "GET")()
 
     assert len(likelihood["estimates"]) == 2
     assert decision["offer_id"] in payload["eligible_offers"]
+    assert decision["policy"] == "likelihood_ranker"
+    assert decision["policy_version"] == model.version
+    assert decision["artifact_version"] == model.version
+    assert len(decision["artifact_checksum"]) == 64
+    assert policy["policy"] == "likelihood_ranker"
+    assert policy["artifact_checksum"] == decision["artifact_checksum"]
+    assert policy["promoted_offline_policy"]["policy"] == "thompson_sampling"
+
+
+def test_api_startup_fails_when_artifact_is_missing(monkeypatch) -> None:
+    def fail_from_files():
+        raise FileNotFoundError("missing model artifact")
+
+    monkeypatch.setattr(api_main.DecisionService, "from_files", staticmethod(fail_from_files))
+
+    async def run_lifespan() -> None:
+        app = api_main.create_app()
+        async with app.router.lifespan_context(app):
+            pass
+
+    with pytest.raises(FileNotFoundError, match="missing model artifact"):
+        asyncio.run(run_lifespan())
 
 
 def test_api_rejects_empty_eligible_offers() -> None:

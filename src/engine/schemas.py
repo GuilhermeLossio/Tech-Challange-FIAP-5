@@ -38,5 +38,9 @@ class DecisionResponse:
     purchase_likelihood: float
     policy: str
     policy_version: str
+    artifact_schema: str
+    artifact_version: str
+    artifact_checksum: str
+    artifact_status: str
     reason_codes: list[str]
     warnings: list[str] = field(default_factory=list)

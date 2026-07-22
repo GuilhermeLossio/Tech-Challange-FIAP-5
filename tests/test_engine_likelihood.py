@@ -94,12 +94,21 @@ def test_decision_service_recommends_only_eligible_offer(tmp_path) -> None:
     model_file = tmp_path / "purchase_likelihood_model.json"
     selected_policy_file = tmp_path / "selected_policy.json"
     processed_dataframe().to_csv(input_file, index=False)
-    model = train_likelihood_model(input_file=input_file, output_file=model_file)
+    train_likelihood_model(input_file=input_file, output_file=model_file)
     selected_policy_file.write_text(
-        json.dumps({"policy": "thompson_sampling", "version": "offline-v1"}),
+        json.dumps(
+            {
+                "schema_version": "selected_policy.v1",
+                "artifact_status": "active",
+                "policy": "thompson_sampling",
+                "version": "offline-v1",
+                "selection_rule": "test fixture",
+                "metrics": {"rounds": 18},
+            }
+        ),
         encoding="utf-8",
     )
-    service = DecisionService(PurchaseLikelihoodService(model), selected_policy_file)
+    service = DecisionService.from_files(model_file, selected_policy_file)
 
     response = service.decide(
         EngineRequest(
@@ -110,5 +119,10 @@ def test_decision_service_recommends_only_eligible_offer(tmp_path) -> None:
     )
 
     assert response.offer_id in {"financial_education", "cashback_recurring_purchase"}
-    assert response.policy == "thompson_sampling"
+    assert response.policy == "likelihood_ranker"
+    assert response.policy_version == "likelihood-v1"
+    assert response.artifact_schema == "purchase_likelihood_model.v1"
+    assert response.artifact_version == "likelihood-v1"
+    assert len(response.artifact_checksum) == 64
+    assert response.artifact_status == "active"
     assert response.decision_id.startswith("dec_")
