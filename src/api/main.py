@@ -37,7 +37,10 @@ app = create_app()
 def main() -> None:
     import uvicorn
 
-    uvicorn.run("src.api.main:app", host="127.0.0.1", port=8000, reload=False)
+    from src.core.config import load_settings
+
+    settings = load_settings()
+    uvicorn.run("src.api.main:app", host=settings.api_host, port=8000, reload=False)
 
 
 if __name__ == "__main__":

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 import json
 
+from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 import pandas as pd
 import pytest
 from pydantic import ValidationError
@@ -11,8 +14,10 @@ fastapi = pytest.importorskip("fastapi")
 
 import src.api.main as api_main  # noqa: E402
 from src.api import dependencies  # noqa: E402
+from src.api.security import Principal, require_scopes, validate_security_settings  # noqa: E402
 from src.api.schemas.decisions import DecisionRequest  # noqa: E402
 from src.api.schemas.errors import ErrorResponse  # noqa: E402
+from src.core.config import load_settings  # noqa: E402
 from src.engine.likelihood import train_likelihood_model  # noqa: E402
 from src.engine.service import DecisionService  # noqa: E402
 
@@ -73,10 +78,10 @@ def test_api_purchase_likelihood_and_decision(tmp_path) -> None:
     }
     request = DecisionRequest(**payload)
 
-    likelihood = route_endpoint(app, "/v1/likelihood-estimates", "POST")(request, service)
-    alias = route_endpoint(app, "/v1/purchase-likelihood", "POST")(request, service)
-    decision = route_endpoint(app, "/v1/decisions", "POST")(request, service)
-    policy = route_endpoint(app, "/v1/policies/current", "GET")(service)
+    likelihood = route_endpoint(app, "/v1/likelihood-estimates", "POST")(request, service=service)
+    alias = route_endpoint(app, "/v1/purchase-likelihood", "POST")(request, service=service)
+    decision = route_endpoint(app, "/v1/decisions", "POST")(request, service=service)
+    policy = route_endpoint(app, "/v1/policies/current", "GET")(service=service)
 
     assert len(likelihood["estimates"]) == 2
     assert alias == likelihood
@@ -174,9 +179,29 @@ def test_api_routes_have_explicit_response_models() -> None:
     ]:
         route = route_for(app, path, method)
         assert getattr(route, "response_model", None) is not None
+        assert route.responses[401]["model"] is ErrorResponse
+        assert route.responses[403]["model"] is ErrorResponse
         assert route.responses[422]["model"] is ErrorResponse
 
     assert route_for(app, "/v1/purchase-likelihood", "POST").deprecated is True
+
+
+def test_business_routes_require_expected_scopes() -> None:
+    app = api_main.create_app()
+
+    expected = {
+        ("/v1/policies/current", "GET"): {"policy:read"},
+        ("/v1/likelihood-estimates", "POST"): {"decision:read"},
+        ("/v1/purchase-likelihood", "POST"): {"decision:read"},
+        ("/v1/decisions", "POST"): {"decision:write"},
+    }
+    for (path, method), scopes in expected.items():
+        route = route_for(app, path, method)
+        route_scopes = set()
+        for dependency in route.dependant.dependencies:
+            route_scopes.update(getattr(dependency.call, "required_scopes", frozenset()))
+
+        assert route_scopes == scopes
 
 
 def test_api_public_documentation_routes_are_disabled() -> None:
@@ -186,6 +211,83 @@ def test_api_public_documentation_routes_are_disabled() -> None:
     assert "/docs" not in paths
     assert "/redoc" not in paths
     assert "/openapi.json" not in paths
+
+
+def test_cloud_security_rejects_disabled_auth() -> None:
+    settings = replace(
+        load_settings(),
+        app_environment="cloud",
+        api_host="0.0.0.0",
+        auth_mode="disabled",
+        azure_cosmos_key="",
+        azure_cosmos_auth_mode="managed_identity",
+    )
+
+    with pytest.raises(RuntimeError, match="AUTH_MODE=disabled"):
+        validate_security_settings(settings)
+
+
+def test_business_scope_requires_token_in_cloud() -> None:
+    settings = replace(
+        load_settings(),
+        app_environment="cloud",
+        api_host="0.0.0.0",
+        auth_mode="entra_id",
+        entra_tenant_id="tenant",
+        entra_client_id="client",
+        entra_audience="api://client",
+        azure_cosmos_key="",
+        azure_cosmos_auth_mode="managed_identity",
+    )
+    dependency = require_scopes("decision:write")
+
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(dependency(security_scopes=None, credentials=None, settings=settings))
+
+    assert error.value.status_code == 401
+
+
+def test_business_scope_rejects_token_without_required_scope(monkeypatch) -> None:
+    settings = replace(
+        load_settings(),
+        app_environment="cloud",
+        api_host="0.0.0.0",
+        auth_mode="entra_id",
+        entra_tenant_id="tenant",
+        entra_client_id="client",
+        entra_audience="api://client",
+        azure_cosmos_key="",
+        azure_cosmos_auth_mode="managed_identity",
+    )
+
+    monkeypatch.setattr(
+        "src.api.security.validate_entra_token",
+        lambda token, settings: Principal("user", frozenset({"decision:read"}), {}),
+    )
+    dependency = require_scopes("decision:write")
+    credentials = HTTPAuthorizationCredentials(scheme="Bearer", credentials="token")
+
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(dependency(security_scopes=None, credentials=credentials, settings=settings))
+
+    assert error.value.status_code == 403
+
+
+def test_cloud_security_rejects_permanent_cosmos_key() -> None:
+    settings = replace(
+        load_settings(),
+        app_environment="cloud",
+        api_host="0.0.0.0",
+        auth_mode="entra_id",
+        entra_tenant_id="tenant",
+        entra_client_id="client",
+        entra_audience="api://client",
+        azure_cosmos_key="permanent-key",
+        azure_cosmos_auth_mode="managed_identity",
+    )
+
+    with pytest.raises(RuntimeError, match="Permanent AZURE_COSMOS_KEY"):
+        validate_security_settings(settings)
 
 
 def route_endpoint(app, path: str, method: str):

@@ -10,6 +10,7 @@ class AzureDataLayout:
     storage_containers: tuple[str, ...]
     cosmos_database: str
     cosmos_containers: tuple[str, ...]
+    cosmos_auth_mode: str
 
 
 def get_azure_data_layout() -> AzureDataLayout:
@@ -25,4 +26,5 @@ def get_azure_data_layout() -> AzureDataLayout:
             settings.azure_cosmos_container_rewards,
             settings.azure_cosmos_container_policies,
         ),
+        cosmos_auth_mode=settings.azure_cosmos_auth_mode,
     )

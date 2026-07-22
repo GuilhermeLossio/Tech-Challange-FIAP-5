@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends
 
 from src.api.dependencies import get_decision_service, to_engine_request
 from src.api.errors import API_ERROR_RESPONSES, artifact_unavailable, invalid_request
+from src.api.security import Principal, require_scopes
 from src.api.schemas.decisions import DecisionRequest, DecisionResponse
 from src.engine import DecisionService
 from src.engine.artifacts import ArtifactValidationError
@@ -18,6 +19,7 @@ router = APIRouter(prefix="/v1/decisions", tags=["decisions"])
 @router.post("", response_model=DecisionResponse, responses=API_ERROR_RESPONSES)
 def create_decision(
     payload: DecisionRequest,
+    _: Principal = Depends(require_scopes("decision:write")),
     service: DecisionService = Depends(get_decision_service),
 ) -> dict[str, object]:
     try:

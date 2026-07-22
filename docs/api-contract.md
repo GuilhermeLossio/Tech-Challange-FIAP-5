@@ -6,14 +6,23 @@ This document defines the local Decision API payloads for ECloe. The target use 
 
 ## Implemented Endpoints
 
-| Method | Path | Description |
-|:---|:---|:---|
-| `GET` | `/livez` | Returns liveness for the HTTP process. |
-| `GET` | `/readyz` | Returns readiness after serving artifacts are loaded. |
-| `GET` | `/v1/policies/current` | Returns the serving strategy, serving artifact metadata, and promoted offline policy metadata. |
-| `POST` | `/v1/likelihood-estimates` | Estimates purchase or conversion probability for eligible offers. |
-| `POST` | `/v1/purchase-likelihood` | Deprecated alias for `/v1/likelihood-estimates`. |
-| `POST` | `/v1/decisions` | Selects one eligible offer and returns likelihood, policy, and reason codes. |
+| Method | Path | Required scope | Description |
+|:---|:---|:---|:---|
+| `GET` | `/livez` | None | Returns liveness for the HTTP process. |
+| `GET` | `/readyz` | None | Returns readiness after serving artifacts are loaded. |
+| `GET` | `/v1/policies/current` | `policy:read` | Returns the serving strategy, serving artifact metadata, and promoted offline policy metadata. |
+| `POST` | `/v1/likelihood-estimates` | `decision:read` | Estimates purchase or conversion probability for eligible offers. |
+| `POST` | `/v1/purchase-likelihood` | `decision:read` | Deprecated alias for `/v1/likelihood-estimates`. |
+| `POST` | `/v1/decisions` | `decision:write` | Selects one eligible offer and returns likelihood, policy, and reason codes. |
+
+Cloud runtime uses Microsoft Entra ID bearer tokens. Business routes reject requests without a valid token and required scope. Local development may set `AUTH_MODE=disabled` only when the API binds to `127.0.0.1`.
+
+Available scopes:
+
+- `decision:read` - read likelihood estimates.
+- `decision:write` - create decisions.
+- `reward:write` - write future reward events.
+- `policy:read` - read active policy metadata.
 
 ## Decision Request
 

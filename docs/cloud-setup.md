@@ -26,17 +26,26 @@ Containers:
 
 ## Manual Environment Variables
 
-Secrets must be filled manually in local `.env` or through a managed runtime configuration. Do not commit secret values.
+Secrets must be filled manually in local `.env` or through a managed runtime configuration. Do not commit secret values. Cloud runtime must use Microsoft Entra ID authentication for API access and Managed Identity for Cosmos DB.
 
 ```text
+APP_ENVIRONMENT=cloud
+API_HOST=0.0.0.0
+AUTH_MODE=entra_id
+ENTRA_TENANT_ID=<tenant-id>
+ENTRA_CLIENT_ID=<api-application-client-id>
+ENTRA_AUDIENCE=api://<api-application-client-id>
+CORS_ALLOWED_ORIGINS=https://<approved-client-host>
+TRUSTED_HOSTS=<approved-api-host>
 AZURE_COSMOS_ENDPOINT=https://ecloe5cosmos1266cl.documents.azure.com:443/
+AZURE_COSMOS_AUTH_MODE=managed_identity
 AZURE_COSMOS_DATABASE=ecloe
 AZURE_COSMOS_CONTAINER_DECISIONS=decisions
 AZURE_COSMOS_CONTAINER_REWARDS=rewards
 AZURE_COSMOS_CONTAINER_POLICIES=policy_versions
 ```
 
-Use `AZURE_COSMOS_KEY` only for local experiments when Managed Identity is not available. For Azure App Service or Container Apps, prefer Managed Identity and Cosmos DB data-plane role assignment.
+Use `AZURE_COSMOS_KEY` only for local experiments when Managed Identity is not available. Azure App Service or Container Apps must use Managed Identity and a Cosmos DB data-plane role assignment. Startup is expected to fail in cloud when `AUTH_MODE=disabled`, `AZURE_COSMOS_KEY` is present, or `AZURE_COSMOS_AUTH_MODE` is not `managed_identity`.
 
 ## Region Notes
 

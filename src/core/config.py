@@ -35,6 +35,10 @@ def _env(name: str, default: str = "") -> str:
     return os.getenv(name, default).strip()
 
 
+def _split_csv(value: str) -> tuple[str, ...]:
+    return tuple(item.strip() for item in value.split(",") if item.strip())
+
+
 @dataclass(frozen=True)
 class Settings:
     kaggle_dataset: str
@@ -56,6 +60,21 @@ class Settings:
     azure_cosmos_container_decisions: str
     azure_cosmos_container_rewards: str
     azure_cosmos_container_policies: str
+    app_environment: str
+    api_host: str
+    auth_mode: str
+    entra_tenant_id: str
+    entra_client_id: str
+    entra_audience: str
+    entra_issuer: str
+    entra_jwks_url: str
+    cors_allowed_origins: tuple[str, ...]
+    trusted_hosts: tuple[str, ...]
+    max_payload_bytes: int
+    max_concurrent_requests: int
+    rate_limit_requests: int
+    rate_limit_window_seconds: int
+    azure_cosmos_auth_mode: str
 
     @property
     def raw_file(self) -> Path:
@@ -97,6 +116,21 @@ def load_settings() -> Settings:
         azure_cosmos_container_decisions=_env("AZURE_COSMOS_CONTAINER_DECISIONS", "decisions"),
         azure_cosmos_container_rewards=_env("AZURE_COSMOS_CONTAINER_REWARDS", "rewards"),
         azure_cosmos_container_policies=_env("AZURE_COSMOS_CONTAINER_POLICIES", "policy_versions"),
+        app_environment=_env("APP_ENVIRONMENT", "local").lower(),
+        api_host=_env("API_HOST", "127.0.0.1"),
+        auth_mode=_env("AUTH_MODE", "disabled").lower(),
+        entra_tenant_id=_env("ENTRA_TENANT_ID"),
+        entra_client_id=_env("ENTRA_CLIENT_ID"),
+        entra_audience=_env("ENTRA_AUDIENCE") or _env("ENTRA_CLIENT_ID"),
+        entra_issuer=_env("ENTRA_ISSUER"),
+        entra_jwks_url=_env("ENTRA_JWKS_URL"),
+        cors_allowed_origins=_split_csv(_env("CORS_ALLOWED_ORIGINS")),
+        trusted_hosts=_split_csv(_env("TRUSTED_HOSTS", "127.0.0.1,localhost")),
+        max_payload_bytes=int(_env("MAX_PAYLOAD_BYTES", "65536")),
+        max_concurrent_requests=int(_env("MAX_CONCURRENT_REQUESTS", "16")),
+        rate_limit_requests=int(_env("RATE_LIMIT_REQUESTS", "120")),
+        rate_limit_window_seconds=int(_env("RATE_LIMIT_WINDOW_SECONDS", "60")),
+        azure_cosmos_auth_mode=_env("AZURE_COSMOS_AUTH_MODE", "key").lower(),
     )
 
 

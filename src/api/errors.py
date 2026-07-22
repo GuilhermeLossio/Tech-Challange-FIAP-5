@@ -10,6 +10,8 @@ from src.engine.artifacts import ArtifactValidationError
 
 API_ERROR_RESPONSES = {
     400: {"model": ErrorResponse},
+    401: {"model": ErrorResponse},
+    403: {"model": ErrorResponse},
     422: {"model": ErrorResponse},
     500: {"model": ErrorResponse},
     503: {"model": ErrorResponse},

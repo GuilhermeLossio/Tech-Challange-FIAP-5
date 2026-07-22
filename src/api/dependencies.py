@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import Request
 
 from src.api.schemas.decisions import DecisionRequest
+from src.api.security import validate_security_settings
 from src.engine import DecisionService
 from src.engine.schemas import EngineRequest
 
@@ -12,6 +13,9 @@ from src.engine.schemas import EngineRequest
 def create_lifespan(decision_service: DecisionService | None = None):
     @asynccontextmanager
     async def lifespan(app):
+        from src.core.config import load_settings
+
+        validate_security_settings(load_settings())
         app.state.decision_service = decision_service or DecisionService.from_files()
         yield
 

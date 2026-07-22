@@ -143,14 +143,16 @@ python -m src.api.main
 
 Local endpoints:
 
-| Method | Path | Purpose |
-|:---|:---|:---|
-| `GET` | `/livez` | Liveness check for the HTTP process. |
-| `GET` | `/readyz` | Readiness check that requires serving artifacts to be loaded. |
-| `GET` | `/v1/policies/current` | Current serving strategy and artifact metadata. |
-| `POST` | `/v1/likelihood-estimates` | Estimated purchase/conversion probability by eligible offer. |
-| `POST` | `/v1/purchase-likelihood` | Deprecated alias for `/v1/likelihood-estimates`. |
-| `POST` | `/v1/decisions` | Recommended eligible offer with likelihood, policy, and reason codes. |
+| Method | Path | Scope | Purpose |
+|:---|:---|:---|:---|
+| `GET` | `/livez` | None | Liveness check for the HTTP process. |
+| `GET` | `/readyz` | None | Readiness check that requires serving artifacts to be loaded. |
+| `GET` | `/v1/policies/current` | `policy:read` | Current serving strategy and artifact metadata. |
+| `POST` | `/v1/likelihood-estimates` | `decision:read` | Estimated purchase/conversion probability by eligible offer. |
+| `POST` | `/v1/purchase-likelihood` | `decision:read` | Deprecated alias for `/v1/likelihood-estimates`. |
+| `POST` | `/v1/decisions` | `decision:write` | Recommended eligible offer with likelihood, policy, and reason codes. |
+
+Cloud runtime must use Microsoft Entra ID bearer tokens. `AUTH_MODE=disabled` is accepted only for local loopback execution with `API_HOST=127.0.0.1`.
 
 ---
 
