@@ -125,8 +125,10 @@ The fairness index monitored by ECloe evaluates relative exposure across **synth
 ## 8. Logging and Telemetry Policy
 
 - Decision logs record `subject_key`, `decision_id`, `request_id`, selected offer, executed policy and version, artifact hash, reason codes, minimized context, timestamp, and optional `Idempotency-Key`.
+- Reward logs record `subject_key`, `decision_id`, `event_id`, reward event type, reward value, and occurrence timestamp.
 - Logs **do not record** data subject identifiers, financial data, or sensitive attributes.
 - Repeated requests with the same `Idempotency-Key` return the original decision and do not create duplicate events.
+- Repeated reward events with the same `event_id` return the original reward response and do not create duplicate events.
 - Log access is restricted through Azure RBAC, Managed Identity, and Entra ID.
 - Audit logs are immutable and append-only, stored in Blob Storage with configured retention.
 - Application Insights telemetry is configured without full IP collection, with the last octet masked.

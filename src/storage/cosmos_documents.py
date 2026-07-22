@@ -36,13 +36,15 @@ class DecisionEvent:
 
 @dataclass(frozen=True)
 class RewardEvent:
+    event_id: str
     decision_id: str
     subject_key: str
-    reward: int
-    reward_type: str = "conversion"
+    event_type: str
+    reward: float
+    occurred_at: str
     ttl: int = 157680000
     id: str = field(default_factory=lambda: str(uuid4()))
-    event_type: str = "reward"
+    record_type: str = "reward"
     created_at: str = field(default_factory=utc_now_iso)
 
     @property

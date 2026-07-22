@@ -10,6 +10,7 @@ from src.api.schemas.errors import ErrorCode, ErrorResponse
 from src.api.schemas.health import HealthResponse
 from src.api.schemas.likelihoods import Confidence, PurchaseLikelihoodResponse
 from src.api.schemas.policies import PolicyResponse
+from src.api.schemas.rewards import RewardEventType, RewardRequest, RewardResponse
 
 __all__ = [
     "Channel",
@@ -24,4 +25,7 @@ __all__ = [
     "PolicyResponse",
     "PurchaseLikelihoodResponse",
     "ReasonCode",
+    "RewardEventType",
+    "RewardRequest",
+    "RewardResponse",
 ]

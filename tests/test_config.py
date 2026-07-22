@@ -22,6 +22,8 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "DECISION_EVENT_TTL_SECONDS",
         "DECISION_REPOSITORY_MODE",
         "DECISION_EVENTS_FILE",
+        "OBSERVABILITY_ENABLED",
+        "APPLICATIONINSIGHTS_CONNECTION_STRING",
     ]:
         monkeypatch.delenv(name, raising=False)
 
@@ -40,3 +42,5 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.decision_event_ttl_seconds == 157680000
     assert settings.decision_repository_mode == "file"
     assert settings.decision_events_file == ROOT_DIR / "reports" / "decision_events.jsonl"
+    assert settings.observability_enabled is True
+    assert settings.applicationinsights_connection_string == ""

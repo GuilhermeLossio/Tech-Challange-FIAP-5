@@ -51,6 +51,10 @@ def get_decision_repository(request: Request) -> DecisionRepository:
     return repository
 
 
+def get_request_context(request: Request) -> Request:
+    return request
+
+
 def to_engine_request(payload: DecisionRequest) -> EngineRequest:
     return EngineRequest(
         request_id=payload.request_id,

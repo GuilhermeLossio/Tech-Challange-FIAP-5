@@ -1,0 +1,189 @@
+<svg viewBox="0 0 1240 660" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ECloe API security and observability flow</title>
+  <desc id="desc">Security and observability flow for ECloe Engine API. A client sends a request with a token and correlation identifiers. HTTP perimeter controls validate host, origin, payload, rate, and concurrency. Authentication checks Microsoft Entra ID scopes before business routers execute decisions or rewards. Structured logs and OpenTelemetry spans emit redacted telemetry to Application Insights. CI gates enforce tests, coverage, dependency audit, secret scanning, CodeQL, and OpenAPI compatibility.</desc>
+  <defs>
+    <linearGradient id="neutralCard" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f6f8fa"/>
+    </linearGradient>
+    <linearGradient id="blueCard" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#eff6ff"/>
+      <stop offset="100%" stop-color="#dbeafe"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-25%" width="140%" height="160%">
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#1f2328" flood-opacity="0.12"/>
+    </filter>
+    <filter id="primaryShadow" x="-24%" y="-30%" width="148%" height="170%">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#2563eb" flood-opacity="0.18"/>
+    </filter>
+    <marker id="arrowGray" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#57606a"/>
+    </marker>
+    <marker id="arrowBlue" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#2563eb"/>
+    </marker>
+    <style>
+      .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-weight: 700; }
+      .sectionText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 13px; font-weight: 700; }
+      .bodyText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; }
+      .cardTitle { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-size: 15px; font-weight: 700; }
+      .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; }
+      .pillText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; font-weight: 700; }
+      .labelText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; font-weight: 700; }
+      .icon { fill: none; stroke: #57606a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .iconBlue { fill: none; stroke: #2563eb; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+
+  <rect width="1240" height="660" fill="#ffffff"/>
+  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - API Security and Observability Flow</text>
+  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Runtime controls authenticate business routes, protect the HTTP perimeter, and emit redacted telemetry.</text>
+
+  <rect x="40" y="112" width="238" height="358" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.2"/>
+  <text x="70" y="140" class="sectionText">Client and Token</text>
+
+  <rect x="326" y="112" width="266" height="358" rx="18" fill="#f8fbff" stroke="#c6d6f4" stroke-width="2.2"/>
+  <text x="356" y="140" class="sectionText">HTTP Perimeter</text>
+
+  <rect x="640" y="112" width="250" height="358" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.2"/>
+  <text x="670" y="140" class="sectionText">Business Execution</text>
+
+  <rect x="938" y="112" width="262" height="358" rx="18" fill="#f8fbff" stroke="#c6d6f4" stroke-width="2.2"/>
+  <text x="968" y="140" class="sectionText">Telemetry Sink</text>
+
+  <path d="M 278 286 C 298 268, 306 268, 326 286" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <path d="M 592 226 C 612 204, 620 198, 640 192" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrowGray)"/>
+  <path d="M 592 334 C 614 334, 618 334, 640 334" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <path d="M 890 286 C 912 286, 916 286, 938 286" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+
+  <text x="302" y="260" text-anchor="middle" class="labelText">HTTPS</text>
+  <text x="616" y="178" text-anchor="middle" class="labelText">scope check</text>
+  <text x="616" y="322" text-anchor="middle" class="labelText">valid request</text>
+  <text x="914" y="274" text-anchor="middle" class="labelText">redacted logs</text>
+
+  <g transform="translate(72 178)" filter="url(#primaryShadow)">
+    <rect width="174" height="214" rx="12" fill="url(#blueCard)" stroke="#2563eb" stroke-width="2.4"/>
+    <g class="iconBlue" transform="translate(56 24)">
+      <rect x="7" y="10" width="48" height="36" rx="5"/>
+      <path d="M 18 54 h26"/>
+      <path d="M 31 46 v8"/>
+      <path d="M 16 23 h30"/>
+      <path d="M 23 33 h16"/>
+    </g>
+    <text x="87" y="96" text-anchor="middle" class="cardTitle">API Client</text>
+    <text x="87" y="122" text-anchor="middle" class="cardSub">Sends bearer token,</text>
+    <text x="87" y="140" text-anchor="middle" class="cardSub">request_id, trace_id,</text>
+    <text x="87" y="158" text-anchor="middle" class="cardSub">and minimal context.</text>
+    <rect x="34" y="176" width="106" height="24" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="87" y="192" text-anchor="middle" class="pillText">no raw PII log</text>
+  </g>
+
+  <g transform="translate(358 168)" filter="url(#softShadow)">
+    <rect width="202" height="86" rx="12" fill="url(#neutralCard)" stroke="#d0d7de" stroke-width="2.2"/>
+    <g class="icon" transform="translate(20 17)">
+      <path d="M 28 5 l21 8 v16 c0 15 -9 25 -21 31 c-12 -6 -21 -16 -21 -31 V13 z"/>
+      <path d="M 19 32 l7 7 l16 -18" stroke="#2563eb"/>
+    </g>
+    <text x="126" y="31" text-anchor="middle" class="cardTitle">Host and CORS</text>
+    <text x="126" y="56" text-anchor="middle" class="cardSub">TrustedHostMiddleware</text>
+    <text x="126" y="74" text-anchor="middle" class="cardSub">and explicit origins</text>
+  </g>
+
+  <g transform="translate(358 278)" filter="url(#primaryShadow)">
+    <rect width="202" height="116" rx="12" fill="url(#blueCard)" stroke="#2563eb" stroke-width="2.4"/>
+    <g class="iconBlue" transform="translate(20 22)">
+      <rect x="10" y="20" width="42" height="30" rx="5"/>
+      <path d="M 18 20 v-8 c0 -8 6 -13 13 -13 s13 5 13 13 v8"/>
+      <circle cx="31" cy="35" r="4"/>
+      <path d="M 31 39 v7"/>
+    </g>
+    <text x="126" y="34" text-anchor="middle" class="cardTitle">Abuse Controls</text>
+    <text x="126" y="61" text-anchor="middle" class="cardSub">Payload size, rate,</text>
+    <text x="126" y="79" text-anchor="middle" class="cardSub">and concurrency limits</text>
+    <text x="126" y="97" text-anchor="middle" class="cardSub">return standard errors.</text>
+  </g>
+
+  <g transform="translate(672 162)" filter="url(#softShadow)">
+    <rect width="186" height="104" rx="12" fill="url(#neutralCard)" stroke="#d0d7de" stroke-width="2.2"/>
+    <g class="icon" transform="translate(20 20)">
+      <circle cx="22" cy="16" r="11"/>
+      <path d="M 6 54 c3 -14 11 -21 16 -21 s13 7 16 21"/>
+      <path d="M 44 20 h28"/>
+      <path d="M 58 20 v10"/>
+      <path d="M 70 20 v8"/>
+    </g>
+    <text x="120" y="35" text-anchor="middle" class="cardTitle">Entra ID Auth</text>
+    <text x="120" y="63" text-anchor="middle" class="cardSub">Validates JWT claims</text>
+    <text x="120" y="81" text-anchor="middle" class="cardSub">and required scopes.</text>
+  </g>
+
+  <g transform="translate(672 304)" filter="url(#primaryShadow)">
+    <rect width="186" height="116" rx="12" fill="url(#blueCard)" stroke="#2563eb" stroke-width="2.4"/>
+    <g class="iconBlue" transform="translate(21 21)">
+      <path d="M 7 14 h45 v36 H7 z"/>
+      <path d="M 18 25 h23"/>
+      <path d="M 18 36 h16"/>
+      <path d="M 45 37 l6 6 l12 -16"/>
+    </g>
+    <text x="120" y="36" text-anchor="middle" class="cardTitle">Routers</text>
+    <text x="120" y="63" text-anchor="middle" class="cardSub">Decision, likelihood,</text>
+    <text x="120" y="81" text-anchor="middle" class="cardSub">policy, and reward</text>
+    <text x="120" y="99" text-anchor="middle" class="cardSub">contracts execute.</text>
+  </g>
+
+  <g transform="translate(970 166)" filter="url(#primaryShadow)">
+    <rect width="198" height="120" rx="12" fill="url(#blueCard)" stroke="#2563eb" stroke-width="2.4"/>
+    <g class="iconBlue" transform="translate(22 24)">
+      <path d="M 7 49 h47"/>
+      <rect x="12" y="29" width="7" height="20" rx="2"/>
+      <rect x="25" y="18" width="7" height="31" rx="2"/>
+      <rect x="38" y="8" width="7" height="41" rx="2"/>
+    </g>
+    <text x="130" y="36" text-anchor="middle" class="cardTitle">Structured Logs</text>
+    <text x="130" y="63" text-anchor="middle" class="cardSub">request_id, trace_id,</text>
+    <text x="130" y="81" text-anchor="middle" class="cardSub">route, status, latency,</text>
+    <text x="130" y="99" text-anchor="middle" class="cardSub">decision_id, policy version</text>
+  </g>
+
+  <g transform="translate(970 326)" filter="url(#softShadow)">
+    <rect width="198" height="104" rx="12" fill="url(#neutralCard)" stroke="#d0d7de" stroke-width="2.2"/>
+    <g class="icon" transform="translate(22 19)">
+      <path d="M 7 44 c8 -20 19 -30 32 -30 s24 10 32 30"/>
+      <path d="M 15 44 h48"/>
+      <path d="M 39 14 v-8"/>
+      <path d="M 27 20 l-7 -7"/>
+      <path d="M 51 20 l7 -7"/>
+    </g>
+    <text x="130" y="35" text-anchor="middle" class="cardTitle">OpenTelemetry</text>
+    <text x="130" y="63" text-anchor="middle" class="cardSub">Optional export to</text>
+    <text x="130" y="81" text-anchor="middle" class="cardSub">Application Insights.</text>
+  </g>
+
+  <path d="M 1070 470 C 1070 512, 620 512, 620 540" fill="none" stroke="#57606a" stroke-width="2.1" stroke-dasharray="7 7" marker-end="url(#arrowGray)" opacity="0.8"/>
+  <text x="862" y="500" text-anchor="middle" class="labelText">continuous assurance</text>
+
+  <g transform="translate(90 540)" filter="url(#softShadow)">
+    <rect width="1060" height="70" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.2"/>
+    <text x="32" y="30" class="sectionText">CI gates</text>
+    <rect x="118" y="18" width="124" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="180" y="39" text-anchor="middle" class="pillText">Ruff</text>
+    <rect x="260" y="18" width="124" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="322" y="39" text-anchor="middle" class="pillText">pytest + cov</text>
+    <rect x="402" y="18" width="124" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="464" y="39" text-anchor="middle" class="pillText">pip-audit</text>
+    <rect x="544" y="18" width="124" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="606" y="39" text-anchor="middle" class="pillText">OpenAPI</text>
+    <rect x="686" y="18" width="124" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="748" y="39" text-anchor="middle" class="pillText">CodeQL</text>
+    <rect x="828" y="18" width="150" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <text x="903" y="39" text-anchor="middle" class="pillText">secret scanning</text>
+  </g>
+
+  <g transform="translate(118 488)">
+    <rect width="1004" height="34" rx="17" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
+    <circle cx="26" cy="17" r="6" fill="#2563eb"/>
+    <text x="44" y="21" class="bodyText">Business routes require token scopes in cloud; local disabled auth is limited to 127.0.0.1.</text>
+    <circle cx="640" cy="17" r="6" fill="#57606a"/>
+    <text x="658" y="21" class="bodyText">Customer context is minimized and excluded from access logs.</text>
+  </g>
+</svg>

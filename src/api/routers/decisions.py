@@ -2,9 +2,14 @@ from __future__ import annotations
 
 from dataclasses import asdict
 
-from fastapi import APIRouter, Depends, Header
+from fastapi import APIRouter, Depends, Header, Request
 
-from src.api.dependencies import get_decision_repository, get_decision_service, to_engine_request
+from src.api.dependencies import (
+    get_decision_repository,
+    get_decision_service,
+    get_request_context,
+    to_engine_request,
+)
 from src.api.errors import API_ERROR_RESPONSES, artifact_unavailable, invalid_request
 from src.api.security import Principal, require_scopes, subject_key_for
 from src.api.schemas.decisions import DecisionRequest, DecisionResponse
@@ -21,6 +26,7 @@ router = APIRouter(prefix="/v1/decisions", tags=["decisions"])
 @router.post("", response_model=DecisionResponse, responses=API_ERROR_RESPONSES)
 def create_decision(
     payload: DecisionRequest,
+    request_context: Request = Depends(get_request_context),
     idempotency_key: str | None = Header(
         default=None,
         alias="Idempotency-Key",
@@ -71,6 +77,9 @@ def create_decision(
                 ttl=settings.decision_event_ttl_seconds,
             )
         )
+        if hasattr(request_context, "state"):
+            request_context.state.decision_id = saved.decision_id
+            request_context.state.policy_version = saved.policy_version
     except (ArtifactValidationError, FileNotFoundError) as error:
         raise artifact_unavailable(error) from error
     except ValueError as error:

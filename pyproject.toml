@@ -15,8 +15,16 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "httpx2>=0.28.0",
+    "pip-audit>=2.7.0",
     "pytest>=8.0.0",
+    "pytest-cov>=5.0.0",
     "ruff>=0.6.0",
+]
+observability = [
+    "azure-monitor-opentelemetry-exporter>=1.0.0b30",
+    "opentelemetry-instrumentation-fastapi>=0.46b0",
+    "opentelemetry-sdk>=1.25.0",
 ]
 azure = [
     "azure-cosmos>=4.7.0",

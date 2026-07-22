@@ -76,7 +76,10 @@ Suggested logical partitioning:
 
 Decision events persist `decision_id`, `request_id`, selected offer, executed policy, policy version, artifact version and checksum, reason codes, UTC timestamp, minimized context, optional `Idempotency-Key`, and a pseudonymized `subject_key`. Cosmos DB TTL should be enabled for event containers using `DECISION_EVENT_TTL_SECONDS`; the default MVP retention is 157,680,000 seconds, or approximately 5 years.
 
+Reward events persist `event_id`, `decision_id`, `subject_key`, `event_type`, numeric reward, `occurred_at`, append timestamp, and TTL. Reward ingestion is append-only; `event_id` is the idempotency key for duplicate suppression.
+
 The Python document shapes for Cosmos DB are defined in `src/storage/cosmos_documents.py`.
+
 Local development uses `DECISION_REPOSITORY_MODE=file` and writes JSONL decision events to `reports/decision_events.jsonl`. Cloud runtime must use `DECISION_REPOSITORY_MODE=cosmos`.
 
 The current Azure Cosmos DB Serverless setup is documented in [`cloud-setup.md`](cloud-setup.md).

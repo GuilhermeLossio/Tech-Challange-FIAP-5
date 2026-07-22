@@ -5,7 +5,9 @@ from fastapi import FastAPI
 from src.api.dependencies import create_lifespan
 from src.api.errors import register_error_handlers
 from src.api.middleware import register_middleware
+from src.api.observability import configure_observability
 from src.api.routers import decisions, health, likelihoods, policies, rewards
+from src.core.config import load_settings
 from src.engine import DecisionService
 from src.storage.decision_repository import DecisionRepository
 
@@ -27,6 +29,7 @@ def create_app(
     if decision_repository is not None:
         app.state.decision_repository = decision_repository
 
+    configure_observability(app, load_settings())
     register_middleware(app)
     register_error_handlers(app)
     app.include_router(health.router)

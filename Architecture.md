@@ -42,6 +42,16 @@ The MVP pipeline is intentionally small:
 7. Train the lightweight purchase-likelihood validator.
 8. Select the policy for the Golden Set and local Engine API.
 
+## API Security and Observability
+
+![API security and observability flow](docs/api-security-observability-flow.svg)
+
+The API runtime now has an explicit operational perimeter. Business routes validate Microsoft Entra ID bearer tokens and route scopes in cloud environments, while local disabled authentication is limited to loopback execution. The middleware applies trusted host checks, explicit CORS origins, payload limits, request rate limits, and concurrency limits before the route handler executes.
+
+Every request emits structured telemetry with `request_id`, `trace_id`, route, status, latency, and safe decision metadata such as `decision_id` and `policy_version` when available. Full `customer_context` payloads are intentionally excluded from access logs. OpenTelemetry instrumentation can export traces to Application Insights when the optional observability dependencies and connection string are configured.
+
+Continuous assurance is enforced through CI gates for Ruff, pytest with coverage, dependency audit, OpenAPI compatibility, CodeQL, and secret scanning.
+
 ## Target Azure Architecture
 
 ![Azure architecture flow](docs/azure-architecture-flow.svg)

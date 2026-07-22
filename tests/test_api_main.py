@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import replace
 import json
+import logging
 
 from fastapi import HTTPException
 from fastapi.security import HTTPAuthorizationCredentials
@@ -12,11 +13,26 @@ from pydantic import ValidationError
 
 fastapi = pytest.importorskip("fastapi")
 
+try:
+    from fastapi.testclient import TestClient
+except RuntimeError as error:
+    TestClient = None
+    TESTCLIENT_UNAVAILABLE = str(error)
+else:
+    TESTCLIENT_UNAVAILABLE = ""
+
+
+requires_testclient = pytest.mark.skipif(
+    TestClient is None,
+    reason=TESTCLIENT_UNAVAILABLE or "TestClient dependency is unavailable",
+)
+
 import src.api.main as api_main  # noqa: E402
 from src.api import dependencies  # noqa: E402
 from src.api.security import Principal, require_scopes, validate_security_settings  # noqa: E402
 from src.api.schemas.decisions import DecisionRequest  # noqa: E402
 from src.api.schemas.errors import ErrorResponse  # noqa: E402
+from src.api.schemas.rewards import RewardRequest  # noqa: E402
 from src.core.config import load_settings  # noqa: E402
 from src.engine.likelihood import train_likelihood_model  # noqa: E402
 from src.engine.service import DecisionService  # noqa: E402
@@ -39,6 +55,40 @@ def processed_dataframe() -> pd.DataFrame:
             "spend": [10.0, 0.0, 0.0] * 3,
         }
     )
+
+
+def decision_test_components(tmp_path):
+    input_file = tmp_path / "processed.csv"
+    model_file = tmp_path / "purchase_likelihood_model.json"
+    selected_policy_file = tmp_path / "selected_policy.json"
+    processed_dataframe().to_csv(input_file, index=False)
+    train_likelihood_model(input_file=input_file, output_file=model_file, min_samples=2)
+    selected_policy_file.write_text(
+        json.dumps(
+            {
+                "schema_version": "selected_policy.v1",
+                "artifact_status": "active",
+                "policy": "thompson_sampling",
+                "version": "offline-v1",
+                "selection_rule": "test fixture",
+                "metrics": {"rounds": 9},
+            }
+        ),
+        encoding="utf-8",
+    )
+    service = DecisionService.from_files(model_file, selected_policy_file)
+    repository = InMemoryDecisionRepository()
+    app = api_main.create_app(service, repository)
+    request = DecisionRequest(
+        request_id="req_1",
+        customer_context={"channel": "Web", "history_segment": "1) Low", "newbie": 1},
+        eligible_offers=["cashback_recurring_purchase", "financial_education"],
+    )
+    return service, repository, app, request
+
+
+def api_test_client(app):
+    return TestClient(app, base_url="http://127.0.0.1")
 
 
 def test_api_health() -> None:
@@ -178,6 +228,142 @@ def test_decision_without_idempotency_key_persists_new_events(tmp_path) -> None:
     assert repository.event_count == 2
 
 
+def test_reward_ingestion_is_idempotent_and_append_only(tmp_path) -> None:
+    service, repository, app, request = decision_test_components(tmp_path)
+    principal = Principal("user-1", frozenset({"decision:write", "reward:write"}), {})
+    decision = route_endpoint(app, "/v1/decisions", "POST")(
+        request,
+        idempotency_key="idem-1",
+        principal=principal,
+        service=service,
+        repository=repository,
+        settings=load_settings(),
+    )
+    reward_request = RewardRequest(
+        decision_id=decision["decision_id"],
+        event_id="evt_123",
+        event_type="conversion",
+        reward=1.0,
+        occurred_at="2099-07-22T20:00:00Z",
+    )
+
+    reward = route_endpoint(app, "/v1/rewards", "POST")(
+        reward_request,
+        principal=principal,
+        repository=repository,
+        settings=load_settings(),
+    )
+    repeated = route_endpoint(app, "/v1/rewards", "POST")(
+        reward_request,
+        principal=principal,
+        repository=repository,
+        settings=load_settings(),
+    )
+
+    assert reward == repeated
+    assert reward["accepted"] is True
+    assert reward["decision_id"] == decision["decision_id"]
+    assert len(repository.reward_records) == 1
+
+
+def test_reward_rejects_orphan_decision(tmp_path) -> None:
+    _, repository, app, _ = decision_test_components(tmp_path)
+    principal = Principal("user-1", frozenset({"reward:write"}), {})
+    reward_request = RewardRequest(
+        decision_id="dec_missing",
+        event_id="evt_123",
+        event_type="conversion",
+        reward=1.0,
+        occurred_at="2099-07-22T20:00:00Z",
+    )
+
+    with pytest.raises(HTTPException) as error:
+        route_endpoint(app, "/v1/rewards", "POST")(
+            reward_request,
+            principal=principal,
+            repository=repository,
+            settings=load_settings(),
+        )
+
+    assert error.value.status_code == 400
+    assert "decision_id" in error.value.detail["message"]
+
+
+def test_reward_rejects_other_subject_decision(tmp_path) -> None:
+    service, repository, app, request = decision_test_components(tmp_path)
+    owner = Principal("user-1", frozenset({"decision:write"}), {})
+    other = Principal("user-2", frozenset({"reward:write"}), {})
+    decision = route_endpoint(app, "/v1/decisions", "POST")(
+        request,
+        idempotency_key="idem-1",
+        principal=owner,
+        service=service,
+        repository=repository,
+        settings=load_settings(),
+    )
+    reward_request = RewardRequest(
+        decision_id=decision["decision_id"],
+        event_id="evt_123",
+        event_type="conversion",
+        reward=1.0,
+        occurred_at="2099-07-22T20:00:00Z",
+    )
+
+    with pytest.raises(HTTPException) as error:
+        route_endpoint(app, "/v1/rewards", "POST")(
+            reward_request,
+            principal=other,
+            repository=repository,
+            settings=load_settings(),
+        )
+
+    assert error.value.status_code == 400
+
+
+def test_reward_rejects_timestamp_before_decision(tmp_path) -> None:
+    service, repository, app, request = decision_test_components(tmp_path)
+    principal = Principal("user-1", frozenset({"decision:write", "reward:write"}), {})
+    decision = route_endpoint(app, "/v1/decisions", "POST")(
+        request,
+        idempotency_key="idem-1",
+        principal=principal,
+        service=service,
+        repository=repository,
+        settings=load_settings(),
+    )
+    reward_request = RewardRequest(
+        decision_id=decision["decision_id"],
+        event_id="evt_123",
+        event_type="conversion",
+        reward=1.0,
+        occurred_at="2000-01-01T00:00:00Z",
+    )
+
+    with pytest.raises(HTTPException) as error:
+        route_endpoint(app, "/v1/rewards", "POST")(
+            reward_request,
+            principal=principal,
+            repository=repository,
+            settings=load_settings(),
+        )
+
+    assert error.value.status_code == 400
+    assert "occurred_at" in error.value.detail["message"]
+
+
+def test_reward_schema_rejects_invalid_reward_value() -> None:
+    with pytest.raises(ValidationError) as error:
+        RewardRequest(
+            decision_id="dec_123",
+            event_id="evt_123",
+            event_type="conversion",
+            reward=1.5,
+            occurred_at="2099-07-22T20:00:00Z",
+        )
+
+    assert "less than or equal to 1" in str(error.value)
+
+
 def test_api_startup_fails_when_artifact_is_missing(monkeypatch) -> None:
     def fail_from_files():
         raise FileNotFoundError("missing model artifact")
@@ -259,6 +445,7 @@ def test_api_routes_have_explicit_response_models() -> None:
         ("/v1/likelihood-estimates", "POST"),
         ("/v1/purchase-likelihood", "POST"),
         ("/v1/decisions", "POST"),
+        ("/v1/rewards", "POST"),
     ]:
         route = route_for(app, path, method)
         assert getattr(route, "response_model", None) is not None
@@ -277,6 +464,7 @@ def test_business_routes_require_expected_scopes() -> None:
         ("/v1/likelihood-estimates", "POST"): {"decision:read"},
         ("/v1/purchase-likelihood", "POST"): {"decision:read"},
         ("/v1/decisions", "POST"): {"decision:write"},
+        ("/v1/rewards", "POST"): {"reward:write"},
     }
     for (path, method), scopes in expected.items():
         route = route_for(app, path, method)
@@ -294,6 +482,216 @@ def test_api_public_documentation_routes_are_disabled() -> None:
     assert "/docs" not in paths
     assert "/redoc" not in paths
     assert "/openapi.json" not in paths
+
+
+@requires_testclient
+def test_http_readiness_uses_loaded_service(tmp_path) -> None:
+    _, _, app, _ = decision_test_components(tmp_path)
+
+    with api_test_client(app) as client:
+        response = client.get("/readyz")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ready", "service": "ecloe-engine"}
+    assert response.headers["x-request-id"]
+    assert response.headers["x-trace-id"]
+
+
+@requires_testclient
+def test_http_rejects_unknown_fields(tmp_path) -> None:
+    _, _, app, _ = decision_test_components(tmp_path)
+    payload = {
+        "request_id": "req_1",
+        "customer_context": {"channel": "Web", "zip_code": "12345"},
+        "eligible_offers": ["cashback_recurring_purchase"],
+        "unexpected": True,
+    }
+
+    with api_test_client(app) as client:
+        response = client.post("/v1/decisions", json=payload)
+
+    assert response.status_code == 422
+    assert response.json()["code"] == "invalid_request"
+
+
+@requires_testclient
+def test_http_rate_limit_returns_standard_error(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("RATE_LIMIT_REQUESTS", "1")
+    monkeypatch.setenv("RATE_LIMIT_WINDOW_SECONDS", "60")
+    _, _, app, _ = decision_test_components(tmp_path)
+
+    with api_test_client(app) as client:
+        first = client.get("/livez")
+        second = client.get("/livez")
+
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert second.json() == {"code": "invalid_request", "message": "Rate limit exceeded."}
+
+
+@requires_testclient
+def test_http_decision_idempotency_and_log_redaction(caplog, tmp_path) -> None:
+    _, repository, app, _ = decision_test_components(tmp_path)
+    payload = {
+        "request_id": "req_1",
+        "customer_context": {"channel": "Web", "history_segment": "1) Low", "newbie": 1},
+        "eligible_offers": ["cashback_recurring_purchase", "financial_education"],
+    }
+
+    with caplog.at_level(logging.INFO, logger="ecloe.api.access"):
+        with api_test_client(app) as client:
+            first = client.post("/v1/decisions", json=payload, headers={"Idempotency-Key": "idem-1"})
+            second = client.post(
+                "/v1/decisions",
+                json=payload,
+                headers={"Idempotency-Key": "idem-1", "X-Request-Id": "traceable-request"},
+            )
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json() == second.json()
+    assert repository.event_count == 1
+    log_messages = "\n".join(record.message for record in caplog.records)
+    assert "customer_context" not in log_messages
+    assert "history_segment" not in log_messages
+    assert "traceable-request" in log_messages
+    assert first.json()["decision_id"] in log_messages
+    assert first.json()["policy_version"] in log_messages
+
+
+@requires_testclient
+def test_http_reward_duplicate_returns_previous_response(tmp_path) -> None:
+    _, repository, app, _ = decision_test_components(tmp_path)
+    decision_payload = {
+        "request_id": "req_1",
+        "customer_context": {"channel": "Web", "history_segment": "1) Low", "newbie": 1},
+        "eligible_offers": ["cashback_recurring_purchase", "financial_education"],
+    }
+
+    with api_test_client(app) as client:
+        decision = client.post(
+            "/v1/decisions",
+            json=decision_payload,
+            headers={"Idempotency-Key": "idem-1"},
+        )
+        reward_payload = {
+            "decision_id": decision.json()["decision_id"],
+            "event_id": "evt_123",
+            "event_type": "conversion",
+            "reward": 1.0,
+            "occurred_at": "2099-07-22T20:00:00Z",
+        }
+        first = client.post("/v1/rewards", json=reward_payload)
+        second = client.post("/v1/rewards", json=reward_payload)
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+    assert first.json() == second.json()
+    assert len(repository.reward_records) == 1
+
+
+@requires_testclient
+def test_http_business_route_requires_token_in_cloud(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
+    monkeypatch.setenv("API_HOST", "0.0.0.0")
+    monkeypatch.setenv("AUTH_MODE", "entra_id")
+    monkeypatch.setenv("ENTRA_TENANT_ID", "tenant")
+    monkeypatch.setenv("ENTRA_CLIENT_ID", "client")
+    monkeypatch.setenv("ENTRA_AUDIENCE", "api://client")
+    monkeypatch.setenv("SUBJECT_KEY_SALT", "cloud-secret")
+    monkeypatch.setenv("AZURE_COSMOS_AUTH_MODE", "managed_identity")
+    monkeypatch.setenv("DECISION_REPOSITORY_MODE", "cosmos")
+    monkeypatch.setattr("src.api.dependencies.validate_security_settings", lambda settings: None)
+    _, _, app, _ = decision_test_components(tmp_path)
+
+    with api_test_client(app) as client:
+        response = client.post(
+            "/v1/decisions",
+            json={
+                "request_id": "req_1",
+                "customer_context": {"channel": "Web"},
+                "eligible_offers": ["cashback_recurring_purchase"],
+            },
+        )
+
+    assert response.status_code == 401
+    assert response.json()["code"] == "unauthorized"
+
+
+@requires_testclient
+def test_http_business_route_rejects_missing_scope(monkeypatch, tmp_path) -> None:
+    monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
+    monkeypatch.setenv("API_HOST", "0.0.0.0")
+    monkeypatch.setenv("AUTH_MODE", "entra_id")
+    monkeypatch.setenv("ENTRA_TENANT_ID", "tenant")
+    monkeypatch.setenv("ENTRA_CLIENT_ID", "client")
+    monkeypatch.setenv("ENTRA_AUDIENCE", "api://client")
+    monkeypatch.setenv("SUBJECT_KEY_SALT", "cloud-secret")
+    monkeypatch.setenv("AZURE_COSMOS_AUTH_MODE", "managed_identity")
+    monkeypatch.setenv("DECISION_REPOSITORY_MODE", "cosmos")
+    monkeypatch.setattr("src.api.dependencies.validate_security_settings", lambda settings: None)
+    monkeypatch.setattr(
+        "src.api.security.validate_entra_token",
+        lambda token, settings: Principal("user", frozenset({"decision:read"}), {}),
+    )
+    _, _, app, _ = decision_test_components(tmp_path)
+
+    with api_test_client(app) as client:
+        response = client.post(
+            "/v1/decisions",
+            json={
+                "request_id": "req_1",
+                "customer_context": {"channel": "Web"},
+                "eligible_offers": ["cashback_recurring_purchase"],
+            },
+            headers={"Authorization": "Bearer token"},
+        )
+
+    assert response.status_code == 403
+    assert response.json()["code"] == "forbidden"
+
+
+def test_openapi_contract_has_explicit_reward_route(tmp_path) -> None:
+    _, _, app, _ = decision_test_components(tmp_path)
+    contract = app.openapi()
+
+    assert contract["paths"]["/v1/rewards"]["post"]["responses"]["200"]["description"]
+    assert (
+        contract["paths"]["/v1/decisions"]["post"]["requestBody"]["content"]["application/json"][
+            "schema"
+        ]["$ref"]
+        == "#/components/schemas/DecisionRequest"
+    )
+
+
+@requires_testclient
+def test_corrupted_artifact_fails_startup(tmp_path, monkeypatch) -> None:
+    model_file = tmp_path / "purchase_likelihood_model.json"
+    policy_file = tmp_path / "selected_policy.json"
+    original_from_files = DecisionService.from_files
+    model_file.write_text("{bad json", encoding="utf-8")
+    policy_file.write_text(
+        json.dumps(
+            {
+                "schema_version": "selected_policy.v1",
+                "artifact_status": "active",
+                "policy": "thompson_sampling",
+                "version": "offline-v1",
+                "selection_rule": "test fixture",
+                "metrics": {"rounds": 9},
+            }
+        ),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(
+        dependencies.DecisionService,
+        "from_files",
+        staticmethod(lambda: original_from_files(model_file, policy_file)),
+    )
+
+    with pytest.raises(ValueError, match="not valid JSON"):
+        with api_test_client(api_main.create_app()):
+            pass
 
 
 def test_cloud_security_rejects_disabled_auth() -> None:

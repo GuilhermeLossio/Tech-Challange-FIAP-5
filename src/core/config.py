@@ -79,6 +79,8 @@ class Settings:
     decision_event_ttl_seconds: int
     decision_repository_mode: str
     decision_events_file: Path
+    observability_enabled: bool
+    applicationinsights_connection_string: str
 
     @property
     def raw_file(self) -> Path:
@@ -139,6 +141,8 @@ def load_settings() -> Settings:
         decision_event_ttl_seconds=int(_env("DECISION_EVENT_TTL_SECONDS", "157680000")),
         decision_repository_mode=_env("DECISION_REPOSITORY_MODE", "file").lower(),
         decision_events_file=ROOT_DIR / _env("DECISION_EVENTS_FILE", "reports/decision_events.jsonl"),
+        observability_enabled=_env("OBSERVABILITY_ENABLED", "true").lower() == "true",
+        applicationinsights_connection_string=_env("APPLICATIONINSIGHTS_CONNECTION_STRING"),
     )
 
 

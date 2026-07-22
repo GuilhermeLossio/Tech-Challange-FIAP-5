@@ -14,6 +14,7 @@ This document defines the local Decision API payloads for ECloe. The target use 
 | `POST` | `/v1/likelihood-estimates` | `decision:read` | Estimates purchase or conversion probability for eligible offers. |
 | `POST` | `/v1/purchase-likelihood` | `decision:read` | Deprecated alias for `/v1/likelihood-estimates`. |
 | `POST` | `/v1/decisions` | `decision:write` | Selects one eligible offer and returns likelihood, policy, and reason codes. |
+| `POST` | `/v1/rewards` | `reward:write` | Appends a reward event for an existing decision. |
 
 Cloud runtime uses Microsoft Entra ID bearer tokens. Business routes reject requests without a valid token and required scope. Local development may set `AUTH_MODE=disabled` only when the API binds to `127.0.0.1`.
 
@@ -113,9 +114,12 @@ The probability is an offline simulated estimate derived from public proxy data.
 
 ## Reward Event
 
+Request:
+
 ```json
 {
   "decision_id": "dec_123",
+  "event_id": "evt_123",
   "event_type": "conversion",
   "reward": 1.0,
   "occurred_at": "2026-07-05T15:00:00Z"
@@ -125,9 +129,25 @@ The probability is an offline simulated estimate derived from public proxy data.
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `decision_id` | string | Yes | Decision identifier returned by the Decision API |
+| `event_id` | string | Yes | Client event identifier used as the reward idempotency key |
 | `event_type` | string | Yes | Event such as `click`, `conversion`, or `dismissal` |
-| `reward` | number | Yes | Numeric reward signal, usually `0.0` or `1.0` |
-| `occurred_at` | string | Yes | ISO 8601 timestamp for the event |
+| `reward` | number | Yes | Numeric reward signal from `0.0` to `1.0` |
+| `occurred_at` | string | Yes | ISO 8601 timestamp for the event; must not be earlier than the decision timestamp |
+
+Response:
+
+```json
+{
+  "decision_id": "dec_123",
+  "event_id": "evt_123",
+  "event_type": "conversion",
+  "reward": 1.0,
+  "occurred_at": "2026-07-05T15:00:00+00:00",
+  "accepted": true
+}
+```
+
+Reward ingestion is append-only. The decision must exist for the authenticated `subject_key`, and `event_id` is idempotent for that subject. Repeating the same `event_id` returns the original reward response without creating a duplicate event. Unknown decisions, timestamps earlier than the decision, invalid reward values, and decisions owned by another subject are rejected.
 
 ## Error Conventions
 

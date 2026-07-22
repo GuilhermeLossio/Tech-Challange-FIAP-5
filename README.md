@@ -51,6 +51,7 @@ Supporting diagrams:
 - [`docs/decision-flow.svg`](./docs/decision-flow.svg) - decision and reward loop.
 - [`docs/azure-architecture-flow.svg`](./docs/azure-architecture-flow.svg) - target Azure service map.
 - [`docs/mlops-lifecycle.svg`](./docs/mlops-lifecycle.svg) - offline evaluation and promotion lifecycle.
+- [`docs/api-security-observability-flow.svg`](./docs/api-security-observability-flow.svg) - API security, telemetry, and CI gates.
 
 ---
 
@@ -151,9 +152,11 @@ Local endpoints:
 | `POST` | `/v1/likelihood-estimates` | `decision:read` | Estimated purchase/conversion probability by eligible offer. |
 | `POST` | `/v1/purchase-likelihood` | `decision:read` | Deprecated alias for `/v1/likelihood-estimates`. |
 | `POST` | `/v1/decisions` | `decision:write` | Recommended eligible offer with likelihood, policy, and reason codes. |
+| `POST` | `/v1/rewards` | `reward:write` | Append-only reward event ingestion linked to an existing decision. |
 
 Cloud runtime must use Microsoft Entra ID bearer tokens. `AUTH_MODE=disabled` is accepted only for local loopback execution with `API_HOST=127.0.0.1`.
 `POST /v1/decisions` accepts `Idempotency-Key`; repeating the same key for the same authenticated subject returns the original persisted decision without creating a duplicate event.
+`POST /v1/rewards` uses `event_id` as an idempotency key; duplicate reward events return the original accepted response.
 Local development persists decision events to `reports/decision_events.jsonl`; cloud runtime must use Cosmos DB with Managed Identity.
 
 ---

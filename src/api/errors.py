@@ -22,6 +22,13 @@ INTERNAL_ERROR_MESSAGE = "Internal server error."
 
 
 def register_error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(HTTPException)
+    async def http_exception_handler(_: Request, error: HTTPException) -> JSONResponse:
+        detail = error.detail
+        if isinstance(detail, dict) and {"code", "message"} <= set(detail):
+            return JSONResponse(status_code=error.status_code, content=detail, headers=error.headers)
+        return error_response(error.status_code, ErrorCode.invalid_request, str(detail))
+
     @app.exception_handler(RequestValidationError)
     async def request_validation_handler(_: Request, error: RequestValidationError) -> JSONResponse:
         return error_response(422, ErrorCode.invalid_request, _validation_message(error))

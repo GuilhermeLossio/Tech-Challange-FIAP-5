@@ -41,7 +41,34 @@ class DecisionRecord:
         return self.subject_key
 
 
+@dataclass(frozen=True)
+class RewardRecord:
+    event_id: str
+    decision_id: str
+    subject_key: str
+    event_type: str
+    reward: float
+    occurred_at: str
+    created_at: str
+    response: dict[str, Any]
+    ttl: int | None = None
+    id: str = field(default_factory=lambda: str(uuid4()))
+    record_type: str = "reward"
+
+    @property
+    def partition_key(self) -> str:
+        return self.subject_key
+
+
 class DecisionRepository(Protocol):
+    def get_decision(
+        self,
+        *,
+        subject_key: str,
+        decision_id: str,
+    ) -> DecisionRecord | None:
+        pass
+
     def get_by_idempotency_key(
         self,
         *,
@@ -53,11 +80,25 @@ class DecisionRepository(Protocol):
     def save_decision(self, record: DecisionRecord) -> DecisionRecord:
         pass
 
+    def get_reward_by_event_id(
+        self,
+        *,
+        subject_key: str,
+        event_id: str,
+    ) -> RewardRecord | None:
+        pass
+
+    def save_reward(self, record: RewardRecord) -> RewardRecord:
+        pass
+
 
 class InMemoryDecisionRepository:
     def __init__(self) -> None:
         self._records: list[DecisionRecord] = []
+        self._reward_records: list[RewardRecord] = []
         self._idempotency: dict[tuple[str, str], DecisionRecord] = {}
+        self._decisions: dict[tuple[str, str], DecisionRecord] = {}
+        self._reward_idempotency: dict[tuple[str, str], RewardRecord] = {}
         self._lock = Lock()
 
     @property
@@ -68,6 +109,20 @@ class InMemoryDecisionRepository:
     def records(self) -> tuple[DecisionRecord, ...]:
         with self._lock:
             return tuple(self._records)
+
+    @property
+    def reward_records(self) -> tuple[RewardRecord, ...]:
+        with self._lock:
+            return tuple(self._reward_records)
+
+    def get_decision(
+        self,
+        *,
+        subject_key: str,
+        decision_id: str,
+    ) -> DecisionRecord | None:
+        with self._lock:
+            return self._decisions.get((subject_key, decision_id))
 
     def get_by_idempotency_key(
         self,
@@ -86,7 +141,27 @@ class InMemoryDecisionRepository:
                 if existing is not None:
                     return existing
                 self._idempotency[key] = record
+            self._decisions[(record.subject_key, record.decision_id)] = record
             self._records.append(record)
+            return record
+
+    def get_reward_by_event_id(
+        self,
+        *,
+        subject_key: str,
+        event_id: str,
+    ) -> RewardRecord | None:
+        with self._lock:
+            return self._reward_idempotency.get((subject_key, event_id))
+
+    def save_reward(self, record: RewardRecord) -> RewardRecord:
+        with self._lock:
+            key = (record.subject_key, record.event_id)
+            existing = self._reward_idempotency.get(key)
+            if existing is not None:
+                return existing
+            self._reward_idempotency[key] = record
+            self._reward_records.append(record)
             return record
 
 
@@ -99,10 +174,19 @@ class FileDecisionRepository(InMemoryDecisionRepository):
     def save_decision(self, record: DecisionRecord) -> DecisionRecord:
         saved = super().save_decision(record)
         if saved is record:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            with self.path.open("a", encoding="utf-8") as file:
-                file.write(json.dumps(_record_to_dict(record), sort_keys=True) + "\n")
+            self._append(_record_to_dict(record))
         return saved
+
+    def save_reward(self, record: RewardRecord) -> RewardRecord:
+        saved = super().save_reward(record)
+        if saved is record:
+            self._append(_reward_to_dict(record))
+        return saved
+
+    def _append(self, payload: dict[str, Any]) -> None:
+        self.path.parent.mkdir(parents=True, exist_ok=True)
+        with self.path.open("a", encoding="utf-8") as file:
+            file.write(json.dumps(payload, sort_keys=True) + "\n")
 
     def _load(self) -> None:
         if not self.path.exists():
@@ -110,16 +194,21 @@ class FileDecisionRepository(InMemoryDecisionRepository):
         for line in self.path.read_text(encoding="utf-8").splitlines():
             if not line.strip():
                 continue
-            record = _record_from_dict(json.loads(line))
+            payload = json.loads(line)
+            if payload.get("record_type") == "reward":
+                reward = _reward_from_dict(payload)
+                self._reward_records.append(reward)
+                self._reward_idempotency[(reward.subject_key, reward.event_id)] = reward
+                continue
+
+            record = _record_from_dict(payload)
             self._records.append(record)
+            self._decisions[(record.subject_key, record.decision_id)] = record
             if record.idempotency_key:
                 self._idempotency[(record.subject_key, record.idempotency_key)] = record
 
 
 class CosmosDecisionRepository:
-    def __init__(self, container: Any) -> None:
-        self.container = container
-
     @classmethod
     def from_settings(cls, settings: Settings) -> "CosmosDecisionRepository":
         try:
@@ -143,7 +232,36 @@ class CosmosDecisionRepository:
 
         client = CosmosClient(settings.azure_cosmos_endpoint, credential=credential)
         database = client.get_database_client(settings.azure_cosmos_database)
-        return cls(database.get_container_client(settings.azure_cosmos_container_decisions))
+        return cls(
+            database.get_container_client(settings.azure_cosmos_container_decisions),
+            database.get_container_client(settings.azure_cosmos_container_rewards),
+        )
+
+    def __init__(self, decision_container: Any, reward_container: Any) -> None:
+        self.container = decision_container
+        self.reward_container = reward_container
+
+    def get_decision(
+        self,
+        *,
+        subject_key: str,
+        decision_id: str,
+    ) -> DecisionRecord | None:
+        query = (
+            "SELECT * FROM c WHERE c.subject_key = @subject_key "
+            "AND c.decision_id = @decision_id OFFSET 0 LIMIT 1"
+        )
+        items = self.container.query_items(
+            query=query,
+            parameters=[
+                {"name": "@subject_key", "value": subject_key},
+                {"name": "@decision_id", "value": decision_id},
+            ],
+            partition_key=subject_key,
+        )
+        for item in items:
+            return _record_from_dict(item)
+        return None
 
     def get_by_idempotency_key(
         self,
@@ -176,6 +294,38 @@ class CosmosDecisionRepository:
             if existing is not None:
                 return existing
         self.container.create_item(_record_to_dict(record))
+        return record
+
+    def get_reward_by_event_id(
+        self,
+        *,
+        subject_key: str,
+        event_id: str,
+    ) -> RewardRecord | None:
+        query = (
+            "SELECT * FROM c WHERE c.subject_key = @subject_key "
+            "AND c.event_id = @event_id OFFSET 0 LIMIT 1"
+        )
+        items = self.reward_container.query_items(
+            query=query,
+            parameters=[
+                {"name": "@subject_key", "value": subject_key},
+                {"name": "@event_id", "value": event_id},
+            ],
+            partition_key=subject_key,
+        )
+        for item in items:
+            return _reward_from_dict(item)
+        return None
+
+    def save_reward(self, record: RewardRecord) -> RewardRecord:
+        existing = self.get_reward_by_event_id(
+            subject_key=record.subject_key,
+            event_id=record.event_id,
+        )
+        if existing is not None:
+            return existing
+        self.reward_container.create_item(_reward_to_dict(record))
         return record
 
 
@@ -219,3 +369,24 @@ def _record_to_dict(record: DecisionRecord) -> dict[str, Any]:
 def _record_from_dict(payload: dict[str, Any]) -> DecisionRecord:
     allowed = {item.name for item in fields(DecisionRecord)}
     return DecisionRecord(**{key: payload[key] for key in allowed if key in payload})
+
+
+def _reward_to_dict(record: RewardRecord) -> dict[str, Any]:
+    return {
+        "event_id": record.event_id,
+        "decision_id": record.decision_id,
+        "subject_key": record.subject_key,
+        "event_type": record.event_type,
+        "reward": record.reward,
+        "occurred_at": record.occurred_at,
+        "created_at": record.created_at,
+        "response": record.response,
+        "ttl": record.ttl,
+        "id": record.id,
+        "record_type": record.record_type,
+    }
+
+
+def _reward_from_dict(payload: dict[str, Any]) -> RewardRecord:
+    allowed = {item.name for item in fields(RewardRecord)}
+    return RewardRecord(**{key: payload[key] for key in allowed if key in payload})
