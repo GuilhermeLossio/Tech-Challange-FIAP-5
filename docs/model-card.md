@@ -37,11 +37,9 @@ Direct identifiers, sensitive attributes, income, wealth, precise location, raw 
 
 Expected inputs:
 
-- `customer_context.marketplace_segment`
-- `customer_context.purchase_habit`
-- `customer_context.wallet_engagement`
 - `customer_context.channel`
-- `customer_context.risk_band`
+- `customer_context.history_segment`
+- `customer_context.newbie`
 - `eligible_offers`
 - `request_id`
 
@@ -52,6 +50,10 @@ Expected outputs:
 - `purchase_likelihood`
 - `policy`
 - `policy_version`
+- `artifact_schema`
+- `artifact_version`
+- `artifact_checksum`
+- `artifact_status`
 - `reason_codes`
 
 The canonical payloads are documented in [`api-contract.md`](api-contract.md).

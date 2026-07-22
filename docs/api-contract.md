@@ -18,11 +18,9 @@ This document defines the local Decision API payloads for ECloe. The target use 
 ```json
 {
   "customer_context": {
-    "marketplace_segment": "recurring_buyer",
-    "purchase_habit": "frequent_grocery",
-    "wallet_engagement": "high",
-    "channel": "mobile_app",
-    "risk_band": "eligible_low_risk"
+    "channel": "Web",
+    "history_segment": "2) $100 - $200",
+    "newbie": 1
   },
   "eligible_offers": [
     "cashback_recurring_purchase",
@@ -35,13 +33,13 @@ This document defines the local Decision API payloads for ECloe. The target use 
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `request_id` | string | Yes | Client-generated request identifier |
-| `customer_context.marketplace_segment` | string | Yes | Synthetic or anonymized marketplace behavior segment |
-| `customer_context.purchase_habit` | string | Yes | Coarse purchase habit such as recurring category or checkout pattern |
-| `customer_context.wallet_engagement` | string | Yes | Coarse digital wallet engagement band |
-| `customer_context.channel` | string | Yes | Channel such as `mobile_app`, `checkout`, or `crm` |
-| `customer_context.risk_band` | string | Yes | Coarse eligibility context provided by upstream rules |
-| `eligible_offers` | array of strings | Yes | Actions already approved by marketplace, wallet, risk, and compliance rules |
+| `request_id` | string | Yes | Client-generated request identifier, 1 to 64 characters |
+| `customer_context.channel` | enum | Yes | One of `Web`, `Phone`, or `Multichannel` |
+| `customer_context.history_segment` | string | No | Coarse Hillstrom history segment used by the likelihood artifact |
+| `customer_context.newbie` | enum | No | `0` or `1` indicator used by the likelihood artifact |
+| `eligible_offers` | array of enums | Yes | One to ten unique eligible offers already approved by upstream marketplace, wallet, risk, and compliance rules |
+
+The API uses an allowlist for `customer_context`. Unknown context fields, unknown offers, duplicate offers, oversized request identifiers, and invalid enum values are rejected.
 
 ## Decision Response
 
@@ -56,7 +54,7 @@ This document defines the local Decision API payloads for ECloe. The target use 
   "artifact_version": "likelihood-v1",
   "artifact_checksum": "64-character-sha256-checksum",
   "artifact_status": "active",
-  "reason_codes": ["marketplace_behavior_match", "wallet_engagement_signal"]
+  "reason_codes": ["highest_validated_purchase_likelihood", "contextual_conversion_rate"]
 }
 ```
 
@@ -118,16 +116,18 @@ The probability is an offline simulated estimate derived from public proxy data.
 
 ## Error Conventions
 
-Future implementations should return structured errors for:
+Implemented routes return structured errors for:
 
 - Missing required fields.
 - Empty `eligible_offers`.
 - Unknown offer identifiers.
 - Unsupported channel or segment values.
+- Unknown context fields.
+- Duplicate offers.
 - Reward events for unknown `decision_id` values.
 - Service unavailable or fallback activation.
 
-Error payloads should include a machine-readable code, a human-readable message, and the original `request_id` when available.
+Error payloads include a machine-readable `code` and a human-readable `message`.
 
 ## Privacy Constraints
 

@@ -5,6 +5,7 @@ import json
 
 import pandas as pd
 import pytest
+from pydantic import ValidationError
 
 fastapi = pytest.importorskip("fastapi")
 
@@ -67,7 +68,7 @@ def test_api_purchase_likelihood_and_decision(tmp_path) -> None:
         "customer_context": {"channel": "Web", "history_segment": "1) Low", "newbie": 1},
         "eligible_offers": ["cashback_recurring_purchase", "financial_education"],
     }
-    request = api_main.EngineRequestPayload(**payload)
+    request = api_main.DecisionRequest(**payload)
 
     likelihood = route_endpoint(app, "/v1/purchase-likelihood", "POST")(request)
     decision = route_endpoint(app, "/v1/decisions", "POST")(request)
@@ -99,23 +100,82 @@ def test_api_startup_fails_when_artifact_is_missing(monkeypatch) -> None:
         asyncio.run(run_lifespan())
 
 
-def test_api_rejects_empty_eligible_offers() -> None:
+def test_api_schema_rejects_unknown_context_fields() -> None:
+    with pytest.raises(ValidationError) as error:
+        api_main.DecisionRequest(
+            request_id="req_1",
+            customer_context={"channel": "Web", "zip_code": "12345"},
+            eligible_offers=["cashback_recurring_purchase"],
+        )
+
+    assert "Extra inputs are not permitted" in str(error.value)
+
+
+def test_api_schema_rejects_duplicate_offers() -> None:
+    with pytest.raises(ValidationError) as error:
+        api_main.DecisionRequest(
+            request_id="req_1",
+            customer_context={"channel": "Web"},
+            eligible_offers=["cashback_recurring_purchase", "cashback_recurring_purchase"],
+        )
+
+    assert "duplicate offers" in str(error.value)
+
+
+def test_api_schema_rejects_oversized_request() -> None:
+    with pytest.raises(ValidationError) as error:
+        api_main.DecisionRequest(
+            request_id="r" * 65,
+            customer_context={"channel": "Web"},
+            eligible_offers=["cashback_recurring_purchase"],
+        )
+
+    assert "at most 64 characters" in str(error.value)
+
+
+def test_api_schema_rejects_too_many_offers() -> None:
+    with pytest.raises(ValidationError) as error:
+        api_main.DecisionRequest(
+            request_id="req_1",
+            customer_context={"channel": "Web"},
+            eligible_offers=[
+                "mens_email",
+                "womens_email",
+                "no_email",
+                "cashback_recurring_purchase",
+                "savings_goal",
+                "financial_education",
+                "account_upgrade",
+                "installment_education",
+                "credit_limit",
+                "personal_loan",
+                "cashback_investment",
+            ],
+        )
+
+    assert "at most 10 items" in str(error.value)
+
+
+def test_api_routes_have_explicit_response_models() -> None:
     app = api_main.create_app()
-    request = api_main.EngineRequestPayload(
-        request_id="req_1",
-        customer_context={"channel": "Web"},
-        eligible_offers=[],
-    )
 
-    with pytest.raises(fastapi.HTTPException) as error:
-        route_endpoint(app, "/v1/purchase-likelihood", "POST")(request)
-
-    assert error.value.status_code == 400
-    assert error.value.detail["code"] == "invalid_request"
+    for path, method in [
+        ("/health", "GET"),
+        ("/v1/policy", "GET"),
+        ("/v1/purchase-likelihood", "POST"),
+        ("/v1/decisions", "POST"),
+    ]:
+        route = route_for(app, path, method)
+        assert getattr(route, "response_model", None) is not None
+        assert route.responses[422]["model"] is api_main.ErrorResponse
 
 
 def route_endpoint(app, path: str, method: str):
+    return route_for(app, path, method).endpoint
+
+
+def route_for(app, path: str, method: str):
     for route in app.routes:
         if getattr(route, "path", None) == path and method in getattr(route, "methods", set()):
-            return route.endpoint
+            return route
     raise AssertionError(f"Route not found: {method} {path}")

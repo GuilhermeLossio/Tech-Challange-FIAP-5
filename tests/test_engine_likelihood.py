@@ -58,7 +58,7 @@ def test_purchase_likelihood_uses_context_then_action_fallback(tmp_path) -> None
     fallback = service.estimate(
         EngineRequest(
             request_id="req_2",
-            customer_context={"channel": "mobile_app", "purchase_habit": "frequent_grocery"},
+            customer_context={"history_segment": "1) Low"},
             eligible_offers=["cashback_recurring_purchase"],
         )
     )

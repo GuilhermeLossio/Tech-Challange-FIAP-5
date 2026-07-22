@@ -57,12 +57,9 @@ Production-like features should be aggregated and non-sensitive:
 ```json
 {
   "customer_context": {
-    "channel": "mobile_app",
-    "marketplace_segment": "recurring_buyer",
-    "purchase_habit": "frequent_grocery",
-    "wallet_engagement": "high",
-    "relationship_recency": "recent",
-    "risk_band": "eligible_low_risk"
+    "channel": "Web",
+    "history_segment": "2) $100 - $200",
+    "newbie": 1
   },
   "eligible_offers": [
     "cashback_recurring_purchase",
@@ -71,6 +68,8 @@ Production-like features should be aggregated and non-sensitive:
   ]
 }
 ```
+
+The implemented local API intentionally accepts only these minimized serving fields. Richer marketplace, wallet, and eligibility signals remain upstream responsibilities until they are explicitly mapped into a validated model artifact.
 
 Excluded fields:
 
