@@ -8,9 +8,11 @@ This document defines the local Decision API payloads for ECloe. The target use 
 
 | Method | Path | Description |
 |:---|:---|:---|
-| `GET` | `/health` | Returns local service health. |
-| `GET` | `/v1/policy` | Returns the serving strategy, serving artifact metadata, and promoted offline policy metadata. |
-| `POST` | `/v1/purchase-likelihood` | Estimates purchase or conversion probability for eligible offers. |
+| `GET` | `/livez` | Returns liveness for the HTTP process. |
+| `GET` | `/readyz` | Returns readiness after serving artifacts are loaded. |
+| `GET` | `/v1/policies/current` | Returns the serving strategy, serving artifact metadata, and promoted offline policy metadata. |
+| `POST` | `/v1/likelihood-estimates` | Estimates purchase or conversion probability for eligible offers. |
+| `POST` | `/v1/purchase-likelihood` | Deprecated alias for `/v1/likelihood-estimates`. |
 | `POST` | `/v1/decisions` | Selects one eligible offer and returns likelihood, policy, and reason codes. |
 
 ## Decision Request

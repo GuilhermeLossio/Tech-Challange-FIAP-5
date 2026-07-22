@@ -57,14 +57,16 @@ class DecisionService:
             "artifact_version": artifact.version,
             "artifact_checksum": artifact.checksum,
             "artifact_status": artifact.status,
-            "artifact_path": artifact.path,
-            "promoted_offline_policy": self.selected_policy,
+            "promoted_offline_policy": {
+                "policy": self.selected_policy["policy"],
+                "version": self.selected_policy["version"],
+                "status": self.selected_policy_metadata.status,
+            },
             "promoted_offline_policy_artifact": {
                 "schema": self.selected_policy_metadata.schema_version,
                 "version": self.selected_policy_metadata.version,
                 "checksum": self.selected_policy_metadata.checksum,
                 "status": self.selected_policy_metadata.status,
-                "path": self.selected_policy_metadata.path,
             },
         }
 

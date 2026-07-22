@@ -10,6 +10,9 @@ from pydantic import ValidationError
 fastapi = pytest.importorskip("fastapi")
 
 import src.api.main as api_main  # noqa: E402
+from src.api import dependencies  # noqa: E402
+from src.api.schemas.decisions import DecisionRequest  # noqa: E402
+from src.api.schemas.errors import ErrorResponse  # noqa: E402
 from src.engine.likelihood import train_likelihood_model  # noqa: E402
 from src.engine.service import DecisionService  # noqa: E402
 
@@ -34,7 +37,7 @@ def processed_dataframe() -> pd.DataFrame:
 
 def test_api_health() -> None:
     app = api_main.create_app()
-    endpoint = route_endpoint(app, "/health", "GET")
+    endpoint = route_endpoint(app, "/livez", "GET")
 
     response = endpoint()
 
@@ -68,13 +71,15 @@ def test_api_purchase_likelihood_and_decision(tmp_path) -> None:
         "customer_context": {"channel": "Web", "history_segment": "1) Low", "newbie": 1},
         "eligible_offers": ["cashback_recurring_purchase", "financial_education"],
     }
-    request = api_main.DecisionRequest(**payload)
+    request = DecisionRequest(**payload)
 
-    likelihood = route_endpoint(app, "/v1/purchase-likelihood", "POST")(request)
-    decision = route_endpoint(app, "/v1/decisions", "POST")(request)
-    policy = route_endpoint(app, "/v1/policy", "GET")()
+    likelihood = route_endpoint(app, "/v1/likelihood-estimates", "POST")(request, service)
+    alias = route_endpoint(app, "/v1/purchase-likelihood", "POST")(request, service)
+    decision = route_endpoint(app, "/v1/decisions", "POST")(request, service)
+    policy = route_endpoint(app, "/v1/policies/current", "GET")(service)
 
     assert len(likelihood["estimates"]) == 2
+    assert alias == likelihood
     assert decision["offer_id"] in payload["eligible_offers"]
     assert decision["policy"] == "likelihood_ranker"
     assert decision["policy_version"] == model.version
@@ -89,7 +94,7 @@ def test_api_startup_fails_when_artifact_is_missing(monkeypatch) -> None:
     def fail_from_files():
         raise FileNotFoundError("missing model artifact")
 
-    monkeypatch.setattr(api_main.DecisionService, "from_files", staticmethod(fail_from_files))
+    monkeypatch.setattr(dependencies.DecisionService, "from_files", staticmethod(fail_from_files))
 
     async def run_lifespan() -> None:
         app = api_main.create_app()
@@ -102,7 +107,7 @@ def test_api_startup_fails_when_artifact_is_missing(monkeypatch) -> None:
 
 def test_api_schema_rejects_unknown_context_fields() -> None:
     with pytest.raises(ValidationError) as error:
-        api_main.DecisionRequest(
+        DecisionRequest(
             request_id="req_1",
             customer_context={"channel": "Web", "zip_code": "12345"},
             eligible_offers=["cashback_recurring_purchase"],
@@ -113,7 +118,7 @@ def test_api_schema_rejects_unknown_context_fields() -> None:
 
 def test_api_schema_rejects_duplicate_offers() -> None:
     with pytest.raises(ValidationError) as error:
-        api_main.DecisionRequest(
+        DecisionRequest(
             request_id="req_1",
             customer_context={"channel": "Web"},
             eligible_offers=["cashback_recurring_purchase", "cashback_recurring_purchase"],
@@ -124,7 +129,7 @@ def test_api_schema_rejects_duplicate_offers() -> None:
 
 def test_api_schema_rejects_oversized_request() -> None:
     with pytest.raises(ValidationError) as error:
-        api_main.DecisionRequest(
+        DecisionRequest(
             request_id="r" * 65,
             customer_context={"channel": "Web"},
             eligible_offers=["cashback_recurring_purchase"],
@@ -135,7 +140,7 @@ def test_api_schema_rejects_oversized_request() -> None:
 
 def test_api_schema_rejects_too_many_offers() -> None:
     with pytest.raises(ValidationError) as error:
-        api_main.DecisionRequest(
+        DecisionRequest(
             request_id="req_1",
             customer_context={"channel": "Web"},
             eligible_offers=[
@@ -160,14 +165,27 @@ def test_api_routes_have_explicit_response_models() -> None:
     app = api_main.create_app()
 
     for path, method in [
-        ("/health", "GET"),
-        ("/v1/policy", "GET"),
+        ("/livez", "GET"),
+        ("/readyz", "GET"),
+        ("/v1/policies/current", "GET"),
+        ("/v1/likelihood-estimates", "POST"),
         ("/v1/purchase-likelihood", "POST"),
         ("/v1/decisions", "POST"),
     ]:
         route = route_for(app, path, method)
         assert getattr(route, "response_model", None) is not None
-        assert route.responses[422]["model"] is api_main.ErrorResponse
+        assert route.responses[422]["model"] is ErrorResponse
+
+    assert route_for(app, "/v1/purchase-likelihood", "POST").deprecated is True
+
+
+def test_api_public_documentation_routes_are_disabled() -> None:
+    app = api_main.create_app()
+    paths = {getattr(route, "path", None) for route in app.routes}
+
+    assert "/docs" not in paths
+    assert "/redoc" not in paths
+    assert "/openapi.json" not in paths
 
 
 def route_endpoint(app, path: str, method: str):
@@ -175,7 +193,11 @@ def route_endpoint(app, path: str, method: str):
 
 
 def route_for(app, path: str, method: str):
-    for route in app.routes:
+    routes = []
+    for item in app.routes:
+        routes.extend(getattr(getattr(item, "original_router", None), "routes", [item]))
+
+    for route in routes:
         if getattr(route, "path", None) == path and method in getattr(route, "methods", set()):
             return route
     raise AssertionError(f"Route not found: {method} {path}")

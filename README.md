@@ -17,7 +17,7 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 | Adaptive recommendation | Compares Baseline, Epsilon-Greedy, UCB, and Thompson Sampling policies. |
 | Local policy training | Runs deterministic offline policy simulation with local reports. |
 | Purchase likelihood validator | Estimates simulated conversion probability for eligible offers through ECloe Engine. |
-| Local Engine API | Exposes health, policy, purchase-likelihood, and decision endpoints with FastAPI. |
+| Local Engine API | Exposes liveness, readiness, policy, likelihood-estimate, and decision endpoints with FastAPI routers. |
 | Evaluation-first delivery | Measures conversion rate, cumulative reward, regret, and exploration rate before selecting a policy. |
 | Golden Set validation | Plans 5 deterministic examples for explainable Demo Day validation. |
 | Low-consumption architecture | Prioritizes local execution and small Azure services instead of enterprise infrastructure. |
@@ -145,9 +145,11 @@ Local endpoints:
 
 | Method | Path | Purpose |
 |:---|:---|:---|
-| `GET` | `/health` | Service health check. |
-| `GET` | `/v1/policy` | Current selected policy metadata. |
-| `POST` | `/v1/purchase-likelihood` | Estimated purchase/conversion probability by eligible offer. |
+| `GET` | `/livez` | Liveness check for the HTTP process. |
+| `GET` | `/readyz` | Readiness check that requires serving artifacts to be loaded. |
+| `GET` | `/v1/policies/current` | Current serving strategy and artifact metadata. |
+| `POST` | `/v1/likelihood-estimates` | Estimated purchase/conversion probability by eligible offer. |
+| `POST` | `/v1/purchase-likelihood` | Deprecated alias for `/v1/likelihood-estimates`. |
 | `POST` | `/v1/decisions` | Recommended eligible offer with likelihood, policy, and reason codes. |
 
 ---

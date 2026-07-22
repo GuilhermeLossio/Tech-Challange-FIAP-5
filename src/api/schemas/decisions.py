@@ -1,13 +1,11 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Literal
+from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import Field, field_validator
 
-
-class StrictApiModel(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+from src.api.schemas.base import StrictApiModel
 
 
 class Channel(str, Enum):
@@ -30,12 +28,6 @@ class OfferId(str, Enum):
     cashback_investment = "cashback_investment"
 
 
-class Confidence(str, Enum):
-    low = "low"
-    medium = "medium"
-    high = "high"
-
-
 class ReasonCode(str, Enum):
     contextual_conversion_rate = "contextual_conversion_rate"
     action_conversion_rate = "action_conversion_rate"
@@ -43,12 +35,6 @@ class ReasonCode(str, Enum):
     global_conversion_rate = "global_conversion_rate"
     action_fallback = "action_fallback"
     highest_validated_purchase_likelihood = "highest_validated_purchase_likelihood"
-
-
-class ErrorCode(str, Enum):
-    invalid_request = "invalid_request"
-    artifact_unavailable = "artifact_unavailable"
-    internal_error = "internal_error"
 
 
 class CustomerContext(StrictApiModel):
@@ -71,23 +57,6 @@ class DecisionRequest(StrictApiModel):
         return offers
 
 
-class LikelihoodEstimateResponse(StrictApiModel):
-    offer_id: OfferId
-    proxy_action: OfferId
-    purchase_likelihood: float = Field(ge=0.0, le=1.0)
-    confidence: Confidence
-    fallback_level: str
-    sample_count: int = Field(ge=0)
-    reason_codes: list[ReasonCode]
-    warnings: list[str]
-
-
-class PurchaseLikelihoodResponse(StrictApiModel):
-    request_id: str
-    estimates: list[LikelihoodEstimateResponse]
-    warnings: list[str]
-
-
 class DecisionResponse(StrictApiModel):
     request_id: str
     decision_id: str
@@ -101,34 +70,3 @@ class DecisionResponse(StrictApiModel):
     artifact_status: Literal["active"]
     reason_codes: list[ReasonCode]
     warnings: list[str]
-
-
-class ArtifactResponse(StrictApiModel):
-    artifact_schema: str = Field(alias="schema")
-    version: str
-    checksum: str
-    status: Literal["active"]
-    path: str
-
-
-class PolicyResponse(StrictApiModel):
-    policy: Literal["likelihood_ranker", "thompson_sampling"]
-    version: str
-    status: Literal["active"]
-    artifact_schema: str
-    artifact_version: str
-    artifact_checksum: str
-    artifact_status: Literal["active"]
-    artifact_path: str
-    promoted_offline_policy: dict[str, Any]
-    promoted_offline_policy_artifact: ArtifactResponse
-
-
-class HealthResponse(StrictApiModel):
-    status: Literal["ok"]
-    service: Literal["ecloe-engine"]
-
-
-class ErrorResponse(StrictApiModel):
-    code: ErrorCode
-    message: str
