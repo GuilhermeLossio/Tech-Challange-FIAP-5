@@ -4,6 +4,8 @@
 
 This document defines the local Decision API payloads for ECloe. The target use case is an integrated marketplace and digital wallet channel where **ECloe Market** provides commerce behavior signals, **ECloe Pay** provides wallet context and eligible actions, and **ECloe Engine** selects the next best action. The MVP exposes these contracts through FastAPI and includes append-only reward ingestion linked to existing decisions.
 
+The dedicated ECloe Pay wallet surface documentation is maintained separately in [`ecloe-pay.md`](ecloe-pay.md). This contract remains focused on the implemented Engine API payloads that ECloe Pay will consume during the planned demo.
+
 ## Implemented Endpoints
 
 | Method | Path | Required scope | Description |

@@ -25,7 +25,7 @@ ECloe decision engine
 Digital channel
   app banner, checkout message, CRM card, push notification
         ↓
-Reward event
+Reward event  
   click, ignore, accept, conversion
 ```
 
@@ -133,6 +133,8 @@ Raw marketplace interaction events remain in the demo layer. Raw item-level brow
 
 ECloe Pay should show a simulated wallet balance, cashback, savings goals, benefits, recent simulated transactions, recommended benefit, and accepted-offer status. After a reward is registered, it may state that the interaction was recorded and will be available for future policy evaluation. It must not claim immediate online learning or instant retraining.
 
+The dedicated ECloe Pay scope, screen inventory, wallet data boundaries, reward flow, and Azure direction are documented in [`ecloe-pay.md`](ecloe-pay.md).
+
 ### Checkout Recommendation
 
 Checkout is the main decision point. The demo layer first calculates eligible offers:
@@ -178,4 +180,4 @@ ECloe Control Room is a technical and operational interface for demonstration ju
 
 The demo should show the product value: adaptive personalization across commerce and wallet channels with low operational cost and clear governance.
 
-See [`demo-interface.md`](demo-interface.md) for the full planned screen inventory, states, API calls, and status labels.
+See [`demo-interface.md`](demo-interface.md) for the full planned screen inventory, states, API calls, and status labels. See [`ecloe-pay.md`](ecloe-pay.md) for the dedicated wallet surface documentation.

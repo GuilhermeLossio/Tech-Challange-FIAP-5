@@ -9,6 +9,7 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 - [Business Problem](#business-problem)
 - [Architecture](#architecture)
 - [Demo Interface](#demo-interface)
+- [ECloe Pay](#ecloe-pay)
 - [Dataset](#dataset)
 - [Training Strategy](#training-strategy)
 - [API Examples](#api-examples)
@@ -69,6 +70,9 @@ Supporting diagrams:
 
 - [`docs/decision-flow.svg`](./docs/decision-flow.svg) - decision and reward loop.
 - [`docs/demo-interface-flow.svg`](./docs/demo-interface-flow.svg) - planned demo interface layer.
+- [`docs/ecloe-pay-overview.svg`](./docs/ecloe-pay-overview.svg) - planned ECloe Pay overview.
+- [`docs/ecloe-pay-transfer-flow.svg`](./docs/ecloe-pay-transfer-flow.svg) - planned ECloe Pay transfer flow.
+- [`docs/ecloe-pay-simplified-relationship.svg`](./docs/ecloe-pay-simplified-relationship.svg) - simplified ECloe Pay relationships.
 - [`docs/azure-architecture-flow.svg`](./docs/azure-architecture-flow.svg) - target Azure service map.
 - [`docs/mlops-lifecycle.svg`](./docs/mlops-lifecycle.svg) - offline evaluation and promotion lifecycle.
 - [`docs/api-security-observability-flow.svg`](./docs/api-security-observability-flow.svg) - API security, telemetry, and CI gates.
@@ -88,6 +92,16 @@ Demo persona -> ECloe Market -> eligible offers -> ECloe Engine decision -> EClo
 ```
 
 Eligibility, risk, compliance, and business rules remain upstream. ECloe Engine only ranks one eligible offer from the request. See [`docs/demo-interface.md`](./docs/demo-interface.md) for the planned screens, states, API calls, and presentation flow.
+
+---
+
+## ECloe Pay
+
+Status: **Planned for demo**.
+
+ECloe Pay is documented as the simulated wallet surface for the demo. It displays wallet benefits, reuses the checkout decision returned by ECloe Engine, lets the user open, dismiss, or accept the selected eligible offer, and registers the interaction through the implemented reward endpoint. The Pay surface does not approve credit, calculate eligibility, process real payments, or trigger immediate model learning.
+
+Detailed ECloe Pay scope, screens, data boundaries, reward flow, Azure direction, and SVG diagrams are documented separately in [`docs/ecloe-pay.md`](./docs/ecloe-pay.md).
 
 ---
 
@@ -429,6 +443,10 @@ FIAP submissions often require team members and RM identifiers in the central RE
 - [`Architecture.md`](./Architecture.md) - Architecture, components, pipeline, and trade-offs.
 - [`docs/api-contract.md`](./docs/api-contract.md) - Implemented ECloe Engine API contracts and reward payloads.
 - [`docs/demo-interface.md`](./docs/demo-interface.md) - Planned ECloe Market, ECloe Pay, and ECloe Control Room interface.
+- [`docs/ecloe-pay.md`](./docs/ecloe-pay.md) - Dedicated ECloe Pay wallet surface documentation.
+- [`docs/ecloe-pay-overview.svg`](./docs/ecloe-pay-overview.svg) - ECloe Pay overview diagram.
+- [`docs/ecloe-pay-transfer-flow.svg`](./docs/ecloe-pay-transfer-flow.svg) - ECloe Pay transfer flow diagram.
+- [`docs/ecloe-pay-simplified-relationship.svg`](./docs/ecloe-pay-simplified-relationship.svg) - ECloe Pay simplified relationship diagram.
 - [`docs/marketplace-finance-use-case.md`](./docs/marketplace-finance-use-case.md) - Practical marketplace and digital wallet use case.
 - [`docs/data-structure.md`](./docs/data-structure.md) - Local data folders and cloud storage conventions.
 - [`docs/evaluation-plan.md`](./docs/evaluation-plan.md) - Offline evaluation and Golden Set expectations.

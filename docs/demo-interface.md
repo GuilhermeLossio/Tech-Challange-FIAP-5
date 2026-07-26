@@ -53,6 +53,8 @@ ECloe Demo
 
 ECloe Engine remains an independent API consumed by the demo application.
 
+ECloe Pay has its own dedicated documentation in [`ecloe-pay.md`](ecloe-pay.md). This interface document keeps the full demo journey together, while the Pay document owns wallet screens, wallet data boundaries, benefit interaction, reward mapping, and Azure direction for the wallet surface.
+
 ```mermaid
 flowchart LR
     User[Demo user]
@@ -163,7 +165,7 @@ No persona uses real personal data.
 | Checkout | `/market/checkout` | Planned for demo | Main decision screen. | `POST /v1/decisions`; optional `POST /v1/likelihood-estimates`. | Selected eligible offer displayed. | Recommendation placeholder. | No eligible offer. | Engine unavailable or invalid request. | Deterministic safe message from demo layer. |
 | Recommendation card | Inside checkout | Planned for demo | Present selected eligible offer. | Uses checkout decision response. | Customer-facing card shown. | Card placeholder. | No eligible offer selected. | Missing decision response. | Hide technical details and show neutral message. |
 | Offer details | `/offers/{offer_id}` | Planned for demo | Accept, dismiss, or return from offer. | `POST /v1/rewards` after verified demo action. | Reward event accepted. | Reward submit progress. | Unknown offer ID. | Reward rejected. | Keep decision and show retry option. |
-| ECloe Pay | `/pay` | Planned for demo | Show simulated wallet and accepted offer status. | BFF session state; reward status from prior call. | Wallet benefits and accepted offer status shown. | Wallet summary skeleton. | No accepted offer. | Session lookup failure. | Static wallet demo view. |
+| ECloe Pay | `/pay` | Planned for demo | Show simulated wallet and accepted offer status. Detailed in [`ecloe-pay.md`](ecloe-pay.md). | BFF session state; reward status from prior call. | Wallet benefits and accepted offer status shown. | Wallet summary skeleton. | No accepted offer. | Session lookup failure. | Static wallet demo view. |
 | Demo summary | `/demo/summary` | Planned for demo | Show full technical journey. | BFF timeline read. | Timeline with request, decision, event, policy, and latency. | Timeline loading. | No recorded events. | Timeline unavailable. | Locally reconstructed summary from session state. |
 | Decision Lab | `/engine/lab` | Planned for demo | Developer/evaluator API exploration. | `POST /v1/likelihood-estimates`, `POST /v1/decisions`. | Request and response JSON shown. | Request in progress. | No request history. | Structured API error shown. | Use sample payload. |
 | Policy and artifacts | `/engine/policies` | Planned for demo | Separate online serving strategy from offline promoted policy. | `GET /v1/policies/current`. | Current serving strategy and promoted offline policy shown separately. | Policy metadata loading. | Artifact missing. | Artifact unavailable. | Show documentation-only explanation. |
@@ -344,7 +346,7 @@ GET /internal/v1/sessions/{session_id}/timeline
 | Policy metadata | Implemented | `GET /v1/policies/current` separates serving policy and promoted offline policy metadata. |
 | Likelihood estimates | Implemented | `POST /v1/likelihood-estimates` estimates simulated conversion probability. |
 | ECloe Market UI | Planned for demo | No frontend code exists in the repository. |
-| ECloe Pay UI | Planned for demo | No frontend code exists in the repository. |
+| ECloe Pay UI | Planned for demo | No frontend code exists in the repository. Dedicated scope is documented in [`ecloe-pay.md`](ecloe-pay.md). |
 | ECloe Control Room UI | Planned for demo | Depends on demo UI and future internal read surfaces. |
 | Demo Backend-for-Frontend | Planned for demo | Recommended for session state, aggregation, and eligibility simulation. |
 | Production financial integration | Future | Requires real governance, security, legal, privacy, and model-risk review. |

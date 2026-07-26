@@ -26,7 +26,30 @@ The planned interface layer is documentation-only at this stage. It should demon
 
 Current implemented architecture is the local ECloe Engine API, offline evaluation pipeline, purchase-likelihood artifact, and persistence layer. Planned demo architecture adds the simulated UI and BFF around that API. Future production integration would replace the simulated eligibility and session layers with governed upstream marketplace, wallet, risk, compliance, and operations systems.
 
-The planned interface is detailed in [`docs/demo-interface.md`](docs/demo-interface.md). It explicitly separates the current online serving strategy from the offline promoted policy and future adaptive strategies.
+The planned interface is detailed in [`docs/demo-interface.md`](docs/demo-interface.md), with the wallet-specific ECloe Pay scope separated in [`docs/ecloe-pay.md`](docs/ecloe-pay.md). These documents explicitly separate the current online serving strategy from the offline promoted policy and future adaptive strategies.
+
+## ECloe Pay Surface
+
+![ECloe Pay overview](docs/ecloe-pay-overview.svg)
+
+ECloe Pay is the planned wallet surface inside the demo application. It should reuse the checkout decision returned by ECloe Engine, present the selected eligible offer as a wallet benefit, and register the user interaction through the implemented reward endpoint.
+
+| Concern | Status | Architecture boundary |
+|:---|:---|:---|
+| Wallet presentation | Planned for demo | Simulated UI state for balance, cashback, savings goals, benefits, and accepted-offer status. |
+| Decision reuse | Planned for demo | Pay screens reuse the `decision_id` created at checkout instead of creating duplicate decisions. |
+| Reward registration | Implemented | `POST /v1/rewards` records click, dismissal, or conversion events linked to the original decision. |
+| Technical evidence | Planned for demo | Technical mode may show request ID, decision ID, event ID, policy, artifact, latency, and excluded fields. |
+| Real payment account integration | Future | Requires governed wallet, identity, consent, security, and operations systems. |
+| Credit, fraud, risk, compliance, and eligibility decisions | Out of scope | These remain upstream and must not be presented as ECloe Pay or ECloe Engine responsibilities. |
+
+Detailed screen inventory, data contract, reward mapping, and Azure direction are documented in [`docs/ecloe-pay.md`](docs/ecloe-pay.md).
+
+Supporting ECloe Pay diagrams:
+
+- [`docs/ecloe-pay-overview.svg`](docs/ecloe-pay-overview.svg) - planned ECloe Pay overview.
+- [`docs/ecloe-pay-transfer-flow.svg`](docs/ecloe-pay-transfer-flow.svg) - planned wallet benefit transfer flow.
+- [`docs/ecloe-pay-simplified-relationship.svg`](docs/ecloe-pay-simplified-relationship.svg) - simplified relationship between channels, services, and state stores.
 
 ## Components
 
@@ -34,7 +57,7 @@ The planned interface is detailed in [`docs/demo-interface.md`](docs/demo-interf
 |:---|:---|:---|
 | Configuration | Loads local `.env` settings, data paths, Kaggle dataset slug, file names, seed, and Azure placeholders. | `src/core/config.py`, `.env.example` |
 | ECloe Market | Planned simulated marketplace surface for product browsing, cart, checkout, and purchase-habit signals. | Planned `src/demo/` |
-| ECloe Pay | Planned simulated digital wallet surface for payment context, benefits, and eligible financial actions. | Planned `src/demo/` |
+| ECloe Pay | Planned simulated digital wallet surface for payment context, benefits, eligible financial actions, accepted-offer status, and reward interaction. | `docs/ecloe-pay.md`, planned `src/demo/` |
 | ECloe Engine | Adaptive decision layer that ranks eligible offers using marketplace-finance context and simulated conversion likelihood. | `src/bandits/`, `src/evaluation/`, `src/engine/` |
 | Local Engine API | Exposes the implemented health, policy, purchase-likelihood, and decision endpoints. | `src/api/` |
 | Data ingestion | Downloads the configured Hillstrom Kaggle dataset into `data/raw/hillstrom.csv`. | `src/data/download.py` |
@@ -44,7 +67,7 @@ The planned interface is detailed in [`docs/demo-interface.md`](docs/demo-interf
 | Storage contracts | Defines target Azure settings and Cosmos DB document shapes for future decision/reward storage. | `src/storage/` |
 | Offline policy layer | Implements Baseline, Epsilon-Greedy, UCB, and Thompson Sampling evaluation. | `src/bandits/`, `src/evaluation/` |
 | Notebooks | Reproduce the essential data, validation, training, evaluation, and cloud-reference stages. | `notebooks/` |
-| Marketplace-finance demo | Planned app simulation showing ECloe Market behavior, ECloe Pay context, eligible offers, recommendations, and reward events. | `docs/demo-interface.md` |
+| Marketplace-finance demo | Planned app simulation showing ECloe Market behavior, ECloe Pay context, eligible offers, recommendations, and reward events. | `docs/demo-interface.md`, `docs/ecloe-pay.md` |
 | Documentation | Central delivery documentation, diagrams, contracts, governance, model card, and demo script. | `README.md`, `docs/` |
 
 ## Data / ML Pipeline Flow
@@ -92,7 +115,7 @@ The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](
 
 ## API and Event Contracts
 
-The implemented local Engine API, planned reward payloads, and privacy boundaries are documented in [`docs/api-contract.md`](docs/api-contract.md). The practical marketplace-finance scenario is documented in [`docs/marketplace-finance-use-case.md`](docs/marketplace-finance-use-case.md). The MVP includes local policy training and purchase-likelihood artifact generation documented in [`docs/training-workflow.md`](docs/training-workflow.md).
+The implemented local Engine API, planned reward payloads, and privacy boundaries are documented in [`docs/api-contract.md`](docs/api-contract.md). The practical marketplace-finance scenario is documented in [`docs/marketplace-finance-use-case.md`](docs/marketplace-finance-use-case.md), and the ECloe Pay wallet surface is documented separately in [`docs/ecloe-pay.md`](docs/ecloe-pay.md). The MVP includes local policy training and purchase-likelihood artifact generation documented in [`docs/training-workflow.md`](docs/training-workflow.md).
 
 ## Key Design Decisions
 
