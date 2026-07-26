@@ -25,9 +25,9 @@ This document defines how ECloe policies should be evaluated for the Datathon MV
 | Demo latency | The script, notebook, or API should respond quickly enough for Demo Day |
 | Operational consumption | The MVP should avoid unnecessary cloud services and heavy infrastructure |
 
-## Golden Set Expectations
+## Golden Set
 
-The Datathon scope requires a simplified Golden Set with 5 examples. Each case should include:
+The Golden Set contains 5 deterministic examples for Demo Day explanation. Each case includes:
 
 - customer/context summary;
 - eligible offers;
@@ -35,7 +35,7 @@ The Datathon scope requires a simplified Golden Set with 5 examples. Each case s
 - selected policy;
 - short explanation of why the recommendation makes sense.
 
-The Golden Set can be generated from the processed dataset or from documented synthetic examples. It should be deterministic for the same seed and configuration.
+The current artifact is generated from the processed dataset and is deterministic for the same seed and configuration.
 
 ## Pass and Fail Criteria
 
