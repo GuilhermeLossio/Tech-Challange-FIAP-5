@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Literal
 
 from pydantic import Field, field_validator
@@ -8,13 +8,13 @@ from pydantic import Field, field_validator
 from src.api.schemas.base import StrictApiModel
 
 
-class Channel(str, Enum):
+class Channel(StrEnum):
     web = "Web"
     phone = "Phone"
     multichannel = "Multichannel"
 
 
-class OfferId(str, Enum):
+class OfferId(StrEnum):
     mens_email = "mens_email"
     womens_email = "womens_email"
     no_email = "no_email"
@@ -28,7 +28,7 @@ class OfferId(str, Enum):
     cashback_investment = "cashback_investment"
 
 
-class ReasonCode(str, Enum):
+class ReasonCode(StrEnum):
     contextual_conversion_rate = "contextual_conversion_rate"
     action_conversion_rate = "action_conversion_rate"
     context_fallback = "context_fallback"

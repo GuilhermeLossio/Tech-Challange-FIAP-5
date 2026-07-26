@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-from collections import defaultdict, deque
 import json
 import logging
+from collections import defaultdict, deque
 from time import monotonic
 from uuid import uuid4
 

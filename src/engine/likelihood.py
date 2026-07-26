@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import argparse
+import json
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
-import json
 from pathlib import Path
 from typing import Any
 
@@ -14,14 +14,13 @@ from src.data.schemas import MODEL_CONTEXT_COLUMNS
 from src.engine.artifacts import (
     ARTIFACT_STATUS_ACTIVE,
     LIKELIHOOD_MODEL_SCHEMA,
-    LoadedArtifact,
     ArtifactMetadata,
+    LoadedArtifact,
     load_json_artifact,
 )
 from src.engine.offers import resolve_offer_action
 from src.engine.schemas import EngineRequest, LikelihoodEstimate, LikelihoodResponse
 from src.engine.validation import validate_engine_request
-
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT_FILE = ROOT_DIR / "data" / "processed" / "hillstrom_processed.csv"
@@ -47,7 +46,7 @@ class LikelihoodModel:
     context_columns: list[str]
 
     @classmethod
-    def from_json(cls, path: Path) -> "LikelihoodModel":
+    def from_json(cls, path: Path) -> LikelihoodModel:
         artifact = load_likelihood_artifact(path)
         return cls(**artifact.payload)
 
@@ -95,13 +94,13 @@ def train_likelihood_model(
     if invalid_rewards:
         raise ValueError(f"Invalid rewards in likelihood training data: {invalid_rewards}")
 
-    global_count = int(len(dataframe))
+    global_count = len(dataframe)
     global_rate = float(dataframe["reward"].mean()) if global_count else 0.0
 
     action_rates: dict[str, dict[str, float | int]] = {}
     for action in ACTIONS:
         action_rows = dataframe[dataframe["action"] == action]
-        count = int(len(action_rows))
+        count = len(action_rows)
         successes = float(action_rows["reward"].sum())
         action_rates[action] = {
             "count": count,
@@ -122,7 +121,7 @@ def train_likelihood_model(
                 values_tuple = values if isinstance(values, tuple) else (values,)
                 context = dict(zip(columns, values_tuple, strict=True))
                 key = _context_key(action, context)
-                count = int(len(group))
+                count = len(group)
                 successes = float(group["reward"].sum())
                 context_rates[key] = {
                     "action": action,
@@ -162,7 +161,7 @@ class PurchaseLikelihoodService:
         )
 
     @classmethod
-    def from_file(cls, path: Path = DEFAULT_LIKELIHOOD_MODEL_FILE) -> "PurchaseLikelihoodService":
+    def from_file(cls, path: Path = DEFAULT_LIKELIHOOD_MODEL_FILE) -> PurchaseLikelihoodService:
         artifact = load_likelihood_artifact(path)
         return cls(LikelihoodModel(**artifact.payload), artifact.metadata)
 

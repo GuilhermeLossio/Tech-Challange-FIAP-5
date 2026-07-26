@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import json
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
-
 
 LIKELIHOOD_MODEL_SCHEMA = "purchase_likelihood_model.v1"
 SELECTED_POLICY_SCHEMA = "selected_policy.v1"

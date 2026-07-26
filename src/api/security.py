@@ -1,17 +1,16 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 import hashlib
 import hmac
+from dataclasses import dataclass
 from importlib.util import find_spec
-from typing import Any
+from typing import Annotated, Any
 
 from fastapi import Depends, HTTPException, Security
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer, SecurityScopes
 
 from src.api.schemas.errors import ErrorCode, ErrorResponse
 from src.core.config import Settings
-
 
 CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
 LOCAL_HOSTS = {"127.0.0.1"}
@@ -95,8 +94,11 @@ def require_scopes(*required_scopes: str):
 
     async def dependency(
         security_scopes: SecurityScopes,
-        credentials: HTTPAuthorizationCredentials | None = Security(bearer_scheme),
-        settings: Settings = Depends(_settings),
+        credentials: Annotated[
+            HTTPAuthorizationCredentials | None,
+            Security(bearer_scheme),
+        ],
+        settings: Annotated[Settings, Depends(_settings)],
     ) -> Principal:
         route_scopes = set(security_scopes.scopes) if security_scopes is not None else set()
         all_required = set(required_scopes) | route_scopes

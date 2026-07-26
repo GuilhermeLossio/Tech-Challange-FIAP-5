@@ -1,7 +1,26 @@
 # ECloe - Datathon 7MLET
 > **Low-cost next-best-action engine for integrated marketplace and digital wallet ecosystems.**
 
-ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending the next best eligible action in a marketplace-finance journey. The product story is split into **ECloe Market**, a simulated marketplace, **ECloe Pay**, a simulated digital wallet, and **ECloe Engine**, the adaptive decision layer between them. It shows how marketplace behavior and wallet context can guide offers, messages, or benefits without making credit, fraud, or eligibility decisions. The active Etapa 1 data foundation is the public Kaggle Hillstrom email-campaign dataset, processed into minimized context, action, and reward columns for offline bandit evaluation.
+ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending the next best eligible action in a marketplace-finance journey. The product story is split into **ECloe Market**, a simulated marketplace, **ECloe Pay**, a simulated digital wallet, and **ECloe Engine**, the adaptive decision layer between them. It shows how marketplace behavior and wallet context can guide offers, messages, or benefits without making credit, fraud, or eligibility decisions. The active data-preparation foundation is the public Kaggle Hillstrom email-campaign dataset, processed into minimized context, action, and reward columns for offline bandit evaluation.
+
+## Table of Contents
+
+- [Capabilities](#capabilities)
+- [Business Problem](#business-problem)
+- [Architecture](#architecture)
+- [Demo Interface](#demo-interface)
+- [Dataset](#dataset)
+- [Training Strategy](#training-strategy)
+- [API Examples](#api-examples)
+- [Project Structure](#project-structure)
+- [Getting Started](#getting-started)
+- [Evaluation Metrics](#evaluation-metrics)
+- [Latest Local Results](#latest-local-results)
+- [Golden Set](#golden-set)
+- [Deployment Strategy](#deployment-strategy)
+- [Team Identification](#team-identification)
+- [Related Docs](#related-docs)
+- [Limitations](#limitations)
 
 ---
 
@@ -17,9 +36,9 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 | Adaptive recommendation | Compares Baseline, Epsilon-Greedy, UCB, and Thompson Sampling policies. |
 | Local policy training | Runs deterministic offline policy simulation with local reports. |
 | Purchase likelihood validator | Estimates simulated conversion probability for eligible offers through ECloe Engine. |
-| Local Engine API | Exposes liveness, readiness, policy, likelihood-estimate, and decision endpoints with FastAPI routers. |
+| Local Engine API | Exposes liveness, readiness, policy, likelihood-estimate, decision, and reward endpoints with FastAPI routers. |
 | Evaluation-first delivery | Measures conversion rate, cumulative reward, regret, and exploration rate before selecting a policy. |
-| Golden Set validation | Plans 5 deterministic examples for explainable Demo Day validation. |
+| Golden Set validation | Contains 5 deterministic examples for explainable Demo Day validation. |
 | Low-consumption architecture | Prioritizes local execution and small Azure services instead of enterprise infrastructure. |
 
 ---
@@ -49,9 +68,26 @@ The MVP flow is intentionally simple: Kaggle data is downloaded and processed lo
 Supporting diagrams:
 
 - [`docs/decision-flow.svg`](./docs/decision-flow.svg) - decision and reward loop.
+- [`docs/demo-interface-flow.svg`](./docs/demo-interface-flow.svg) - planned demo interface layer.
 - [`docs/azure-architecture-flow.svg`](./docs/azure-architecture-flow.svg) - target Azure service map.
 - [`docs/mlops-lifecycle.svg`](./docs/mlops-lifecycle.svg) - offline evaluation and promotion lifecycle.
 - [`docs/api-security-observability-flow.svg`](./docs/api-security-observability-flow.svg) - API security, telemetry, and CI gates.
+
+---
+
+## Demo Interface
+
+Status: **Planned for demo**.
+
+The planned ECloe Demo is one simulated web application with three areas: **ECloe Market** for marketplace browsing and checkout, **ECloe Pay** for wallet benefits and accepted-offer status, and **ECloe Control Room** for the technical journey. The interface will consume the existing **ECloe Engine** API through a planned demo backend-for-frontend that aggregates context, simulates upstream eligibility, calls the decision endpoint, and registers reward events.
+
+Short journey:
+
+```text
+Demo persona -> ECloe Market -> eligible offers -> ECloe Engine decision -> ECloe Pay interaction -> reward event -> ECloe Control Room summary
+```
+
+Eligibility, risk, compliance, and business rules remain upstream. ECloe Engine only ranks one eligible offer from the request. See [`docs/demo-interface.md`](./docs/demo-interface.md) for the planned screens, states, API calls, and presentation flow.
 
 ---
 
@@ -59,7 +95,7 @@ Supporting diagrams:
 
 The main dataset is Kaggle [`kevin-hillstrom-minethatdata-e-mailanalytics` by bofulee](https://www.kaggle.com/datasets/bofulee/kevin-hillstrom-minethatdata-e-mailanalytics).
 
-Etapa 1 usage rules:
+Data-preparation usage rules:
 
 - `segment` is mapped to the decision action: `mens_email`, `womens_email`, or `no_email`.
 - `conversion` is mapped to the binary reward used by the offline policies.
@@ -77,7 +113,7 @@ PROCESSED_FILENAME=hillstrom_processed.csv
 
 ---
 
-## Stage 3 Training Strategy
+## Training Strategy
 
 Bandit policies are not trained like a traditional classifier. ECloe uses the processed Hillstrom dataset as an offline simulation environment:
 
@@ -94,9 +130,9 @@ Policy comparison:
 | Deterministic baseline | Control policy | Reference conversion and regret metrics. |
 | Epsilon-Greedy | Simple adaptive policy | Exploration/exploitation trade-off with configurable `epsilon`. |
 | UCB | Optimistic adaptive policy | Controlled exploration through an uncertainty bonus. |
-| Thompson Sampling | Recommended main policy | Bayesian exploration with Beta priors for binary rewards. |
+| Thompson Sampling | Adaptive challenger | Bayesian exploration with Beta priors for binary rewards. |
 
-The algorithms are compared, not merged into one model. Thompson Sampling is the initial candidate for the final policy if offline results beat or technically tie the alternatives.
+The algorithms are compared, not merged into one model. Offline evaluation selects an offline promoted policy for review, while the current online serving strategy remains the strategy returned by `/v1/policies/current`. The Engine API must not be described as serving Thompson Sampling unless the implementation actually selects offers with that strategy at request time.
 
 Run the local training workflow:
 
@@ -161,6 +197,63 @@ Local development persists decision events to `reports/decision_events.jsonl`; c
 
 ---
 
+## API Examples
+
+Local example with `AUTH_MODE=disabled` and the API running on `127.0.0.1:8000`:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/v1/decisions" \
+  -H "Content-Type: application/json" \
+  -H "Idempotency-Key: demo-checkout-001" \
+  -d '{
+    "request_id": "req_demo_001",
+    "customer_context": {
+      "channel": "Web",
+      "history_segment": "2) $100 - $200",
+      "newbie": 1
+    },
+    "eligible_offers": [
+      "cashback_recurring_purchase",
+      "savings_goal",
+      "financial_education"
+    ]
+  }'
+```
+
+Example decision response:
+
+```json
+{
+  "decision_id": "dec_123",
+  "offer_id": "cashback_recurring_purchase",
+  "purchase_likelihood": 0.1375,
+  "policy": "likelihood_ranker",
+  "policy_version": "likelihood-v1",
+  "reason_codes": [
+    "highest_validated_purchase_likelihood",
+    "contextual_conversion_rate"
+  ]
+}
+```
+
+Reward registration example:
+
+```bash
+curl -X POST "http://127.0.0.1:8000/v1/rewards" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "decision_id": "dec_123",
+    "event_id": "evt_demo_001",
+    "event_type": "conversion",
+    "reward": 1.0,
+    "occurred_at": "2026-07-05T15:00:00Z"
+  }'
+```
+
+See [`docs/api-contract.md`](./docs/api-contract.md) for the complete request and response contract, validation rules, and cloud authentication requirements.
+
+---
+
 ## Project Structure
 
 ```text
@@ -211,7 +304,7 @@ Optional Azure dependencies:
 pip install -e ".[azure]"
 ```
 
-MLflow should be added when Stage 7 is implemented.
+MLflow remains a future experiment-tracking enhancement.
 
 ### Configure `.env`
 
@@ -226,7 +319,7 @@ KAGGLE_USERNAME=
 KAGGLE_KEY=
 ```
 
-### Run Etapa 1
+### Run Data Preparation
 
 ```bash
 python -m src.data.download
@@ -276,17 +369,34 @@ mlflow ui
 
 ---
 
+## Latest Local Results
+
+The latest committed local training report is [`reports/policy_training/metrics.json`](./reports/policy_training/metrics.json). It compares all policies on the same 1,500 simulated rounds.
+
+| Policy | Rounds | Cumulative reward | Conversion rate | Cumulative regret | Exploration rate |
+|:---|:---|:---|:---|:---|:---|
+| Baseline | 1,500 | 31 | 2.0667% | 0.000000 | 0.0000% |
+| Epsilon-Greedy | 1,500 | 23 | 1.5333% | 3.821737 | 39.0000% |
+| UCB | 1,500 | 18 | 1.2000% | 9.004301 | 63.9333% |
+| Thompson Sampling | 1,500 | 15 | 1.0000% | 9.803851 | 84.7333% |
+
+The local promotion rule selected `baseline` because it produced the highest cumulative reward, then the lowest regret and exploration rate. Thompson Sampling remains documented as an adaptive challenger, but it is not the promoted policy for this run.
+
+---
+
 ## Golden Set
 
-Stage 4 must include 5 examples with context, recommended action or offer, policy, and a short business justification. The Golden Set should be generated from the processed dataset or from documented synthetic examples.
+The Golden Set contains 5 deterministic cases used to validate explainability of the recommendations during Demo Day. The current local artifact is [`reports/policy_training/golden_set_recommendations.json`](./reports/policy_training/golden_set_recommendations.json), generated from processed Hillstrom rows and the selected offline policy.
 
-| Case | Short context | Recommended offer | Policy |
-|:---|:---|:---|:---|
-| 1 | Digital customer with positive campaign evidence | `cashback_investment` | Thompson Sampling |
-| 2 | Customer with credit-oriented context | `personal_loan` | Thompson Sampling |
-| 3 | Segment with limited evidence | `credit_limit` | Thompson Sampling |
-| 4 | Recurring digital-channel customer | `cashback_investment` | Thompson Sampling |
-| 5 | Less-observed segment | `personal_loan` | Thompson Sampling |
+| Case | Context snapshot | Recommended action | Policy | Reason codes |
+|:---|:---|:---|:---|:---|
+| 1 | `channel=Multichannel`, `history_segment=4) $350 - $500`, `newbie=0` | `womens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 2 | `channel=Web`, `history_segment=6) $750 - $1,000`, `newbie=1` | `womens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 3 | `channel=Phone`, `history_segment=5) $500 - $750`, `newbie=1` | `womens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 4 | `channel=Web`, `history_segment=1) $0 - $100`, `newbie=0` | `womens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 5 | `channel=Multichannel`, `history_segment=3) $200 - $350`, `newbie=1` | `womens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+
+These are simulated recommendations for demonstration. They are not approvals for credit, loans, limits, eligibility, fraud, risk, or regulated financial products.
 
 ---
 
@@ -308,10 +418,17 @@ The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](
 
 ---
 
+## Team Identification
+
+FIAP submissions often require team members and RM identifiers in the central README. The repository currently identifies the project license holder as **Guilherme Ferreira Medeiros Lossio**, but no RM or full group roster was found in the tracked documentation. Add the final FIAP group/RM information here before the Demo Day submission if the challenge rubric requires it.
+
+---
+
 ## Related Docs
 
 - [`Architecture.md`](./Architecture.md) - Architecture, components, pipeline, and trade-offs.
-- [`docs/api-contract.md`](./docs/api-contract.md) - Planned Decision API and reward payloads.
+- [`docs/api-contract.md`](./docs/api-contract.md) - Implemented ECloe Engine API contracts and reward payloads.
+- [`docs/demo-interface.md`](./docs/demo-interface.md) - Planned ECloe Market, ECloe Pay, and ECloe Control Room interface.
 - [`docs/marketplace-finance-use-case.md`](./docs/marketplace-finance-use-case.md) - Practical marketplace and digital wallet use case.
 - [`docs/data-structure.md`](./docs/data-structure.md) - Local data folders and cloud storage conventions.
 - [`docs/evaluation-plan.md`](./docs/evaluation-plan.md) - Offline evaluation and Golden Set expectations.

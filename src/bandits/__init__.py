@@ -1,15 +1,15 @@
 from src.bandits.policies import (
     ACTIONS,
+    UCB1,
     DeterministicBaseline,
     EpsilonGreedy,
     ThompsonSampling,
-    UCB1,
 )
 
 __all__ = [
     "ACTIONS",
+    "UCB1",
     "DeterministicBaseline",
     "EpsilonGreedy",
     "ThompsonSampling",
-    "UCB1",
 ]

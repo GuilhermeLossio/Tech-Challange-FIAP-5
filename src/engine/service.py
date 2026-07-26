@@ -5,11 +5,15 @@ from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
 
-from src.engine.artifacts import SELECTED_POLICY_SCHEMA, ArtifactMetadata, LoadedArtifact, load_json_artifact
+from src.engine.artifacts import (
+    SELECTED_POLICY_SCHEMA,
+    ArtifactMetadata,
+    LoadedArtifact,
+    load_json_artifact,
+)
 from src.engine.likelihood import DEFAULT_OUTPUT_DIR, PurchaseLikelihoodService
 from src.engine.schemas import DecisionResponse, EngineRequest
 from src.engine.strategies import DecisionStrategy, LikelihoodRankerStrategy
-
 
 DEFAULT_SELECTED_POLICY_FILE = DEFAULT_OUTPUT_DIR / "selected_policy.json"
 
@@ -34,7 +38,7 @@ class DecisionService:
         cls,
         likelihood_model_file: Path | None = None,
         selected_policy_file: Path = DEFAULT_SELECTED_POLICY_FILE,
-    ) -> "DecisionService":
+    ) -> DecisionService:
         service = (
             PurchaseLikelihoodService.from_file(likelihood_model_file)
             if likelihood_model_file is not None

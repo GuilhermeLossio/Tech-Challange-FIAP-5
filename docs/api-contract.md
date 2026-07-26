@@ -2,7 +2,7 @@
 
 ## Scope
 
-This document defines the local Decision API payloads for ECloe. The target use case is an integrated marketplace and digital wallet channel where **ECloe Market** provides commerce behavior signals, **ECloe Pay** provides wallet context and eligible actions, and **ECloe Engine** selects the next best action. The MVP exposes these contracts through FastAPI and keeps reward storage as a future integration.
+This document defines the local Decision API payloads for ECloe. The target use case is an integrated marketplace and digital wallet channel where **ECloe Market** provides commerce behavior signals, **ECloe Pay** provides wallet context and eligible actions, and **ECloe Engine** selects the next best action. The MVP exposes these contracts through FastAPI and includes append-only reward ingestion linked to existing decisions.
 
 ## Implemented Endpoints
 
@@ -51,7 +51,7 @@ Available scopes:
 | `customer_context.channel` | enum | Yes | One of `Web`, `Phone`, or `Multichannel` |
 | `customer_context.history_segment` | string | No | Coarse Hillstrom history segment used by the likelihood artifact |
 | `customer_context.newbie` | enum | No | `0` or `1` indicator used by the likelihood artifact |
-| `eligible_offers` | array of enums | Yes | One to ten unique eligible offers already approved by upstream marketplace, wallet, risk, and compliance rules |
+| `eligible_offers` | array of enums | Yes | One to ten unique eligible offers already allowed by upstream marketplace, wallet, risk, and compliance rules |
 
 The API uses an allowlist for `customer_context`. Unknown context fields, unknown offers, duplicate offers, oversized request identifiers, and invalid enum values are rejected.
 

@@ -1,18 +1,18 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from typing import Annotated
 
 from fastapi import APIRouter, Depends
 
 from src.api.dependencies import get_decision_service, to_engine_request
 from src.api.errors import API_ERROR_RESPONSES, artifact_unavailable, invalid_request
-from src.api.security import Principal, require_scopes
 from src.api.schemas.decisions import DecisionRequest
 from src.api.schemas.likelihoods import PurchaseLikelihoodResponse
+from src.api.security import Principal, require_scopes
 from src.engine import DecisionService
 from src.engine.artifacts import ArtifactValidationError
 from src.engine.validation import validate_engine_request
-
 
 router = APIRouter(tags=["likelihoods"])
 
@@ -24,8 +24,8 @@ router = APIRouter(tags=["likelihoods"])
 )
 def likelihood_estimates(
     payload: DecisionRequest,
-    _: Principal = Depends(require_scopes("decision:read")),
-    service: DecisionService = Depends(get_decision_service),
+    service: Annotated[DecisionService, Depends(get_decision_service)],
+    _: Annotated[Principal | None, Depends(require_scopes("decision:read"))] = None,
 ) -> dict[str, object]:
     return _estimate_likelihood(payload, service)
 
@@ -38,8 +38,8 @@ def likelihood_estimates(
 )
 def purchase_likelihood_alias(
     payload: DecisionRequest,
-    _: Principal = Depends(require_scopes("decision:read")),
-    service: DecisionService = Depends(get_decision_service),
+    service: Annotated[DecisionService, Depends(get_decision_service)],
+    _: Annotated[Principal | None, Depends(require_scopes("decision:read"))] = None,
 ) -> dict[str, object]:
     return _estimate_likelihood(payload, service)
 

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 CONTEXT_COLUMNS = [
     "recency",
     "history_segment",

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from src.bandits import ACTIONS
 
-
 OFFER_TO_ACTION = {
     "mens_email": "mens_email",
     "womens_email": "womens_email",

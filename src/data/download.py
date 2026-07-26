@@ -8,7 +8,6 @@ from typing import Any
 from src.core.config import load_settings
 from src.data.paths import ensure_data_dirs
 
-
 KaggleApi: Any | None = None
 
 

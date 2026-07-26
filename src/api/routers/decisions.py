@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Header, Request
 
@@ -11,14 +12,13 @@ from src.api.dependencies import (
     to_engine_request,
 )
 from src.api.errors import API_ERROR_RESPONSES, artifact_unavailable, invalid_request
-from src.api.security import Principal, require_scopes, subject_key_for
 from src.api.schemas.decisions import DecisionRequest, DecisionResponse
+from src.api.security import Principal, require_scopes, subject_key_for
 from src.core.config import Settings, load_settings
 from src.engine import DecisionService
 from src.engine.artifacts import ArtifactValidationError
 from src.engine.validation import validate_engine_request
 from src.storage.decision_repository import DecisionRecord, DecisionRepository, request_hash
-
 
 router = APIRouter(prefix="/v1/decisions", tags=["decisions"])
 
@@ -26,17 +26,15 @@ router = APIRouter(prefix="/v1/decisions", tags=["decisions"])
 @router.post("", response_model=DecisionResponse, responses=API_ERROR_RESPONSES)
 def create_decision(
     payload: DecisionRequest,
-    request_context: Request = Depends(get_request_context),
-    idempotency_key: str | None = Header(
-        default=None,
-        alias="Idempotency-Key",
-        min_length=1,
-        max_length=128,
-    ),
-    principal: Principal = Depends(require_scopes("decision:write")),
-    service: DecisionService = Depends(get_decision_service),
-    repository: DecisionRepository = Depends(get_decision_repository),
-    settings: Settings = Depends(load_settings),
+    principal: Annotated[Principal, Depends(require_scopes("decision:write"))],
+    service: Annotated[DecisionService, Depends(get_decision_service)],
+    repository: Annotated[DecisionRepository, Depends(get_decision_repository)],
+    settings: Annotated[Settings, Depends(load_settings)],
+    request_context: Annotated[Request | None, Depends(get_request_context)] = None,
+    idempotency_key: Annotated[
+        str | None,
+        Header(alias="Idempotency-Key", min_length=1, max_length=128),
+    ] = None,
 ) -> dict[str, object]:
     try:
         subject_key = subject_key_for(principal, settings)

@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from src.api.schemas.base import StrictApiModel
 
 
-class ErrorCode(str, Enum):
+class ErrorCode(StrEnum):
     invalid_request = "invalid_request"
     unauthorized = "unauthorized"
     forbidden = "forbidden"
