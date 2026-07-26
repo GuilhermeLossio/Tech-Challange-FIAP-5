@@ -17,7 +17,7 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 | Adaptive recommendation | Compares Baseline, Epsilon-Greedy, UCB, and Thompson Sampling policies. |
 | Local policy training | Runs deterministic offline policy simulation with local reports. |
 | Purchase likelihood validator | Estimates simulated conversion probability for eligible offers through ECloe Engine. |
-| Local Engine API | Exposes liveness, readiness, policy, likelihood-estimate, and decision endpoints with FastAPI routers. |
+| Local Engine API | Exposes liveness, readiness, policy, likelihood-estimate, decision, and reward endpoints with FastAPI routers. |
 | Evaluation-first delivery | Measures conversion rate, cumulative reward, regret, and exploration rate before selecting a policy. |
 | Golden Set validation | Plans 5 deterministic examples for explainable Demo Day validation. |
 | Low-consumption architecture | Prioritizes local execution and small Azure services instead of enterprise infrastructure. |
@@ -49,9 +49,26 @@ The MVP flow is intentionally simple: Kaggle data is downloaded and processed lo
 Supporting diagrams:
 
 - [`docs/decision-flow.svg`](./docs/decision-flow.svg) - decision and reward loop.
+- [`docs/demo-interface-flow.svg`](./docs/demo-interface-flow.svg) - planned demo interface layer.
 - [`docs/azure-architecture-flow.svg`](./docs/azure-architecture-flow.svg) - target Azure service map.
 - [`docs/mlops-lifecycle.svg`](./docs/mlops-lifecycle.svg) - offline evaluation and promotion lifecycle.
 - [`docs/api-security-observability-flow.svg`](./docs/api-security-observability-flow.svg) - API security, telemetry, and CI gates.
+
+---
+
+## Demo Interface
+
+Status: **Planned for demo**.
+
+The planned ECloe Demo is one simulated web application with three areas: **ECloe Market** for marketplace browsing and checkout, **ECloe Pay** for wallet benefits and accepted-offer status, and **ECloe Control Room** for the technical journey. The interface will consume the existing **ECloe Engine** API through a planned demo backend-for-frontend that aggregates context, simulates upstream eligibility, calls the decision endpoint, and registers reward events.
+
+Short journey:
+
+```text
+Demo persona -> ECloe Market -> eligible offers -> ECloe Engine decision -> ECloe Pay interaction -> reward event -> ECloe Control Room summary
+```
+
+Eligibility, risk, compliance, and business rules remain upstream. ECloe Engine only ranks one eligible offer from the request. See [`docs/demo-interface.md`](./docs/demo-interface.md) for the planned screens, states, API calls, and presentation flow.
 
 ---
 
@@ -96,7 +113,7 @@ Policy comparison:
 | UCB | Optimistic adaptive policy | Controlled exploration through an uncertainty bonus. |
 | Thompson Sampling | Recommended main policy | Bayesian exploration with Beta priors for binary rewards. |
 
-The algorithms are compared, not merged into one model. Thompson Sampling is the initial candidate for the final policy if offline results beat or technically tie the alternatives.
+The algorithms are compared, not merged into one model. Offline evaluation selects an offline promoted policy for review, while the current online serving strategy remains the strategy returned by `/v1/policies/current`. The Engine API must not be described as serving Thompson Sampling unless the implementation actually selects offers with that strategy at request time.
 
 Run the local training workflow:
 
@@ -282,11 +299,13 @@ Stage 4 must include 5 examples with context, recommended action or offer, polic
 
 | Case | Short context | Recommended offer | Policy |
 |:---|:---|:---|:---|
-| 1 | Digital customer with positive campaign evidence | `cashback_investment` | Thompson Sampling |
-| 2 | Customer with credit-oriented context | `personal_loan` | Thompson Sampling |
-| 3 | Segment with limited evidence | `credit_limit` | Thompson Sampling |
-| 4 | Recurring digital-channel customer | `cashback_investment` | Thompson Sampling |
-| 5 | Less-observed segment | `personal_loan` | Thompson Sampling |
+| 1 | Recurring marketplace customer at checkout | `cashback_recurring_purchase` | Offline promoted policy |
+| 2 | New digital customer | `financial_education` | Offline promoted policy |
+| 3 | Low wallet engagement customer | `savings_goal` | Offline promoted policy |
+| 4 | Highly engaged digital customer | `premium_benefit` | Offline promoted policy |
+| 5 | High-value cart customer | `installment_education` | Offline promoted policy |
+
+These are simulated eligible offers for demonstration. They are not approvals for credit, loans, limits, eligibility, fraud, risk, or regulated financial products.
 
 ---
 
@@ -311,7 +330,8 @@ The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](
 ## Related Docs
 
 - [`Architecture.md`](./Architecture.md) - Architecture, components, pipeline, and trade-offs.
-- [`docs/api-contract.md`](./docs/api-contract.md) - Planned Decision API and reward payloads.
+- [`docs/api-contract.md`](./docs/api-contract.md) - Implemented ECloe Engine API contracts and reward payloads.
+- [`docs/demo-interface.md`](./docs/demo-interface.md) - Planned ECloe Market, ECloe Pay, and ECloe Control Room interface.
 - [`docs/marketplace-finance-use-case.md`](./docs/marketplace-finance-use-case.md) - Practical marketplace and digital wallet use case.
 - [`docs/data-structure.md`](./docs/data-structure.md) - Local data folders and cloud storage conventions.
 - [`docs/evaluation-plan.md`](./docs/evaluation-plan.md) - Offline evaluation and Golden Set expectations.

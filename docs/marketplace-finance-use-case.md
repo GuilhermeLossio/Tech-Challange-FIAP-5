@@ -108,14 +108,74 @@ This boundary keeps the MVP useful while avoiding claims that the model approves
 
 ## Demo Direction
 
-A future demo interface should simulate:
+The planned demo interface should simulate the full journey without implementing real financial eligibility, credit, risk, fraud, or compliance decisions.
 
-- a marketplace home or checkout area;
-- a connected digital wallet panel;
-- a fictional customer context;
-- eligible financial actions;
-- the ECloe recommendation;
-- click, ignore, and accept reward buttons;
-- event logging for decisions and rewards.
+| Step | Area | Status | Demo behavior |
+|:---|:---|:---|:---|
+| 1 | Demo launcher | Planned for demo | Select a deterministic persona, channel, presentation mode, technical mode, session ID, and seed. |
+| 2 | ECloe Market | Planned for demo | Browse categories, view a product, add it to cart, and start checkout. |
+| 3 | Context aggregation | Planned for demo | Convert raw UI events into minimized fields such as `channel`, `history_segment`, and `newbie`. |
+| 4 | Eligibility simulation | Planned for demo | Produce eligible offers before ECloe Engine is called. |
+| 5 | Checkout recommendation | Planned for demo | Call `POST /v1/decisions` and display one selected eligible offer. |
+| 6 | Offer interaction | Planned for demo | Open, dismiss, or accept the selected offer. |
+| 7 | Reward event | Planned for demo | Call the implemented `POST /v1/rewards` endpoint after a verified demo interaction. |
+| 8 | ECloe Pay | Planned for demo | Show simulated wallet balance, cashback, savings goals, benefits, and accepted-offer status. |
+| 9 | Journey summary | Planned for demo | Show the technical timeline with session ID, request ID, decision ID, event ID, policy, artifact version, latency, reward, and excluded fields. |
+| 10 | ECloe Control Room | Planned for demo | Inspect the Decision Lab, policy/artifact separation, events, and operations status. |
+
+### Marketplace Interface Flow
+
+ECloe Market should show a marketplace header, categories, product cards, cart, ECloe Pay shortcut, recommendation area, and demo connection status. Possible simulated actions include viewing a category, viewing a product, adding an item to cart, removing an item, opening the cart, and starting checkout.
+
+Raw marketplace interaction events remain in the demo layer. Raw item-level browsing history and exact cart contents must not be sent directly to ECloe Engine.
+
+### Wallet Interface Flow
+
+ECloe Pay should show a simulated wallet balance, cashback, savings goals, benefits, recent simulated transactions, recommended benefit, and accepted-offer status. After a reward is registered, it may state that the interaction was recorded and will be available for future policy evaluation. It must not claim immediate online learning or instant retraining.
+
+### Checkout Recommendation
+
+Checkout is the main decision point. The demo layer first calculates eligible offers:
+
+```json
+{
+  "eligibility_snapshot_id": "elig_demo_001",
+  "eligible_offers": [
+    "cashback_recurring_purchase",
+    "savings_goal",
+    "financial_education"
+  ]
+}
+```
+
+Then the planned demo BFF calls the implemented ECloe Engine decision endpoint:
+
+```http
+POST /v1/decisions
+Idempotency-Key: demo-session:checkout:interaction
+```
+
+ECloe Engine chooses one eligible offer from the request. It does not invent eligibility and does not approve regulated financial products.
+
+### Offer Interaction and Reward Event
+
+| User action | Event type | Demo reward |
+|:---|:---|---:|
+| Open offer | `click` | `0.2` |
+| Dismiss offer | `dismissal` | `0.0` |
+| Accept offer | `conversion` | `1.0` |
+
+These values are acceptable only for the deterministic demo. In a real integration, trusted backend services must map verified business events to configured reward values.
+
+### Control Room
+
+ECloe Control Room is a technical and operational interface for demonstration judges, developers, and evaluators. It should include:
+
+- Decision Lab for request/response examples.
+- Policy and artifacts screen separating online serving strategy from offline promoted policy.
+- Decisions and rewards screen dependent on future administrative read endpoints.
+- Operations screen connected to existing liveness, readiness, and telemetry signals where available.
 
 The demo should show the product value: adaptive personalization across commerce and wallet channels with low operational cost and clear governance.
+
+See [`demo-interface.md`](demo-interface.md) for the full planned screen inventory, states, API calls, and status labels.

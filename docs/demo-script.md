@@ -2,77 +2,56 @@
 
 ## Goal
 
-Use this script to present ECloe as a practical ML Engineering MVP for adaptive marketplace-finance experimentation. The demo should emphasize low-cost execution, offline evaluation, and a working next-best-action flow rather than enterprise infrastructure.
+Use this script to present ECloe as a practical ML Engineering MVP for adaptive marketplace-finance experimentation. The presentation should show a deterministic ECloe Market and ECloe Pay journey consuming the implemented ECloe Engine API, while keeping eligibility, risk, compliance, and regulated financial decisions outside the Engine.
 
-## Suggested Flow
+## Short Presentation Sequence
 
-### 1. Business Problem
+| Step | Presenter action | Status | Presenter note |
+|:---|:---|:---|:---|
+| 1 | Select the recurring marketplace customer. | Planned for demo | Use a deterministic persona so the same context, eligible offers, and expected reward can be repeated. |
+| 2 | Open ECloe Market. | Planned for demo | Explain that marketplace events are simulated and stay in the demo layer. |
+| 3 | Add a recurring-purchase product to the cart. | Planned for demo | Point out that the raw product event is not sent directly to ECloe Engine. |
+| 4 | Open checkout. | Planned for demo | Checkout is the main decision moment. |
+| 5 | Show eligible offers. | Planned for demo | Eligibility occurs before recommendation; ECloe Engine ranks only eligible offers. |
+| 6 | Request an ECloe decision. | Planned for demo | The planned UI calls the implemented `POST /v1/decisions` endpoint with minimized context and an `Idempotency-Key`. |
+| 7 | Display the cashback recommendation. | Planned for demo | Customer-facing mode shows the benefit, not artifact checksums or raw reason codes. |
+| 8 | Open the technical explanation. | Planned for demo | Technical mode may show request ID, decision ID, selected offer, policy, artifact version, and simulated likelihood. |
+| 9 | Accept the offer. | Planned for demo | The UI records a verified demo interaction. |
+| 10 | Register the reward. | Planned for demo | The planned UI calls the implemented `POST /v1/rewards` endpoint with `event_type=conversion` and a deterministic demo reward. |
+| 11 | Open the journey summary. | Planned for demo | Show session ID, request ID, decision ID, event ID, latency, reward, and excluded sensitive fields. |
+| 12 | Show the policy and artifact screen. | Planned for demo | Separate online serving strategy from offline promoted policy. |
 
-Marketplace and digital wallet channels often choose offers using static rules or long A/B tests. ECloe reframes the problem as adaptive experimentation so the system can learn from each interaction while preserving governance and auditability. Present the demo as three product surfaces: ECloe Market, ECloe Pay, and ECloe Engine.
+## Presenter Notes
 
-Use the product analogy:
+### Why Eligibility Occurs Before Recommendation
 
-```text
-ECloe Market behavior + ECloe Pay context -> ECloe Engine -> next best eligible action
-```
+Eligibility, risk, compliance, and business rules decide which offers may be shown. ECloe Engine only receives the eligible offers and selects one of them. This prevents the demo from implying that ECloe approves credit, loans, limits, eligibility, fraud decisions, risk decisions, or regulated financial products.
 
-### 2. Dataset and Preparation
+### Why Only Minimized Context Reaches ECloe
 
-Show that the project uses the public Kaggle Hillstrom email-campaign dataset. Explain that `segment` is mapped to the observed action, `conversion` is mapped to the binary reward, and the processed policy input keeps minimized context only. Then explain that Hillstrom is a proxy for the marketplace-finance pattern: context, eligible action, and reward.
+Raw marketplace events and exact cart contents remain in the demo layer. The planned BFF aggregates them into validated context such as `channel`, `history_segment`, and `newbie` before calling ECloe Engine. This keeps the demo aligned with the current API allowlist and data-minimization boundary.
 
-### 3. Stage 3 Algorithm Strategy
+### Why Reward Registration Does Not Mean Instant Learning
 
-Explain that the algorithms are compared, not merged:
+`POST /v1/rewards` records an append-only reward event linked to a decision. The presenter should say that the event will be available for future policy evaluation. Do not say that the model retrains immediately or that online behavior changes instantly after the reward.
 
-- Deterministic baseline as the control policy.
-- Epsilon-Greedy as a simple adaptive policy.
-- UCB as an optimistic adaptive policy.
-- Thompson Sampling as the main candidate policy.
+### Why Serving Policy and Offline Promoted Policy May Differ
 
-The same customer order and reward assumptions are used for all policies so the comparison is fair.
+The online serving strategy is the strategy returned by `GET /v1/policies/current` and used at request time. The offline promoted policy is the result of local policy comparison and should be reviewed as offline evidence. The demo should show both, but it must not imply that the offline promoted policy is serving online unless the implementation confirms it.
 
-### 4. Decision Flow
+## Suggested Talk Track
 
-Show [`decision-flow.svg`](decision-flow.svg). Explain that a future marketplace-wallet demo sends minimized context and eligible actions, the active policy returns one action with reason codes, and later reward events update evaluation metrics.
+1. ECloe Market simulates a marketplace checkout journey.
+2. ECloe Pay simulates wallet benefits and offer interaction.
+3. A planned demo BFF aggregates context and calculates eligible offers.
+4. ECloe Engine receives only minimized context and eligible offers.
+5. The Engine returns one selected eligible offer.
+6. The customer accepts, dismisses, or opens the offer.
+7. The reward event is recorded for future offline evaluation.
+8. ECloe Control Room explains the technical journey, policies, artifacts, and operational status.
 
-### 5. Golden Set
+## Closing
 
-Show 5 customer examples with:
+ECloe demonstrates how a marketplace-finance next-best-action engine can be presented as a low-consumption ML Engineering MVP with clear eligibility boundaries, minimized data, offline evaluation, and auditable decision and reward events.
 
-- short context;
-- recommended offer;
-- selected policy;
-- short business explanation.
-
-This is the clearest Demo Day evidence that the recommendation flow is understandable.
-
-### 6. MLOps and Metrics
-
-Use [`evaluation-plan.md`](evaluation-plan.md) to describe conversion rate, cumulative reward, cumulative regret, exploration rate, and local policy reports. The goal is to prove the evaluation loop, not to claim production performance.
-
-### 7. Low-Cost Architecture
-
-Show [`azure-architecture-flow.svg`](azure-architecture-flow.svg), but separate the MVP from future enterprise architecture.
-
-For the MVP, explain:
-
-- local Python execution first;
-- optional script, notebook, or lightweight API;
-- Azure App Service or Container Apps only if a cloud demo is needed;
-- Blob Storage for artifacts;
-- Cosmos DB Serverless or small PostgreSQL for events;
-- Application Insights for basic operational telemetry.
-
-### 8. Limitations
-
-Close with the main limitations:
-
-- The dataset is public and not real customer data.
-- Offers and reward assumptions are simulated for the MVP.
-- ECloe does not approve credit, set eligibility, or make regulated financial decisions.
-- Offline results are not production evidence.
-- Regulated production use would require security, privacy, legal, and model risk reviews.
-
-## Suggested Closing
-
-ECloe demonstrates how a marketplace-finance next-best-action engine can be designed as a practical, low-consumption ML Engineering MVP with offline evaluation, explainability, and governance from the start.
+Full interface details are documented in [`demo-interface.md`](demo-interface.md).
