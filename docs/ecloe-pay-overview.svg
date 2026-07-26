@@ -1,0 +1,85 @@
+<svg viewBox="0 0 1180 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ECloe Pay overview</title>
+  <desc id="desc">Overview of the planned ECloe Pay architecture showing customer, demo web frontend, BFF, Pay API, Engine API, outbox worker, Azure PostgreSQL, Service Bus, Cosmos DB, and Blob Storage.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+  <rect width="1180" height="640" fill="#ffffff"/>
+  <text x="590" y="42" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#1f2328">ECloe Pay Overview</text>
+  <text x="590" y="66" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#57606a">Planned wallet surface integrated with ECloe Engine and low-consumption Azure services</text>
+
+  <rect x="40" y="95" width="260" height="320" rx="18" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="65" y="122" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Customer channel</text>
+
+  <rect x="75" y="155" width="190" height="58" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="170" y="181" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">Customer</text>
+  <text x="170" y="199" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Demo persona</text>
+
+  <rect x="75" y="252" width="190" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="170" y="278" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">ECloe Demo Web</text>
+  <text x="170" y="296" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Market and Pay UI</text>
+
+  <rect x="75" y="349" width="190" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="170" y="375" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">ECloe BFF</text>
+  <text x="170" y="393" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Session and routing</text>
+
+  <line x1="170" y1="213" x2="170" y2="252" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="170" y1="310" x2="170" y2="349" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+  <rect x="365" y="95" width="305" height="320" rx="18" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="390" y="122" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Application APIs</text>
+
+  <rect x="420" y="176" width="200" height="70" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="520" y="204" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">ECloe Pay API</text>
+  <text x="520" y="224" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Wallet benefit flow</text>
+
+  <rect x="420" y="317" width="200" height="70" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="520" y="345" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">ECloe Engine API</text>
+  <text x="520" y="365" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Decision and reward</text>
+
+  <line x1="265" y1="368" x2="420" y2="211" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <text x="337" y="270" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#2563eb">Pay calls</text>
+  <line x1="265" y1="384" x2="420" y2="352" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="342" y="385" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Decision calls</text>
+
+  <rect x="735" y="95" width="375" height="320" rx="18" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="760" y="122" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Async integration</text>
+
+  <rect x="820" y="176" width="210" height="70" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="925" y="204" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">Outbox Worker</text>
+  <text x="925" y="224" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Publishes events</text>
+
+  <rect x="820" y="317" width="210" height="70" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="925" y="345" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">Azure Service Bus</text>
+  <text x="925" y="365" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Event distribution</text>
+
+  <line x1="620" y1="211" x2="820" y2="211" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="720" y="199" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">outbox</text>
+  <line x1="925" y1="246" x2="925" y2="317" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+  <rect x="195" y="470" width="875" height="125" rx="18" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="220" y="497" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Data and artifacts</text>
+
+  <rect x="250" y="525" width="190" height="48" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="345" y="545" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Azure PostgreSQL</text>
+  <text x="345" y="562" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">Pay state and outbox</text>
+
+  <rect x="530" y="525" width="190" height="48" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="625" y="545" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Cosmos DB</text>
+  <text x="625" y="562" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">Decision events</text>
+
+  <rect x="810" y="525" width="190" height="48" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="905" y="545" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Blob Storage</text>
+  <text x="905" y="562" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">Artifacts and reports</text>
+
+  <line x1="520" y1="246" x2="345" y2="525" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="925" y1="387" x2="625" y2="525" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="820" y1="352" x2="620" y2="352" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="545" y1="387" x2="625" y2="525" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="575" y1="387" x2="905" y2="525" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+</svg>

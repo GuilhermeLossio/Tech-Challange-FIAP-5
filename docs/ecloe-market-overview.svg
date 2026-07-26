@@ -1,0 +1,85 @@
+<svg viewBox="0 0 1180 650" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ECloe Market overview</title>
+  <desc id="desc">Overview of ECloe Market showing the customer, ECloe Web, BFF, Market API, Pay API, Engine API, PostgreSQL, Service Bus, Cosmos DB, Blob Storage, and outbox worker.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+    </marker>
+  </defs>
+  <rect width="1180" height="650" fill="#ffffff"/>
+  <text x="590" y="42" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#1f2328">ECloe Market Overview</text>
+  <text x="590" y="66" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#57606a">Planned marketplace surface for catalog, cart, checkout, orders, and recommendation signals</text>
+
+  <rect x="40" y="98" width="250" height="322" rx="18" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="65" y="125" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Experience layer</text>
+
+  <rect x="75" y="160" width="180" height="58" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="165" y="185" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">Customer</text>
+  <text x="165" y="203" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Demo shopper</text>
+
+  <rect x="75" y="266" width="180" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="165" y="291" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">ECloe Web</text>
+  <text x="165" y="309" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Market, Pay, Control</text>
+
+  <rect x="75" y="364" width="180" height="42" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="165" y="390" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">ECloe BFF</text>
+
+  <line x1="165" y1="218" x2="165" y2="266" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <line x1="165" y1="324" x2="165" y2="364" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+  <rect x="355" y="98" width="345" height="322" rx="18" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="380" y="125" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Domain APIs</text>
+
+  <rect x="427" y="160" width="200" height="62" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="527" y="186" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">ECloe Market API</text>
+  <text x="527" y="205" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Catalog, cart, order</text>
+
+  <rect x="427" y="266" width="200" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="527" y="291" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328">ECloe Pay API</text>
+  <text x="527" y="309" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Eligible benefits</text>
+
+  <rect x="427" y="362" width="200" height="42" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="527" y="388" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">ECloe Engine API</text>
+
+  <line x1="255" y1="385" x2="427" y2="191" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <text x="333" y="269" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#2563eb">Market calls</text>
+  <line x1="255" y1="392" x2="427" y2="295" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="255" y1="399" x2="427" y2="383" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+  <rect x="765" y="98" width="375" height="322" rx="18" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="790" y="125" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">State and integration</text>
+
+  <rect x="815" y="158" width="130" height="54" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="880" y="181" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">PostgreSQL</text>
+  <text x="880" y="198" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">Source of truth</text>
+
+  <rect x="980" y="158" width="120" height="54" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="1040" y="181" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Worker</text>
+  <text x="1040" y="198" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">Outbox</text>
+
+  <rect x="815" y="265" width="130" height="54" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="880" y="288" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Service Bus</text>
+  <text x="880" y="305" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">Domain events</text>
+
+  <rect x="980" y="265" width="120" height="54" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="1040" y="288" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Cosmos DB</text>
+  <text x="1040" y="305" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">Events</text>
+
+  <rect x="900" y="354" width="130" height="42" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="965" y="380" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Blob Storage</text>
+
+  <line x1="627" y1="191" x2="815" y2="185" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <line x1="945" y1="185" x2="980" y2="185" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="1040" y1="212" x2="890" y2="265" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="945" y1="292" x2="980" y2="292" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="627" y1="383" x2="980" y2="292" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="627" y1="383" x2="965" y2="354" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+  <rect x="150" y="485" width="880" height="96" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="590" y="516" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Boundary rule</text>
+  <text x="590" y="540" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">Market owns catalog, cart, checkout, inventory, and orders. Pay owns wallet and benefits.</text>
+  <text x="590" y="560" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">Engine receives minimized context and eligible offers; it does not price products, approve payments, or decide eligibility.</text>
+</svg>
