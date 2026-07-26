@@ -3,17 +3,16 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-from pathlib import Path
 import random
+from pathlib import Path
 from typing import Any
 
 import pandas as pd
 
-from src.bandits import ACTIONS, DeterministicBaseline, EpsilonGreedy, ThompsonSampling, UCB1
+from src.bandits import ACTIONS, UCB1, DeterministicBaseline, EpsilonGreedy, ThompsonSampling
 from src.bandits.policies import BanditPolicy
 from src.engine.artifacts import ARTIFACT_STATUS_ACTIVE, SELECTED_POLICY_SCHEMA
 from src.engine.likelihood import train_likelihood_model
-
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT_FILE = ROOT_DIR / "data" / "processed" / "hillstrom_processed.csv"
@@ -112,7 +111,7 @@ def evaluate_policy(
 
         decisions.append(
             {
-                "row_id": getattr(row, "row_id"),
+                "row_id": row.row_id,
                 "selected_action": action,
                 "simulated_reward": reward,
                 "cumulative_reward": cumulative_reward,
@@ -157,11 +156,11 @@ def build_golden_set(
     }
 
     for case_number, row in enumerate(evaluation_df.head(5).itertuples(index=False), start=1):
-        decision = decision_by_row[getattr(row, "row_id")]
+        decision = decision_by_row[row.row_id]
         cases.append(
             {
                 "case": case_number,
-                "row_id": getattr(row, "row_id"),
+                "row_id": row.row_id,
                 "context": {
                     "recency": getattr(row, "recency", None),
                     "history_segment": getattr(row, "history_segment", None),

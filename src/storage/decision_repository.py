@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field, fields
-from datetime import UTC, datetime
 import hashlib
 import json
+from dataclasses import dataclass, field, fields
+from datetime import UTC, datetime
 from pathlib import Path
 from threading import Lock
 from typing import Any, Protocol
@@ -210,7 +210,7 @@ class FileDecisionRepository(InMemoryDecisionRepository):
 
 class CosmosDecisionRepository:
     @classmethod
-    def from_settings(cls, settings: Settings) -> "CosmosDecisionRepository":
+    def from_settings(cls, settings: Settings) -> CosmosDecisionRepository:
         try:
             from azure.cosmos import CosmosClient
         except ModuleNotFoundError as error:

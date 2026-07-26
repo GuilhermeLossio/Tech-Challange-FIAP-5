@@ -9,7 +9,6 @@ import pandas as pd
 from src.core.config import load_settings
 from src.data.schemas import MODEL_CONTEXT_COLUMNS, REQUIRED_COLUMNS
 
-
 ACTION_MAP = {
     "Mens E-Mail": "mens_email",
     "Womens E-Mail": "womens_email",

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import Field, field_validator
 
 from src.api.schemas.base import StrictApiModel
 
 
-class RewardEventType(str, Enum):
+class RewardEventType(StrEnum):
     conversion = "conversion"
     click = "click"
     dismissal = "dismissal"

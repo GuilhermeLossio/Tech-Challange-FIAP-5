@@ -3,7 +3,6 @@ from __future__ import annotations
 from src.engine.offers import known_offers
 from src.engine.schemas import EngineRequest
 
-
 ALLOWED_CONTEXT_FIELDS = {"channel", "history_segment", "newbie"}
 ALLOWED_CHANNELS = {"Web", "Phone", "Multichannel"}
 ALLOWED_NEWBIE_VALUES = {0, 1}

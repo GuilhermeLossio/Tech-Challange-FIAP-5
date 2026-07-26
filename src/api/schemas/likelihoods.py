@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 
 from pydantic import Field
 
@@ -8,7 +8,7 @@ from src.api.schemas.base import StrictApiModel
 from src.api.schemas.decisions import OfferId, ReasonCode
 
 
-class Confidence(str, Enum):
+class Confidence(StrEnum):
     low = "low"
     medium = "medium"
     high = "high"

@@ -6,7 +6,6 @@ from fastapi import FastAPI
 
 from src.core.config import Settings
 
-
 LOGGER_NAME = "ecloe.api.access"
 
 

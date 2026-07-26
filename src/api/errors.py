@@ -7,7 +7,6 @@ from fastapi.responses import JSONResponse
 from src.api.schemas.errors import ErrorCode, ErrorResponse
 from src.engine.artifacts import ArtifactValidationError
 
-
 API_ERROR_RESPONSES = {
     400: {"model": ErrorResponse},
     401: {"model": ErrorResponse},

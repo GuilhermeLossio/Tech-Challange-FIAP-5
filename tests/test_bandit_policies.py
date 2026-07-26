@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.bandits.policies import DeterministicBaseline, EpsilonGreedy, ThompsonSampling, UCB1
+from src.bandits.policies import UCB1, DeterministicBaseline, EpsilonGreedy, ThompsonSampling
 
 
 def test_baseline_selects_highest_reward_rate_action() -> None:

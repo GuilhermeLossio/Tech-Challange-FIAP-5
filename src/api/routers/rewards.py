@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
 
 from src.api.dependencies import get_decision_repository, get_request_context
 from src.api.errors import API_ERROR_RESPONSES, invalid_request
-from src.api.security import Principal, require_scopes, subject_key_for
 from src.api.schemas.rewards import RewardRequest, RewardResponse
+from src.api.security import Principal, require_scopes, subject_key_for
 from src.core.config import Settings, load_settings
 from src.storage.decision_repository import DecisionRepository, RewardRecord
-
 
 router = APIRouter(prefix="/v1/rewards", tags=["rewards"])
 
@@ -18,10 +18,10 @@ router = APIRouter(prefix="/v1/rewards", tags=["rewards"])
 @router.post("", response_model=RewardResponse, responses=API_ERROR_RESPONSES)
 def ingest_reward(
     payload: RewardRequest,
-    request_context: Request = Depends(get_request_context),
-    principal: Principal = Depends(require_scopes("reward:write")),
-    repository: DecisionRepository = Depends(get_decision_repository),
-    settings: Settings = Depends(load_settings),
+    principal: Annotated[Principal, Depends(require_scopes("reward:write"))],
+    repository: Annotated[DecisionRepository, Depends(get_decision_repository)],
+    settings: Annotated[Settings, Depends(load_settings)],
+    request_context: Annotated[Request | None, Depends(get_request_context)] = None,
 ) -> dict[str, object]:
     try:
         subject_key = subject_key_for(principal, settings)

@@ -1,14 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import replace
 import json
 import logging
+from dataclasses import replace
 
-from fastapi import HTTPException
-from fastapi.security import HTTPAuthorizationCredentials
 import pandas as pd
 import pytest
+from fastapi import HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import ValidationError
 
 fastapi = pytest.importorskip("fastapi")
@@ -27,16 +27,16 @@ requires_testclient = pytest.mark.skipif(
     reason=TESTCLIENT_UNAVAILABLE or "TestClient dependency is unavailable",
 )
 
-import src.api.main as api_main  # noqa: E402
-from src.api import dependencies  # noqa: E402
-from src.api.security import Principal, require_scopes, validate_security_settings  # noqa: E402
-from src.api.schemas.decisions import DecisionRequest  # noqa: E402
-from src.api.schemas.errors import ErrorResponse  # noqa: E402
-from src.api.schemas.rewards import RewardRequest  # noqa: E402
-from src.core.config import load_settings  # noqa: E402
-from src.engine.likelihood import train_likelihood_model  # noqa: E402
-from src.engine.service import DecisionService  # noqa: E402
-from src.storage.decision_repository import InMemoryDecisionRepository  # noqa: E402
+import src.api.main as api_main
+from src.api import dependencies
+from src.api.schemas.decisions import DecisionRequest
+from src.api.schemas.errors import ErrorResponse
+from src.api.schemas.rewards import RewardRequest
+from src.api.security import Principal, require_scopes, validate_security_settings
+from src.core.config import load_settings
+from src.engine.likelihood import train_likelihood_model
+from src.engine.service import DecisionService
+from src.storage.decision_repository import InMemoryDecisionRepository
 
 
 def processed_dataframe() -> pd.DataFrame:
@@ -538,14 +538,13 @@ def test_http_decision_idempotency_and_log_redaction(caplog, tmp_path) -> None:
         "eligible_offers": ["cashback_recurring_purchase", "financial_education"],
     }
 
-    with caplog.at_level(logging.INFO, logger="ecloe.api.access"):
-        with api_test_client(app) as client:
-            first = client.post("/v1/decisions", json=payload, headers={"Idempotency-Key": "idem-1"})
-            second = client.post(
-                "/v1/decisions",
-                json=payload,
-                headers={"Idempotency-Key": "idem-1", "X-Request-Id": "traceable-request"},
-            )
+    with caplog.at_level(logging.INFO, logger="ecloe.api.access"), api_test_client(app) as client:
+        first = client.post("/v1/decisions", json=payload, headers={"Idempotency-Key": "idem-1"})
+        second = client.post(
+            "/v1/decisions",
+            json=payload,
+            headers={"Idempotency-Key": "idem-1", "X-Request-Id": "traceable-request"},
+        )
 
     assert first.status_code == 200
     assert second.status_code == 200
@@ -689,9 +688,8 @@ def test_corrupted_artifact_fails_startup(tmp_path, monkeypatch) -> None:
         staticmethod(lambda: original_from_files(model_file, policy_file)),
     )
 
-    with pytest.raises(ValueError, match="not valid JSON"):
-        with api_test_client(api_main.create_app()):
-            pass
+    with pytest.raises(ValueError, match="not valid JSON"), api_test_client(api_main.create_app()):
+        pass
 
 
 def test_cloud_security_rejects_disabled_auth() -> None:
