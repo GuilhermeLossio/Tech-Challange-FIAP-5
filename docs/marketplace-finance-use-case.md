@@ -129,6 +129,8 @@ ECloe Market should show a marketplace header, categories, product cards, cart, 
 
 Raw marketplace interaction events remain in the demo layer. Raw item-level browsing history and exact cart contents must not be sent directly to ECloe Engine.
 
+The dedicated ECloe Market scope, data model, checkout transaction, event flow, file flow, and Azure direction are documented in [`ecloe-market.md`](ecloe-market.md).
+
 ### Wallet Interface Flow
 
 ECloe Pay should show a simulated wallet balance, cashback, savings goals, benefits, recent simulated transactions, recommended benefit, and accepted-offer status. After a reward is registered, it may state that the interaction was recorded and will be available for future policy evaluation. It must not claim immediate online learning or instant retraining.
@@ -180,4 +182,4 @@ ECloe Control Room is a technical and operational interface for demonstration ju
 
 The demo should show the product value: adaptive personalization across commerce and wallet channels with low operational cost and clear governance.
 
-See [`demo-interface.md`](demo-interface.md) for the full planned screen inventory, states, API calls, and status labels. See [`ecloe-pay.md`](ecloe-pay.md) for the dedicated wallet surface documentation.
+See [`demo-interface.md`](demo-interface.md) for the full planned screen inventory, states, API calls, and status labels. See [`ecloe-market.md`](ecloe-market.md) for the dedicated marketplace surface documentation and [`ecloe-pay.md`](ecloe-pay.md) for the dedicated wallet surface documentation.

@@ -53,7 +53,7 @@ ECloe Demo
 
 ECloe Engine remains an independent API consumed by the demo application.
 
-ECloe Pay has its own dedicated documentation in [`ecloe-pay.md`](ecloe-pay.md). This interface document keeps the full demo journey together, while the Pay document owns wallet screens, wallet data boundaries, benefit interaction, reward mapping, and Azure direction for the wallet surface.
+ECloe Market and ECloe Pay have dedicated documentation in [`ecloe-market.md`](ecloe-market.md) and [`ecloe-pay.md`](ecloe-pay.md). This interface document keeps the full demo journey together, while those documents own marketplace screens, wallet screens, domain boundaries, data contracts, event flows, and Azure direction for each surface.
 
 ```mermaid
 flowchart LR
@@ -159,10 +159,10 @@ No persona uses real personal data.
 | Screen | Route | Status | Purpose | API calls | Success state | Loading state | Empty state | Error state | Fallback state |
 |:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
 | Demo launcher | `/demo` | Planned for demo | Select deterministic scenario and mode. | None or BFF session create. | Session ID and seed created. | Start button disabled while session starts. | No persona selected. | Invalid scenario configuration. | Default recurring customer scenario. |
-| ECloe Market home | `/market` | Planned for demo | Simulate marketplace browsing. | BFF session state only. | Categories, cards, cart, and recommendation area shown. | Product cards skeleton. | Empty cart or no recommendation yet. | Demo connection unavailable. | Continue in offline presentation mode. |
-| Product details | `/market/products/{product_id}` | Planned for demo | Add products and show wallet preview. | BFF state update only. | Item added to cart. | Product details skeleton. | Product not found in demo catalog. | Add-to-cart failure. | Keep previous cart state. |
-| Cart | `/market/cart` | Planned for demo | Review selected products and payment method. | Eligibility simulator through BFF. | Eligible offers snapshot created. | Eligibility snapshot loading. | Empty cart. | Eligibility simulation failure. | Deterministic eligible offers for the selected persona. |
-| Checkout | `/market/checkout` | Planned for demo | Main decision screen. | `POST /v1/decisions`; optional `POST /v1/likelihood-estimates`. | Selected eligible offer displayed. | Recommendation placeholder. | No eligible offer. | Engine unavailable or invalid request. | Deterministic safe message from demo layer. |
+| ECloe Market home | `/market` | Planned for demo | Simulate marketplace browsing. Detailed in [`ecloe-market.md`](ecloe-market.md). | BFF session state only. | Categories, cards, cart, and recommendation area shown. | Product cards skeleton. | Empty cart or no recommendation yet. | Demo connection unavailable. | Continue in offline presentation mode. |
+| Product details | `/market/products/{product_id}` | Planned for demo | Add products and show wallet preview. Detailed in [`ecloe-market.md`](ecloe-market.md). | BFF state update only. | Item added to cart. | Product details skeleton. | Product not found in demo catalog. | Add-to-cart failure. | Keep previous cart state. |
+| Cart | `/market/cart` | Planned for demo | Review selected products and payment method. Detailed in [`ecloe-market.md`](ecloe-market.md). | Eligibility simulator through BFF. | Eligible offers snapshot created. | Eligibility snapshot loading. | Empty cart. | Eligibility simulation failure. | Deterministic eligible offers for the selected persona. |
+| Checkout | `/market/checkout` | Planned for demo | Main decision screen. Detailed in [`ecloe-market.md`](ecloe-market.md). | `POST /v1/decisions`; optional `POST /v1/likelihood-estimates`. | Selected eligible offer displayed. | Recommendation placeholder. | No eligible offer. | Engine unavailable or invalid request. | Deterministic safe message from demo layer. |
 | Recommendation card | Inside checkout | Planned for demo | Present selected eligible offer. | Uses checkout decision response. | Customer-facing card shown. | Card placeholder. | No eligible offer selected. | Missing decision response. | Hide technical details and show neutral message. |
 | Offer details | `/offers/{offer_id}` | Planned for demo | Accept, dismiss, or return from offer. | `POST /v1/rewards` after verified demo action. | Reward event accepted. | Reward submit progress. | Unknown offer ID. | Reward rejected. | Keep decision and show retry option. |
 | ECloe Pay | `/pay` | Planned for demo | Show simulated wallet and accepted offer status. Detailed in [`ecloe-pay.md`](ecloe-pay.md). | BFF session state; reward status from prior call. | Wallet benefits and accepted offer status shown. | Wallet summary skeleton. | No accepted offer. | Session lookup failure. | Static wallet demo view. |
@@ -345,7 +345,7 @@ GET /internal/v1/sessions/{session_id}/timeline
 | Reward ingestion | Implemented | `POST /v1/rewards` persists append-only reward events linked to a decision. |
 | Policy metadata | Implemented | `GET /v1/policies/current` separates serving policy and promoted offline policy metadata. |
 | Likelihood estimates | Implemented | `POST /v1/likelihood-estimates` estimates simulated conversion probability. |
-| ECloe Market UI | Planned for demo | No frontend code exists in the repository. |
+| ECloe Market UI | Planned for demo | No frontend code exists in the repository. Dedicated scope is documented in [`ecloe-market.md`](ecloe-market.md). |
 | ECloe Pay UI | Planned for demo | No frontend code exists in the repository. Dedicated scope is documented in [`ecloe-pay.md`](ecloe-pay.md). |
 | ECloe Control Room UI | Planned for demo | Depends on demo UI and future internal read surfaces. |
 | Demo Backend-for-Frontend | Planned for demo | Recommended for session state, aggregation, and eligibility simulation. |

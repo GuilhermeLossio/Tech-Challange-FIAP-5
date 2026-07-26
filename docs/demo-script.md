@@ -55,4 +55,5 @@ The online serving strategy is the strategy returned by `GET /v1/policies/curren
 ECloe demonstrates how a marketplace-finance next-best-action engine can be presented as a low-consumption ML Engineering MVP with clear eligibility boundaries, minimized data, offline evaluation, and auditable decision and reward events.
 
 Full interface details are documented in [`demo-interface.md`](demo-interface.md).
+Dedicated ECloe Market marketplace details are documented in [`ecloe-market.md`](ecloe-market.md).
 Dedicated ECloe Pay wallet details are documented in [`ecloe-pay.md`](ecloe-pay.md).

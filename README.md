@@ -9,6 +9,7 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 - [Business Problem](#business-problem)
 - [Architecture](#architecture)
 - [Demo Interface](#demo-interface)
+- [ECloe Market](#ecloe-market)
 - [ECloe Pay](#ecloe-pay)
 - [Dataset](#dataset)
 - [Training Strategy](#training-strategy)
@@ -70,6 +71,9 @@ Supporting diagrams:
 
 - [`docs/decision-flow.svg`](./docs/decision-flow.svg) - decision and reward loop.
 - [`docs/demo-interface-flow.svg`](./docs/demo-interface-flow.svg) - planned demo interface layer.
+- [`docs/ecloe-market-overview.svg`](./docs/ecloe-market-overview.svg) - planned ECloe Market overview.
+- [`docs/ecloe-market-checkout-flow.svg`](./docs/ecloe-market-checkout-flow.svg) - planned ECloe Market checkout and order flow.
+- [`docs/ecloe-market-file-flow.svg`](./docs/ecloe-market-file-flow.svg) - planned ECloe Market file and data flow.
 - [`docs/ecloe-pay-overview.svg`](./docs/ecloe-pay-overview.svg) - planned ECloe Pay overview.
 - [`docs/ecloe-pay-transfer-flow.svg`](./docs/ecloe-pay-transfer-flow.svg) - planned ECloe Pay transfer flow.
 - [`docs/ecloe-pay-simplified-relationship.svg`](./docs/ecloe-pay-simplified-relationship.svg) - simplified ECloe Pay relationships.
@@ -92,6 +96,16 @@ Demo persona -> ECloe Market -> eligible offers -> ECloe Engine decision -> EClo
 ```
 
 Eligibility, risk, compliance, and business rules remain upstream. ECloe Engine only ranks one eligible offer from the request. See [`docs/demo-interface.md`](./docs/demo-interface.md) for the planned screens, states, API calls, and presentation flow.
+
+---
+
+## ECloe Market
+
+Status: **Planned for demo**.
+
+ECloe Market is documented as the simulated marketplace surface for catalog browsing, cart management, checkout, order creation, and behavior-signal aggregation. It uses PostgreSQL as the planned transactional source of truth, outbox events for reliable async publication, and ECloe Engine only after eligible offers have already been determined upstream.
+
+Detailed ECloe Market scope, data model, checkout transaction, event flow, Azure direction, implementation sequence, and SVG diagrams are documented separately in [`docs/ecloe-market.md`](./docs/ecloe-market.md).
 
 ---
 
@@ -443,6 +457,10 @@ FIAP submissions often require team members and RM identifiers in the central RE
 - [`Architecture.md`](./Architecture.md) - Architecture, components, pipeline, and trade-offs.
 - [`docs/api-contract.md`](./docs/api-contract.md) - Implemented ECloe Engine API contracts and reward payloads.
 - [`docs/demo-interface.md`](./docs/demo-interface.md) - Planned ECloe Market, ECloe Pay, and ECloe Control Room interface.
+- [`docs/ecloe-market.md`](./docs/ecloe-market.md) - Dedicated ECloe Market marketplace surface documentation.
+- [`docs/ecloe-market-overview.svg`](./docs/ecloe-market-overview.svg) - ECloe Market overview diagram.
+- [`docs/ecloe-market-checkout-flow.svg`](./docs/ecloe-market-checkout-flow.svg) - ECloe Market checkout and order flow diagram.
+- [`docs/ecloe-market-file-flow.svg`](./docs/ecloe-market-file-flow.svg) - ECloe Market file and data flow diagram.
 - [`docs/ecloe-pay.md`](./docs/ecloe-pay.md) - Dedicated ECloe Pay wallet surface documentation.
 - [`docs/ecloe-pay-overview.svg`](./docs/ecloe-pay-overview.svg) - ECloe Pay overview diagram.
 - [`docs/ecloe-pay-transfer-flow.svg`](./docs/ecloe-pay-transfer-flow.svg) - ECloe Pay transfer flow diagram.
