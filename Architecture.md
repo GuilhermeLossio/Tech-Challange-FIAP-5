@@ -87,7 +87,7 @@ Supporting ECloe Pay diagrams:
 | Data schema | Defines accepted source columns, minimized context columns, allowed actions, rewards, and blocked columns. | `src/data/schemas.py` |
 | Data processing | Normalizes columns, validates required fields, maps `segment -> action`, maps `conversion -> reward`, removes blocked modeling fields, and writes processed CSV output. | `src/data/process.py`, `tests/test_data_process.py` |
 | Data validation | Produces `reports/data_validation.json` with missing values, duplicate count, action distribution, conversion rate, blocked columns, and validity status. | `src/data/validate.py`, `tests/test_data_validate.py` |
-| Storage contracts | Defines target Azure settings and Cosmos DB document shapes for future decision/reward storage. | `src/storage/` |
+| Storage contracts | Defines Azure settings, Cosmos DB document shapes, and promoted Blob artifact loading for decision serving. | `src/storage/`, `src/engine/artifact_sources.py` |
 | Offline policy layer | Implements Baseline, Epsilon-Greedy, UCB, and Thompson Sampling evaluation. | `src/bandits/`, `src/evaluation/` |
 | Notebooks | Reproduce the essential data, validation, training, evaluation, and cloud-reference stages. | `notebooks/` |
 | Marketplace-finance demo | Planned app simulation showing ECloe Market behavior, ECloe Pay context, eligible offers, recommendations, and reward events. | `docs/demo-interface.md`, `docs/ecloe-market.md`, `docs/ecloe-pay.md` |
@@ -126,19 +126,19 @@ The target cloud architecture keeps the MVP low-consumption:
 
 | Layer | MVP option | Role |
 |:---|:---|:---|
-| Runtime | Azure App Service or Azure Container Apps | Runs a future script-backed API or lightweight FastAPI service. |
-| Artifacts | Azure Blob Storage | Stores processed datasets, Golden Set files, metrics, and policy artifacts. |
-| Events | Cosmos DB Serverless or Azure SQL Database serverless | Stores decision events, reward events, and policy versions. |
+| Runtime | Azure Container Apps first, App Service Linux fallback | Runs the FastAPI ECloe Engine container with Managed Identity. |
+| Artifacts | Azure Blob Storage | Stores immutable training runs and a mutable `promoted/current.json` pointer. |
+| Events | Cosmos DB Serverless | Stores decision events, reward events, and policy versions. The existing decision/reward containers use `/customer_id` as partition key, populated only with ECloe's pseudonymized subject key. |
 | Secrets | Azure Key Vault | Keeps Kaggle, storage, and runtime credentials outside code. |
 | Observability | Application Insights | Tracks latency, error rate, decision count, and reward count. |
 
 AKS, Azure Machine Learning, API Management, and Azure AI Search are future enterprise options. They should not block the Datathon MVP.
 
-The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](docs/cloud-setup.md).
+The current Cosmos DB Serverless setup, promoted artifact layout, and deployment path are documented in [`docs/cloud-setup.md`](docs/cloud-setup.md), [`docs/artifact-promotion.md`](docs/artifact-promotion.md), and [`docs/azure-deployment.md`](docs/azure-deployment.md).
 
 ## API and Event Contracts
 
-The implemented local Engine API, planned reward payloads, and privacy boundaries are documented in [`docs/api-contract.md`](docs/api-contract.md). The practical marketplace-finance scenario is documented in [`docs/marketplace-finance-use-case.md`](docs/marketplace-finance-use-case.md), the ECloe Market marketplace surface is documented in [`docs/ecloe-market.md`](docs/ecloe-market.md), and the ECloe Pay wallet surface is documented separately in [`docs/ecloe-pay.md`](docs/ecloe-pay.md). The MVP includes local policy training and purchase-likelihood artifact generation documented in [`docs/training-workflow.md`](docs/training-workflow.md).
+The implemented local Engine API, planned reward payloads, and privacy boundaries are documented in [`docs/api-contract.md`](docs/api-contract.md). The practical marketplace-finance scenario is documented in [`docs/marketplace-finance-use-case.md`](docs/marketplace-finance-use-case.md), the ECloe Market marketplace surface is documented in [`docs/ecloe-market.md`](docs/ecloe-market.md), and the ECloe Pay wallet surface is documented separately in [`docs/ecloe-pay.md`](docs/ecloe-pay.md). The MVP includes local policy training, purchase-likelihood artifact generation, artifact validation, and promotion documented in [`docs/training-workflow.md`](docs/training-workflow.md).
 
 ## Key Design Decisions
 

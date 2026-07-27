@@ -16,6 +16,7 @@ CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
 LOCAL_HOSTS = {"127.0.0.1"}
 SUPPORTED_AUTH_MODES = {"disabled", "entra_id"}
 SUPPORTED_DECISION_REPOSITORY_MODES = {"memory", "file", "cosmos"}
+SUPPORTED_ARTIFACT_SOURCES = {"file", "azure_blob"}
 REQUIRED_ENTRA_SETTINGS = {"entra_tenant_id", "entra_client_id", "entra_audience"}
 AVAILABLE_SCOPES = frozenset({"decision:write", "decision:read", "reward:write", "policy:read"})
 LOCAL_SUBJECT_KEY_SALT = "local-dev-subject-key-salt"
@@ -41,6 +42,8 @@ def validate_security_settings(settings: Settings) -> None:
         raise SecurityConfigurationError(
             f"Unsupported DECISION_REPOSITORY_MODE: {settings.decision_repository_mode}"
         )
+    if settings.artifact_source not in SUPPORTED_ARTIFACT_SOURCES:
+        raise SecurityConfigurationError(f"Unsupported ARTIFACT_SOURCE: {settings.artifact_source}")
 
     is_cloud = settings.app_environment in CLOUD_ENVIRONMENTS
     if "*" in settings.cors_allowed_origins:
@@ -56,6 +59,16 @@ def validate_security_settings(settings: Settings) -> None:
         )
 
     if is_cloud:
+        if settings.azure_storage_connection_string:
+            raise SecurityConfigurationError(
+                "AZURE_STORAGE_CONNECTION_STRING is not allowed in cloud environments."
+            )
+        if settings.artifact_source != "azure_blob":
+            raise SecurityConfigurationError("Cloud environments must use ARTIFACT_SOURCE=azure_blob.")
+        if not settings.azure_storage_account_url:
+            raise SecurityConfigurationError(
+                "Cloud environments must configure AZURE_STORAGE_ACCOUNT_URL."
+            )
         if settings.subject_key_salt == LOCAL_SUBJECT_KEY_SALT:
             raise SecurityConfigurationError(
                 "Cloud environments must configure a non-default SUBJECT_KEY_SALT."

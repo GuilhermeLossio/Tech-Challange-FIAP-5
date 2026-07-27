@@ -248,7 +248,7 @@ class CosmosDecisionRepository:
         decision_id: str,
     ) -> DecisionRecord | None:
         query = (
-            "SELECT * FROM c WHERE c.subject_key = @subject_key "
+            "SELECT * FROM c WHERE (c.subject_key = @subject_key OR c.customer_id = @subject_key) "
             "AND c.decision_id = @decision_id OFFSET 0 LIMIT 1"
         )
         items = self.container.query_items(
@@ -270,7 +270,7 @@ class CosmosDecisionRepository:
         idempotency_key: str,
     ) -> DecisionRecord | None:
         query = (
-            "SELECT * FROM c WHERE c.subject_key = @subject_key "
+            "SELECT * FROM c WHERE (c.subject_key = @subject_key OR c.customer_id = @subject_key) "
             "AND c.idempotency_key = @idempotency_key OFFSET 0 LIMIT 1"
         )
         items = self.container.query_items(
@@ -303,7 +303,7 @@ class CosmosDecisionRepository:
         event_id: str,
     ) -> RewardRecord | None:
         query = (
-            "SELECT * FROM c WHERE c.subject_key = @subject_key "
+            "SELECT * FROM c WHERE (c.subject_key = @subject_key OR c.customer_id = @subject_key) "
             "AND c.event_id = @event_id OFFSET 0 LIMIT 1"
         )
         items = self.reward_container.query_items(
@@ -348,6 +348,7 @@ def _record_to_dict(record: DecisionRecord) -> dict[str, Any]:
     return {
         "decision_id": record.decision_id,
         "subject_key": record.subject_key,
+        "customer_id": record.subject_key,
         "request_id": record.request_id,
         "selected_offer_id": record.selected_offer_id,
         "policy": record.policy,
@@ -367,6 +368,8 @@ def _record_to_dict(record: DecisionRecord) -> dict[str, Any]:
 
 
 def _record_from_dict(payload: dict[str, Any]) -> DecisionRecord:
+    if "subject_key" not in payload and "customer_id" in payload:
+        payload = {**payload, "subject_key": payload["customer_id"]}
     allowed = {item.name for item in fields(DecisionRecord)}
     return DecisionRecord(**{key: payload[key] for key in allowed if key in payload})
 
@@ -376,6 +379,7 @@ def _reward_to_dict(record: RewardRecord) -> dict[str, Any]:
         "event_id": record.event_id,
         "decision_id": record.decision_id,
         "subject_key": record.subject_key,
+        "customer_id": record.subject_key,
         "event_type": record.event_type,
         "reward": record.reward,
         "occurred_at": record.occurred_at,
@@ -388,5 +392,7 @@ def _reward_to_dict(record: RewardRecord) -> dict[str, Any]:
 
 
 def _reward_from_dict(payload: dict[str, Any]) -> RewardRecord:
+    if "subject_key" not in payload and "customer_id" in payload:
+        payload = {**payload, "subject_key": payload["customer_id"]}
     allowed = {item.name for item in fields(RewardRecord)}
     return RewardRecord(**{key: payload[key] for key in allowed if key in payload})

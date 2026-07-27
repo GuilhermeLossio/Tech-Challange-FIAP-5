@@ -46,6 +46,9 @@ jobs:
       - name: OpenAPI contract check
         run: python scripts/check_openapi_contract.py
 
+      - name: Container build
+        run: docker build -t ecloe-engine:ci .
+
       - name: Secret scan
         uses: gitleaks/gitleaks-action@v3
         env:

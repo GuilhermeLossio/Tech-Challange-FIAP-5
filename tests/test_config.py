@@ -24,6 +24,11 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "DECISION_EVENTS_FILE",
         "OBSERVABILITY_ENABLED",
         "APPLICATIONINSIGHTS_CONNECTION_STRING",
+        "AZURE_STORAGE_ACCOUNT_URL",
+        "AZURE_BLOB_CONTAINER_ARTIFACTS",
+        "AZURE_ARTIFACT_PROMOTION_BLOB",
+        "ARTIFACT_SOURCE",
+        "ARTIFACT_CACHE_DIR",
     ]:
         monkeypatch.delenv(name, raising=False)
 
@@ -45,3 +50,7 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.decision_events_file == ROOT_DIR / "reports" / "decision_events.jsonl"
     assert settings.observability_enabled is True
     assert settings.applicationinsights_connection_string == ""
+    assert settings.artifact_source == "file"
+    assert settings.azure_blob_container_artifacts == "ecloe-artifacts"
+    assert settings.azure_artifact_promotion_blob == "promoted/current.json"
+    assert settings.artifact_cache_dir == ROOT_DIR / ".artifact_cache"

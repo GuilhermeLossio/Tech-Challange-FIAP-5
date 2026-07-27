@@ -7,6 +7,7 @@ from fastapi import Request
 from src.api.schemas.decisions import DecisionRequest
 from src.api.security import validate_security_settings
 from src.engine import DecisionService
+from src.engine.artifact_sources import resolve_artifact_directory
 from src.engine.schemas import EngineRequest
 from src.storage.decision_repository import DecisionRepository, create_decision_repository
 
@@ -22,7 +23,9 @@ def create_lifespan(
         settings = load_settings()
         validate_security_settings(settings)
         app.state.settings = settings
-        app.state.decision_service = decision_service or DecisionService.from_files()
+        artifact_dir = resolve_artifact_directory(settings)
+        app.state.artifact_dir = artifact_dir
+        app.state.decision_service = decision_service or DecisionService.from_directory(artifact_dir)
         app.state.decision_repository = decision_repository or create_decision_repository(settings)
         yield
 
@@ -32,7 +35,15 @@ def create_lifespan(
 def get_decision_service(request: Request) -> DecisionService:
     service = getattr(request.app.state, "decision_service", None)
     if service is None:
-        service = DecisionService.from_files()
+        settings = getattr(request.app.state, "settings", None)
+        if settings is None:
+            from src.core.config import load_settings
+
+            settings = load_settings()
+            request.app.state.settings = settings
+        artifact_dir = resolve_artifact_directory(settings)
+        request.app.state.artifact_dir = artifact_dir
+        service = DecisionService.from_directory(artifact_dir)
         request.app.state.decision_service = service
     return service
 

@@ -255,6 +255,8 @@ def run_evaluation(
     max_rows: int | None = None,
 ) -> dict[str, Any]:
     dataframe = pd.read_csv(input_file)
+    if len(dataframe) < 2:
+        raise ValueError("Training input must contain at least 2 rows.")
     if max_rows is not None:
         if max_rows < 2:
             raise ValueError("--max-rows must be at least 2")
