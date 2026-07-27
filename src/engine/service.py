@@ -52,6 +52,13 @@ class DecisionService:
             selected_policy_file=selected_policy_file,
         )
 
+    @classmethod
+    def from_directory(cls, artifact_dir: Path) -> DecisionService:
+        return cls.from_files(
+            likelihood_model_file=artifact_dir / "purchase_likelihood_model.json",
+            selected_policy_file=artifact_dir / "selected_policy.json",
+        )
+
     def current_policy(self) -> dict[str, object]:
         artifact = self.strategy.artifact_metadata
         return {

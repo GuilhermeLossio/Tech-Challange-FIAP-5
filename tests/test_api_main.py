@@ -139,7 +139,7 @@ def test_api_purchase_likelihood_and_decision(tmp_path) -> None:
         principal=principal,
         service=service,
         repository=repository,
-        settings=load_settings(),
+        settings=load_settings(use_env_file=False),
     )
     repeated = route_endpoint(app, "/v1/decisions", "POST")(
         request,
@@ -147,7 +147,7 @@ def test_api_purchase_likelihood_and_decision(tmp_path) -> None:
         principal=principal,
         service=service,
         repository=repository,
-        settings=load_settings(),
+        settings=load_settings(use_env_file=False),
     )
     policy = route_endpoint(app, "/v1/policies/current", "GET")(service=service)
 
@@ -175,7 +175,7 @@ def test_api_purchase_likelihood_and_decision(tmp_path) -> None:
     assert record.minimized_context == {"channel": "Web", "history_segment": "1) Low", "newbie": 1}
     assert record.subject_key.startswith("sub_")
     assert record.subject_key != principal.subject
-    assert record.ttl == load_settings().decision_event_ttl_seconds
+    assert record.ttl == load_settings(use_env_file=False).decision_event_ttl_seconds
 
 
 def test_decision_without_idempotency_key_persists_new_events(tmp_path) -> None:
@@ -213,7 +213,7 @@ def test_decision_without_idempotency_key_persists_new_events(tmp_path) -> None:
         principal=principal,
         service=service,
         repository=repository,
-        settings=load_settings(),
+        settings=load_settings(use_env_file=False),
     )
     second = route_endpoint(app, "/v1/decisions", "POST")(
         request,
@@ -221,7 +221,7 @@ def test_decision_without_idempotency_key_persists_new_events(tmp_path) -> None:
         principal=principal,
         service=service,
         repository=repository,
-        settings=load_settings(),
+        settings=load_settings(use_env_file=False),
     )
 
     assert first["decision_id"] != second["decision_id"]
@@ -237,7 +237,7 @@ def test_reward_ingestion_is_idempotent_and_append_only(tmp_path) -> None:
         principal=principal,
         service=service,
         repository=repository,
-        settings=load_settings(),
+        settings=load_settings(use_env_file=False),
     )
     reward_request = RewardRequest(
         decision_id=decision["decision_id"],
@@ -251,13 +251,13 @@ def test_reward_ingestion_is_idempotent_and_append_only(tmp_path) -> None:
         reward_request,
         principal=principal,
         repository=repository,
-        settings=load_settings(),
+        settings=load_settings(use_env_file=False),
     )
     repeated = route_endpoint(app, "/v1/rewards", "POST")(
         reward_request,
         principal=principal,
         repository=repository,
-        settings=load_settings(),
+        settings=load_settings(use_env_file=False),
     )
 
     assert reward == repeated
@@ -282,7 +282,7 @@ def test_reward_rejects_orphan_decision(tmp_path) -> None:
             reward_request,
             principal=principal,
             repository=repository,
-            settings=load_settings(),
+            settings=load_settings(use_env_file=False),
         )
 
     assert error.value.status_code == 400
@@ -299,7 +299,7 @@ def test_reward_rejects_other_subject_decision(tmp_path) -> None:
         principal=owner,
         service=service,
         repository=repository,
-        settings=load_settings(),
+        settings=load_settings(use_env_file=False),
     )
     reward_request = RewardRequest(
         decision_id=decision["decision_id"],
@@ -314,7 +314,7 @@ def test_reward_rejects_other_subject_decision(tmp_path) -> None:
             reward_request,
             principal=other,
             repository=repository,
-            settings=load_settings(),
+            settings=load_settings(use_env_file=False),
         )
 
     assert error.value.status_code == 400
@@ -329,7 +329,7 @@ def test_reward_rejects_timestamp_before_decision(tmp_path) -> None:
         principal=principal,
         service=service,
         repository=repository,
-        settings=load_settings(),
+        settings=load_settings(use_env_file=False),
     )
     reward_request = RewardRequest(
         decision_id=decision["decision_id"],
@@ -344,7 +344,7 @@ def test_reward_rejects_timestamp_before_decision(tmp_path) -> None:
             reward_request,
             principal=principal,
             repository=repository,
-            settings=load_settings(),
+            settings=load_settings(use_env_file=False),
         )
 
     assert error.value.status_code == 400
@@ -365,10 +365,14 @@ def test_reward_schema_rejects_invalid_reward_value() -> None:
 
 
 def test_api_startup_fails_when_artifact_is_missing(monkeypatch) -> None:
-    def fail_from_files():
+    def fail_from_directory(artifact_dir):
         raise FileNotFoundError("missing model artifact")
 
-    monkeypatch.setattr(dependencies.DecisionService, "from_files", staticmethod(fail_from_files))
+    monkeypatch.setattr(
+        dependencies.DecisionService,
+        "from_directory",
+        staticmethod(fail_from_directory),
+    )
 
     async def run_lifespan() -> None:
         app = api_main.create_app()
@@ -684,8 +688,8 @@ def test_corrupted_artifact_fails_startup(tmp_path, monkeypatch) -> None:
     )
     monkeypatch.setattr(
         dependencies.DecisionService,
-        "from_files",
-        staticmethod(lambda: original_from_files(model_file, policy_file)),
+        "from_directory",
+        staticmethod(lambda artifact_dir: original_from_files(model_file, policy_file)),
     )
 
     with pytest.raises(ValueError, match="not valid JSON"), api_test_client(api_main.create_app()):
@@ -694,12 +698,14 @@ def test_corrupted_artifact_fails_startup(tmp_path, monkeypatch) -> None:
 
 def test_cloud_security_rejects_disabled_auth() -> None:
     settings = replace(
-        load_settings(),
+        load_settings(use_env_file=False),
         app_environment="cloud",
         api_host="0.0.0.0",
         auth_mode="disabled",
         azure_cosmos_key="",
         azure_cosmos_auth_mode="managed_identity",
+        artifact_source="azure_blob",
+        azure_storage_account_url="https://example.blob.core.windows.net",
     )
 
     with pytest.raises(RuntimeError, match="AUTH_MODE=disabled"):
@@ -708,7 +714,7 @@ def test_cloud_security_rejects_disabled_auth() -> None:
 
 def test_business_scope_requires_token_in_cloud() -> None:
     settings = replace(
-        load_settings(),
+        load_settings(use_env_file=False),
         app_environment="cloud",
         api_host="0.0.0.0",
         auth_mode="entra_id",
@@ -717,6 +723,8 @@ def test_business_scope_requires_token_in_cloud() -> None:
         entra_audience="api://client",
         azure_cosmos_key="",
         azure_cosmos_auth_mode="managed_identity",
+        artifact_source="azure_blob",
+        azure_storage_account_url="https://example.blob.core.windows.net",
     )
     dependency = require_scopes("decision:write")
 
@@ -728,7 +736,7 @@ def test_business_scope_requires_token_in_cloud() -> None:
 
 def test_business_scope_rejects_token_without_required_scope(monkeypatch) -> None:
     settings = replace(
-        load_settings(),
+        load_settings(use_env_file=False),
         app_environment="cloud",
         api_host="0.0.0.0",
         auth_mode="entra_id",
@@ -737,6 +745,8 @@ def test_business_scope_rejects_token_without_required_scope(monkeypatch) -> Non
         entra_audience="api://client",
         azure_cosmos_key="",
         azure_cosmos_auth_mode="managed_identity",
+        artifact_source="azure_blob",
+        azure_storage_account_url="https://example.blob.core.windows.net",
     )
 
     monkeypatch.setattr(
@@ -754,7 +764,7 @@ def test_business_scope_rejects_token_without_required_scope(monkeypatch) -> Non
 
 def test_cloud_security_rejects_permanent_cosmos_key() -> None:
     settings = replace(
-        load_settings(),
+        load_settings(use_env_file=False),
         app_environment="cloud",
         api_host="0.0.0.0",
         auth_mode="entra_id",
@@ -764,6 +774,8 @@ def test_cloud_security_rejects_permanent_cosmos_key() -> None:
         subject_key_salt="cloud-secret",
         azure_cosmos_key="permanent-key",
         azure_cosmos_auth_mode="managed_identity",
+        artifact_source="azure_blob",
+        azure_storage_account_url="https://example.blob.core.windows.net",
     )
 
     with pytest.raises(RuntimeError, match="Permanent AZURE_COSMOS_KEY"):
@@ -772,7 +784,7 @@ def test_cloud_security_rejects_permanent_cosmos_key() -> None:
 
 def test_cloud_security_requires_cosmos_decision_repository() -> None:
     settings = replace(
-        load_settings(),
+        load_settings(use_env_file=False),
         app_environment="cloud",
         api_host="0.0.0.0",
         auth_mode="entra_id",
@@ -782,6 +794,8 @@ def test_cloud_security_requires_cosmos_decision_repository() -> None:
         subject_key_salt="cloud-secret",
         azure_cosmos_key="",
         azure_cosmos_auth_mode="managed_identity",
+        artifact_source="azure_blob",
+        azure_storage_account_url="https://example.blob.core.windows.net",
         decision_repository_mode="file",
     )
 

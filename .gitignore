@@ -49,6 +49,8 @@ coverage.xml
 *.py,cover
 .hypothesis/
 .pytest_cache/
+.pytest_tmp/
+.ecloe_test_tmp/
 cover/
 
 # Translations
@@ -169,6 +171,7 @@ cython_debug/
 
 # Ruff stuff:
 .ruff_cache/
+.artifact_cache/
 
 # PyPI configuration file
 .pypirc

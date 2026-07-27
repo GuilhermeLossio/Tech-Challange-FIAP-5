@@ -11,6 +11,8 @@ except ModuleNotFoundError:
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
+ECLOE_COSMOS_ACCOUNT = "ecloe5cosmos1266cl"
+DEFAULT_AZURE_COSMOS_ENDPOINT = f"https://{ECLOE_COSMOS_ACCOUNT}.documents.azure.com:443/"
 
 
 def _load_env_file(path: Path) -> None:
@@ -51,8 +53,13 @@ class Settings:
     processed_filename: str
     random_seed: int
     azure_storage_connection_string: str
+    azure_storage_account_url: str
     azure_blob_container_raw: str
     azure_blob_container_processed: str
+    azure_blob_container_artifacts: str
+    azure_artifact_promotion_blob: str
+    artifact_source: str
+    artifact_cache_dir: Path
     azure_cosmos_endpoint: str
     azure_cosmos_key: str
     azure_cosmos_database: str
@@ -90,8 +97,9 @@ class Settings:
         return self.processed_data_dir / self.processed_filename
 
 
-def load_settings() -> Settings:
-    _load_env_file(ROOT_DIR / ".env")
+def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) -> Settings:
+    if use_env_file:
+        _load_env_file(env_file or ROOT_DIR / ".env")
 
     data_dir = ROOT_DIR / _env("DATA_DIR", "data")
     raw_data_dir = ROOT_DIR / _env("RAW_DATA_DIR", "data/raw")
@@ -113,9 +121,17 @@ def load_settings() -> Settings:
         processed_filename=_env("PROCESSED_FILENAME", "hillstrom_processed.csv"),
         random_seed=int(_env("RANDOM_SEED", "42")),
         azure_storage_connection_string=_env("AZURE_STORAGE_CONNECTION_STRING"),
+        azure_storage_account_url=_env("AZURE_STORAGE_ACCOUNT_URL"),
         azure_blob_container_raw=_env("AZURE_BLOB_CONTAINER_RAW", "ecloe-raw"),
         azure_blob_container_processed=_env("AZURE_BLOB_CONTAINER_PROCESSED", "ecloe-processed"),
-        azure_cosmos_endpoint=_env("AZURE_COSMOS_ENDPOINT"),
+        azure_blob_container_artifacts=_env("AZURE_BLOB_CONTAINER_ARTIFACTS", "ecloe-artifacts"),
+        azure_artifact_promotion_blob=_env(
+            "AZURE_ARTIFACT_PROMOTION_BLOB",
+            "promoted/current.json",
+        ),
+        artifact_source=_env("ARTIFACT_SOURCE", "file").lower(),
+        artifact_cache_dir=ROOT_DIR / _env("ARTIFACT_CACHE_DIR", ".artifact_cache"),
+        azure_cosmos_endpoint=_env("AZURE_COSMOS_ENDPOINT", DEFAULT_AZURE_COSMOS_ENDPOINT),
         azure_cosmos_key=_env("AZURE_COSMOS_KEY"),
         azure_cosmos_database=_env("AZURE_COSMOS_DATABASE", "ecloe"),
         azure_cosmos_container_decisions=_env("AZURE_COSMOS_CONTAINER_DECISIONS", "decisions"),
@@ -145,4 +161,4 @@ def load_settings() -> Settings:
     )
 
 
-settings = load_settings()
+settings = load_settings(use_env_file=False)

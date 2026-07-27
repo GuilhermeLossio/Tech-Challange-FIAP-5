@@ -1,0 +1,348 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.45.15.27210",
+      "templateHash": "14244149628474644685"
+    }
+  },
+  "parameters": {
+    "environmentName": {
+      "type": "string",
+      "defaultValue": "mvp",
+      "metadata": {
+        "description": "Short environment suffix for globally unique names."
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "Azure region. Prefer chilecentral when Container Apps is available."
+      }
+    },
+    "containerImage": {
+      "type": "string",
+      "metadata": {
+        "description": "Container image tag to deploy, for example <acr>.azurecr.io/ecloe-engine:<git-sha>."
+      }
+    },
+    "cosmosAccountName": {
+      "type": "string",
+      "defaultValue": "ecloe5cosmos1266cl",
+      "metadata": {
+        "description": "Existing Cosmos DB account name."
+      }
+    },
+    "cosmosDatabaseName": {
+      "type": "string",
+      "defaultValue": "ecloe",
+      "metadata": {
+        "description": "Existing Cosmos DB database name."
+      }
+    },
+    "entraTenantId": {
+      "type": "string",
+      "metadata": {
+        "description": "Microsoft Entra tenant ID."
+      }
+    },
+    "entraClientId": {
+      "type": "string",
+      "metadata": {
+        "description": "Microsoft Entra client/application ID for the API."
+      }
+    },
+    "subjectKeySalt": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Subject-key salt should come from a secure deployment parameter or Key Vault reference."
+      }
+    },
+    "targetPort": {
+      "type": "int",
+      "defaultValue": 8000,
+      "metadata": {
+        "description": "Container App external ingress port."
+      }
+    }
+  },
+  "variables": {
+    "unique": "[uniqueString(resourceGroup().id, parameters('environmentName'))]",
+    "acrName": "[toLower(format('ecloeacr{0}', variables('unique')))]",
+    "storageName": "[toLower(format('ecloeart{0}', variables('unique')))]",
+    "logName": "[format('ecloe-log-{0}', parameters('environmentName'))]",
+    "appInsightsName": "[format('ecloe-ai-{0}', parameters('environmentName'))]",
+    "envName": "[format('ecloe-aca-env-{0}', parameters('environmentName'))]",
+    "appName": "[format('ecloe-engine-{0}', parameters('environmentName'))]",
+    "artifactContainerName": "ecloe-artifacts"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.ContainerRegistry/registries",
+      "apiVersion": "2023-11-01-preview",
+      "name": "[variables('acrName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Basic"
+      },
+      "properties": {
+        "adminUserEnabled": false
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-05-01",
+      "name": "[variables('storageName')]",
+      "location": "[parameters('location')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "allowBlobPublicAccess": false,
+        "minimumTlsVersion": "TLS1_2"
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-05-01",
+      "name": "[format('{0}/default/{1}', variables('storageName'), variables('artifactContainerName'))]",
+      "properties": {
+        "publicAccess": "None"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2023-09-01",
+      "name": "[variables('logName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "sku": {
+          "name": "PerGB2018"
+        },
+        "retentionInDays": 30
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('appInsightsName')]",
+      "location": "[parameters('location')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('envName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "appLogsConfiguration": {
+          "destination": "log-analytics",
+          "logAnalyticsConfiguration": {
+            "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', variables('logName')), '2023-09-01').customerId]",
+            "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', variables('logName')), '2023-09-01').primarySharedKey]"
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2024-03-01",
+      "name": "[variables('appName')]",
+      "location": "[parameters('location')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('envName'))]",
+        "configuration": {
+          "activeRevisionsMode": "Multiple",
+          "ingress": {
+            "external": true,
+            "targetPort": "[parameters('targetPort')]"
+          },
+          "secrets": [
+            {
+              "name": "subject-key-salt",
+              "value": "[parameters('subjectKeySalt')]"
+            }
+          ],
+          "registries": [
+            {
+              "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2023-11-01-preview').loginServer]",
+              "identity": "system"
+            }
+          ]
+        },
+        "template": {
+          "scale": {
+            "minReplicas": 0,
+            "maxReplicas": 1
+          },
+          "containers": [
+            {
+              "name": "ecloe-engine",
+              "image": "[parameters('containerImage')]",
+              "env": [
+                {
+                  "name": "APP_ENVIRONMENT",
+                  "value": "cloud"
+                },
+                {
+                  "name": "API_HOST",
+                  "value": "0.0.0.0"
+                },
+                {
+                  "name": "AUTH_MODE",
+                  "value": "entra_id"
+                },
+                {
+                  "name": "ENTRA_TENANT_ID",
+                  "value": "[parameters('entraTenantId')]"
+                },
+                {
+                  "name": "ENTRA_CLIENT_ID",
+                  "value": "[parameters('entraClientId')]"
+                },
+                {
+                  "name": "ENTRA_AUDIENCE",
+                  "value": "[format('api://{0}', parameters('entraClientId'))]"
+                },
+                {
+                  "name": "SUBJECT_KEY_SALT",
+                  "secretRef": "subject-key-salt"
+                },
+                {
+                  "name": "DECISION_REPOSITORY_MODE",
+                  "value": "cosmos"
+                },
+                {
+                  "name": "AZURE_COSMOS_AUTH_MODE",
+                  "value": "managed_identity"
+                },
+                {
+                  "name": "AZURE_COSMOS_ENDPOINT",
+                  "value": "[format('https://{0}.documents.azure.com:443/', parameters('cosmosAccountName'))]"
+                },
+                {
+                  "name": "AZURE_COSMOS_DATABASE",
+                  "value": "[parameters('cosmosDatabaseName')]"
+                },
+                {
+                  "name": "ARTIFACT_SOURCE",
+                  "value": "azure_blob"
+                },
+                {
+                  "name": "AZURE_STORAGE_ACCOUNT_URL",
+                  "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), '2023-05-01').primaryEndpoints.blob]"
+                },
+                {
+                  "name": "AZURE_BLOB_CONTAINER_ARTIFACTS",
+                  "value": "[variables('artifactContainerName')]"
+                },
+                {
+                  "name": "AZURE_ARTIFACT_PROMOTION_BLOB",
+                  "value": "promoted/current.json"
+                },
+                {
+                  "name": "ARTIFACT_CACHE_DIR",
+                  "value": "/tmp/ecloe/artifacts"
+                },
+                {
+                  "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
+                  "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString]"
+                }
+              ],
+              "resources": {
+                "cpu": "[json('0.25')]",
+                "memory": "0.5Gi"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
+        "[resourceId('Microsoft.App/managedEnvironments', variables('envName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]",
+      "name": "[guid(resourceId('Microsoft.Storage/storageAccounts', variables('storageName')), variables('appName'), 'Storage Blob Data Reader')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '2a2b9908-6ea1-4ae2-8e65-a410df84e7d1')]",
+        "principalId": "[reference(resourceId('Microsoft.App/containerApps', variables('appName')), '2024-03-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/containerApps', variables('appName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+      "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), variables('appName'), 'AcrPull')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+        "principalId": "[reference(resourceId('Microsoft.App/containerApps', variables('appName')), '2024-03-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+        "[resourceId('Microsoft.App/containerApps', variables('appName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "containerAppName": {
+      "type": "string",
+      "value": "[variables('appName')]"
+    },
+    "containerAppUrl": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', variables('appName')), '2024-03-01').configuration.ingress.fqdn)]"
+    },
+    "acrLoginServer": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2023-11-01-preview').loginServer]"
+    },
+    "storageAccountName": {
+      "type": "string",
+      "value": "[variables('storageName')]"
+    },
+    "artifactContainer": {
+      "type": "string",
+      "value": "[variables('artifactContainerName')]"
+    },
+    "managedIdentityPrincipalId": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.App/containerApps', variables('appName')), '2024-03-01', 'full').identity.principalId]"
+    },
+    "cosmosDataContributorCommand": {
+      "type": "string",
+      "value": "[format('scripts/grant_cosmos_data_contributor.ps1 -AccountName {0} -DatabaseName {1} -PrincipalId {2}', parameters('cosmosAccountName'), parameters('cosmosDatabaseName'), reference(resourceId('Microsoft.App/containerApps', variables('appName')), '2024-03-01', 'full').identity.principalId)]"
+    }
+  }
+}

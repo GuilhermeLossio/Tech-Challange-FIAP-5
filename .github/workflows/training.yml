@@ -1,0 +1,87 @@
+name: Training
+
+on:
+  workflow_dispatch:
+    inputs:
+      max_rows:
+        description: "Optional row limit for smoke training; leave empty for promoted full training."
+        required: false
+        default: ""
+      seed:
+        description: "Training seed."
+        required: false
+        default: "42"
+      promote:
+        description: "Update promoted/current.json after publishing artifacts."
+        required: true
+        type: boolean
+        default: false
+      environment:
+        description: "GitHub environment used for Azure OIDC."
+        required: true
+        default: "mvp"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  train:
+    name: Train and publish artifacts
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.14.6"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev,azure,observability]"
+
+      - name: Prepare data
+        run: python -m src.evaluation.run --prepare-data --seed "${{ inputs.seed }}"
+        if: inputs.max_rows == ''
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+
+      - name: Prepare data and smoke train
+        run: python -m src.evaluation.run --prepare-data --seed "${{ inputs.seed }}" --max-rows "${{ inputs.max_rows }}"
+        if: inputs.max_rows != ''
+        env:
+          KAGGLE_USERNAME: ${{ secrets.KAGGLE_USERNAME }}
+          KAGGLE_KEY: ${{ secrets.KAGGLE_KEY }}
+
+      - name: Validate artifacts
+        run: python -m src.evaluation.validate_artifacts --seed "${{ inputs.seed }}"
+
+      - name: Azure login
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Publish artifacts
+        run: python scripts/publish_artifacts_to_blob.py ${{ inputs.promote && '--promote' || '' }}
+        env:
+          AZURE_STORAGE_ACCOUNT_URL: ${{ vars.AZURE_STORAGE_ACCOUNT_URL }}
+          AZURE_BLOB_CONTAINER_ARTIFACTS: ${{ vars.AZURE_BLOB_CONTAINER_ARTIFACTS || 'ecloe-artifacts' }}
+
+      - name: Upload safe training reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: policy-training-reports
+          path: |
+            reports/data_validation.json
+            reports/policy_training/*.json
+            reports/policy_training/*.csv

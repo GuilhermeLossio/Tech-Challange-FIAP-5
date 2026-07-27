@@ -8,6 +8,7 @@ from src.core.config import load_settings
 @dataclass(frozen=True)
 class AzureDataLayout:
     storage_containers: tuple[str, ...]
+    artifact_container: str
     cosmos_database: str
     cosmos_containers: tuple[str, ...]
     cosmos_auth_mode: str
@@ -21,6 +22,7 @@ def get_azure_data_layout() -> AzureDataLayout:
             settings.azure_blob_container_raw,
             settings.azure_blob_container_processed,
         ),
+        artifact_container=settings.azure_blob_container_artifacts,
         cosmos_database=settings.azure_cosmos_database,
         cosmos_containers=(
             settings.azure_cosmos_container_decisions,

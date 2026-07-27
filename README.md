@@ -18,6 +18,7 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 - [Getting Started](#getting-started)
 - [Evaluation Metrics](#evaluation-metrics)
 - [Latest Local Results](#latest-local-results)
+- [Validation Evidence](#validation-evidence)
 - [Golden Set](#golden-set)
 - [Deployment Strategy](#deployment-strategy)
 - [Team Identification](#team-identification)
@@ -103,7 +104,7 @@ Eligibility, risk, compliance, and business rules remain upstream. ECloe Engine 
 
 Status: **Planned for demo**.
 
-ECloe Market is documented as the simulated marketplace surface for catalog browsing, cart management, checkout, order creation, and behavior-signal aggregation. It uses PostgreSQL as the planned transactional source of truth, outbox events for reliable async publication, and ECloe Engine only after eligible offers have already been determined upstream.
+ECloe Market is documented as the simulated marketplace surface for catalog browsing, cart management, checkout, order creation, and behavior-signal aggregation. It uses Azure SQL as the planned transactional source of truth, outbox events for reliable async publication, and ECloe Engine only after eligible offers have already been determined upstream.
 
 Detailed ECloe Market scope, data model, checkout transaction, event flow, Azure direction, implementation sequence, and SVG diagrams are documented separately in [`docs/ecloe-market.md`](./docs/ecloe-market.md).
 
@@ -180,6 +181,12 @@ Run a smaller local experiment:
 python -m src.evaluation.run --max-rows 5000
 ```
 
+Export reusable decision/reward events from Cosmos DB and retrain from that CSV in one command:
+
+```bash
+python scripts/retrain_from_cosmos_events.py
+```
+
 Expected training outputs:
 
 ```text
@@ -190,9 +197,30 @@ reports/policy_training/selected_policy.json
 reports/policy_training/golden_set_recommendations.json
 reports/policy_training/policy_state_thompson_sampling.json
 reports/policy_training/purchase_likelihood_model.json
+reports/policy_training/artifact_manifest.json
 ```
 
 See [`docs/training-workflow.md`](./docs/training-workflow.md) for the full offline training flow.
+
+Validate generated artifacts before publishing or deploying:
+
+```bash
+python -m src.evaluation.validate_artifacts
+```
+
+Publish and optionally promote artifacts to Azure Blob Storage:
+
+```bash
+python scripts/publish_artifacts_to_blob.py --promote
+```
+
+Publish the validated training results to Cosmos DB for reuse by cloud governance and audit views:
+
+```bash
+python scripts/publish_training_results_to_cosmos.py
+```
+
+This command writes to Cosmos DB database `ecloe`, container `policy_versions`. The confirmed publication for run `train-20260727T211636Z-43b893e` created 5 documents: 4 `policy_version` documents and 1 `training_run` document. `decisions` and `rewards` remain empty by design until the API receives live decision and reward events.
 
 Generate only the lightweight purchase-likelihood validator:
 
@@ -222,6 +250,7 @@ Cloud runtime must use Microsoft Entra ID bearer tokens. `AUTH_MODE=disabled` is
 `POST /v1/decisions` accepts `Idempotency-Key`; repeating the same key for the same authenticated subject returns the original persisted decision without creating a duplicate event.
 `POST /v1/rewards` uses `event_id` as an idempotency key; duplicate reward events return the original accepted response.
 Local development persists decision events to `reports/decision_events.jsonl`; cloud runtime must use Cosmos DB with Managed Identity.
+Cloud runtime must also use `ARTIFACT_SOURCE=azure_blob` so the API loads the promoted artifact run from Azure Blob Storage and fails readiness when the promoted manifest or checksums are invalid.
 
 ---
 
@@ -316,7 +345,7 @@ The current structure is consistent for a Python data/ML MVP. The policy trainin
 
 ### Prerequisites
 
-- Python 3.11 or newer.
+- Python 3.14.6, matching `pyproject.toml` and GitHub Actions.
 - Kaggle account and API token.
 - Local virtual environment recommended.
 
@@ -399,16 +428,57 @@ mlflow ui
 
 ## Latest Local Results
 
-The latest committed local training report is [`reports/policy_training/metrics.json`](./reports/policy_training/metrics.json). It compares all policies on the same 1,500 simulated rounds.
+The latest local training report is [`reports/policy_training/metrics.json`](./reports/policy_training/metrics.json). It compares all policies on the same 17,232 simulated evaluation rounds after a deterministic 70/30 split of 57,438 validated processed rows.
 
 | Policy | Rounds | Cumulative reward | Conversion rate | Cumulative regret | Exploration rate |
 |:---|:---|:---|:---|:---|:---|
-| Baseline | 1,500 | 31 | 2.0667% | 0.000000 | 0.0000% |
-| Epsilon-Greedy | 1,500 | 23 | 1.5333% | 3.821737 | 39.0000% |
-| UCB | 1,500 | 18 | 1.2000% | 9.004301 | 63.9333% |
-| Thompson Sampling | 1,500 | 15 | 1.0000% | 9.803851 | 84.7333% |
+| Baseline | 17,232 | 252 | 1.4624% | 0.000000 | 0.0000% |
+| Epsilon-Greedy | 17,232 | 225 | 1.3057% | 15.830237 | 20.4445% |
+| UCB | 17,232 | 182 | 1.0562% | 58.341888 | 60.5153% |
+| Thompson Sampling | 17,232 | 237 | 1.3753% | 20.800918 | 18.5469% |
 
 The local promotion rule selected `baseline` because it produced the highest cumulative reward, then the lowest regret and exploration rate. Thompson Sampling remains documented as an adaptive challenger, but it is not the promoted policy for this run.
+
+In this offline Hillstrom simulation, the deterministic baseline outperformed adaptive policies on cumulative reward and regret. That is a useful MVP signal: the historical action-reward pattern is stable enough that exploration-heavy policies should remain challengers until more online reward evidence is collected from ECloe decisions and rewards.
+
+Current validated artifact run:
+
+| Field | Value |
+|:---|:---|
+| `run_id` | `train-20260727T211636Z-43b893e` |
+| `git_commit` | `43b893e20072e6833787f2b4d3d484e56be8c89b` |
+| `dataset_sha256` | `252576717b865f1ca247309735ea538845fbbc0d8193a21ab83d7c1e83d8ae79` |
+| `python_version` | `3.14.6` |
+| `seed` | `42` |
+| `generated_at` | `2026-07-27T21:16:36Z` |
+
+Confirmed Cosmos publication:
+
+| Container | Documents | Expected meaning |
+| :--- | ---: | :--- |
+| `policy_versions` | 5 | Training publication succeeded: 4 policy versions and 1 training run summary |
+| `decisions` | 0 | No runtime decisions have been submitted through the API yet |
+| `rewards` | 0 | No runtime rewards have been submitted through the API yet |
+
+Training results belong to `policy_versions`; operational API evidence belongs to `decisions` and `rewards`.
+
+---
+
+## Validation Evidence
+
+Latest local validation evidence:
+
+| Check | Result |
+|:---|:---|
+| Data validation | Passed, 57,438 rows, 11 columns, 0 duplicate rows, no blocked columns |
+| Artifact validation | Passed, manifest generated at `reports/policy_training/artifact_manifest.json` |
+| Ruff | Passed with `python -m ruff check src tests scripts` |
+| Tests | `74 passed` |
+| Coverage | `77.68%`, above the 70% gate |
+| Dependency audit | `No known vulnerabilities found` |
+| Bicep build | Passed for `infra/bicep/main.bicep` |
+
+Pytest reported one local cache warning for `.pytest_cache`; it did not fail the test run or reduce coverage. Docker image validation is still pending because Docker is not installed in the current Windows workstation.
 
 ---
 
@@ -418,11 +488,11 @@ The Golden Set contains 5 deterministic cases used to validate explainability of
 
 | Case | Context snapshot | Recommended action | Policy | Reason codes |
 |:---|:---|:---|:---|:---|
-| 1 | `channel=Multichannel`, `history_segment=4) $350 - $500`, `newbie=0` | `womens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
-| 2 | `channel=Web`, `history_segment=6) $750 - $1,000`, `newbie=1` | `womens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
-| 3 | `channel=Phone`, `history_segment=5) $500 - $750`, `newbie=1` | `womens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
-| 4 | `channel=Web`, `history_segment=1) $0 - $100`, `newbie=0` | `womens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
-| 5 | `channel=Multichannel`, `history_segment=3) $200 - $350`, `newbie=1` | `womens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 1 | `channel=Web`, `history_segment=4) $350 - $500`, `newbie=1` | `mens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 2 | `channel=Phone`, `history_segment=5) $500 - $750`, `newbie=1` | `mens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 3 | `channel=Phone`, `history_segment=3) $200 - $350`, `newbie=0` | `mens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 4 | `channel=Phone`, `history_segment=1) $0 - $100`, `newbie=0` | `mens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 5 | `channel=Web`, `history_segment=2) $100 - $200`, `newbie=0` | `mens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
 
 These are simulated recommendations for demonstration. They are not approvals for credit, loans, limits, eligibility, fraud, risk, or regulated financial products.
 
@@ -434,15 +504,17 @@ The MVP should run locally first. A cloud demonstration should use a low-consump
 
 | Layer | Suggested service |
 |:---|:---|
-| Runtime | Azure App Service or Azure Container Apps |
-| Artifacts | Azure Blob Storage |
-| Events | Cosmos DB Serverless or small PostgreSQL |
+| Runtime | Azure Container Apps first, Azure App Service Linux fallback |
+| Artifacts | Azure Blob Storage with immutable runs and `promoted/current.json` |
+| Events | Existing Cosmos DB Serverless account `ecloe5cosmos1266cl` |
 | Secrets | Azure Key Vault |
 | Observability | Application Insights |
 
 AKS, Azure Machine Learning, API Management, and Azure AI Search remain future options, not MVP prerequisites.
 
-The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](./docs/cloud-setup.md).
+The current Cosmos DB Serverless setup is documented in [`docs/cloud-setup.md`](./docs/cloud-setup.md). The existing `decisions` and `rewards` containers use `/customer_id` as the partition key; ECloe stores the pseudonymized `subject_key` value there, not a direct customer identifier.
+
+Cloud deployment assets are present in `Dockerfile`, `.github/workflows/deploy.yml`, and `infra/bicep/main.bicep`. Local image build and Azure deployment are pending until Docker is available and the artifact Blob container is published with the promoted run.
 
 ---
 
@@ -470,6 +542,9 @@ FIAP submissions often require team members and RM identifiers in the central RE
 - [`docs/evaluation-plan.md`](./docs/evaluation-plan.md) - Offline evaluation and Golden Set expectations.
 - [`docs/training-workflow.md`](./docs/training-workflow.md) - Implemented local policy training workflow.
 - [`docs/cloud-setup.md`](./docs/cloud-setup.md) - Current low-consumption Azure Cosmos DB setup.
+- [`docs/artifact-promotion.md`](./docs/artifact-promotion.md) - Artifact validation, Blob publication, promotion, and rollback.
+- [`docs/azure-deployment.md`](./docs/azure-deployment.md) - Azure Container Apps deployment path and runtime settings.
+- [`docs/runbook.md`](./docs/runbook.md) - Operational checks, readiness troubleshooting, and rollback.
 - [`docs/model-card.md`](./docs/model-card.md) - Policy intent, metrics, risks, and approval criteria.
 - [`docs/system-card.md`](./docs/system-card.md) - System behavior, boundaries, and guardrails.
 - [`docs/demo-script.md`](./docs/demo-script.md) - Demo Day presentation flow.

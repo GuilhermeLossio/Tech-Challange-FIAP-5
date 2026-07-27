@@ -49,7 +49,7 @@
   <text x="720" y="132" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">State and events</text>
 
   <rect x="728" y="154" width="180" height="52" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="818" y="176" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">PostgreSQL</text>
+  <text x="818" y="176" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Azure SQL</text>
   <text x="818" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">Pay state</text>
 
   <rect x="728" y="235" width="180" height="52" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from src.core.config import ROOT_DIR, load_settings
+from src.core.config import DEFAULT_AZURE_COSMOS_ENDPOINT, ROOT_DIR, load_settings
 
 
 def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
@@ -24,10 +24,15 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "DECISION_EVENTS_FILE",
         "OBSERVABILITY_ENABLED",
         "APPLICATIONINSIGHTS_CONNECTION_STRING",
+        "AZURE_STORAGE_ACCOUNT_URL",
+        "AZURE_BLOB_CONTAINER_ARTIFACTS",
+        "AZURE_ARTIFACT_PROMOTION_BLOB",
+        "ARTIFACT_SOURCE",
+        "ARTIFACT_CACHE_DIR",
     ]:
         monkeypatch.delenv(name, raising=False)
 
-    settings = load_settings()
+    settings = load_settings(use_env_file=False)
 
     assert settings.kaggle_dataset == "bofulee/kevin-hillstrom-minethatdata-e-mailanalytics"
     assert settings.raw_file == ROOT_DIR / "data" / "raw" / "hillstrom.csv"
@@ -38,9 +43,14 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.api_host == "127.0.0.1"
     assert settings.auth_mode == "disabled"
     assert settings.azure_cosmos_auth_mode == "key"
+    assert settings.azure_cosmos_endpoint == DEFAULT_AZURE_COSMOS_ENDPOINT
     assert settings.subject_key_salt == "local-dev-subject-key-salt"
     assert settings.decision_event_ttl_seconds == 157680000
     assert settings.decision_repository_mode == "file"
     assert settings.decision_events_file == ROOT_DIR / "reports" / "decision_events.jsonl"
     assert settings.observability_enabled is True
     assert settings.applicationinsights_connection_string == ""
+    assert settings.artifact_source == "file"
+    assert settings.azure_blob_container_artifacts == "ecloe-artifacts"
+    assert settings.azure_artifact_promotion_blob == "promoted/current.json"
+    assert settings.artifact_cache_dir == ROOT_DIR / ".artifact_cache"

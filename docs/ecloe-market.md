@@ -6,7 +6,7 @@
 |:---|:---|:---|
 | ECloe Market product surface | Planned for demo | Simulated marketplace experience inside the ECloe Demo application. |
 | Catalog, cart, checkout, and order APIs | Planned for demo | Target API surface for marketplace behavior and transaction state. |
-| PostgreSQL transaction model | Planned for demo | Recommended source of truth for catalog, inventory, carts, checkout, orders, and outbox records. |
+| Azure SQL transaction model | Planned for demo | Recommended source of truth for catalog, inventory, carts, checkout, orders, and outbox records. |
 | Recommendation integration | Planned for demo | Market/BFF aggregates context, gets eligible offers from upstream services, and calls ECloe Engine. |
 | ECloe Engine API | Implemented | Existing FastAPI service for decisions, likelihood estimates, policy metadata, and reward ingestion. |
 | Real payment processing, fraud, risk, credit, pricing automation, and eligibility decisions | Out of scope | These remain upstream responsibilities and are not performed by ECloe Market or ECloe Engine. |
@@ -23,19 +23,19 @@ The current repository already implements ECloe Engine. ECloe Market, ECloe Pay,
 
 ![ECloe Market overview](ecloe-market-overview.svg)
 
-The overview shows how ECloe Web and the BFF route marketplace interactions to ECloe Market API, ECloe Pay API, and ECloe Engine API. PostgreSQL owns transactional Market state, while outbox events feed Service Bus, Cosmos DB projections, and downstream evidence.
+The overview shows how ECloe Web and the BFF route marketplace interactions to ECloe Market API, ECloe Pay API, and ECloe Engine API. Azure SQL owns transactional Market state, while outbox events feed Service Bus, Cosmos DB projections, and downstream evidence.
 
 ### Checkout Flow
 
 ![ECloe Market checkout flow](ecloe-market-checkout-flow.svg)
 
-The checkout flow shows the planned order path: validate the cart, revalidate price and stock, create the order and outbox record in one PostgreSQL transaction, confirm simulated payment through ECloe Pay, ask ECloe Engine to rank eligible offers, and publish confirmed domain events asynchronously.
+The checkout flow shows the planned order path: validate the cart, revalidate price and stock, create the order and outbox record in one Azure SQL transaction, confirm simulated payment through ECloe Pay, ask ECloe Engine to rank eligible offers, and publish confirmed domain events asynchronously.
 
 ### File and Data Flow
 
 ![ECloe Market file and data flow](ecloe-market-file-flow.svg)
 
-The file and data flow separates future source folders, migrations, tests, PostgreSQL records, outbox events, Service Bus messages, Cosmos DB projections, Blob exports, and Control Room reports.
+The file and data flow separates future source folders, migrations, tests, Azure SQL records, outbox events, Service Bus messages, Cosmos DB projections, Blob exports, and Control Room reports.
 
 ## Product Role
 
@@ -81,9 +81,9 @@ ECloe Market must not:
 
 ## Persistence Decision
 
-The recommended primary database for ECloe Market is **Azure Database for PostgreSQL Flexible Server**.
+The recommended primary database for ECloe Market is **Azure SQL Database** with a low-consumption serverless or small service tier.
 
-PostgreSQL is the source of truth for:
+Azure SQL is the source of truth for:
 
 | Data group | Examples |
 |:---|:---|
@@ -95,7 +95,7 @@ PostgreSQL is the source of truth for:
 | Promotions | market promotions and applied discounts |
 | Integration | payment references, marketplace events, outbox events |
 
-PostgreSQL fits the Market domain because checkout requires relational constraints and atomic updates across cart validation, current price lookup, stock reservation, order creation, order items, checkout state, and outbox records.
+Azure SQL fits the Market domain because checkout requires relational constraints and atomic updates across cart validation, current price lookup, stock reservation, order creation, order items, checkout state, and outbox records.
 
 If any checkout step fails, the Market transaction must roll back without leaving partial order or inventory state.
 
@@ -118,7 +118,7 @@ product_read_models
 customer_journeys
 ```
 
-Cosmos DB should not initially be the official source for stock, prices, orders, carts, payment status, or checkout status. Those records need transaction consistency that fits PostgreSQL better for the first functional Market version.
+Cosmos DB should not initially be the official source for stock, prices, orders, carts, payment status, or checkout status. Those records need transaction consistency that fits Azure SQL better for the first functional Market version.
 
 ## Domain Ownership
 
@@ -128,7 +128,7 @@ Cosmos DB should not initially be the official source for stock, prices, orders,
 | ECloe Pay | Wallets, ledger accounts, financial transactions, balances, benefits, benefit activations, payment orders. | Mutate Market catalog, stock, cart, or order tables directly. |
 | ECloe Engine | Decisions, rewards, policy versions, model artifacts, evaluation metrics. | Access Market or Pay transactional tables directly or invent eligibility. |
 
-Integration between domains should happen through APIs or events. Sharing an Azure PostgreSQL server for cost control does not mean sharing write ownership across schemas.
+Integration between domains should happen through APIs or events. Sharing an Azure SQL database for cost control does not mean sharing write ownership across schemas.
 
 ## Planned API Surface
 
@@ -192,7 +192,7 @@ The API surface is planned and is not implemented in the current repository.
 | Entity | Purpose | Notes |
 |:---|:---|:---|
 | `categories` | Groups products for browsing and navigation. | Supports the marketplace category view. |
-| `products` | Product identity, description, attributes, and lifecycle status. | Flexible attributes can use `JSONB`. |
+| `products` | Product identity, description, attributes, and lifecycle status. | Flexible attributes can use Azure SQL JSON columns or normalized attribute tables. |
 | `product_variants` | SKU-level purchasable units. | Variant-specific attributes and status. |
 | `product_prices` | Time-bounded prices. | Applied order price must be copied into `order_items`. |
 | `inventory_items` | Available and reserved quantity per variant. | Needs concurrency control during checkout. |
@@ -202,7 +202,7 @@ The API surface is planned and is not implemented in the current repository.
 | `orders` | Confirmed or pending order aggregate. | Uses idempotency and correlation IDs. |
 | `order_items` | Historical product and price snapshots. | Preserves what was presented at purchase time. |
 | `payment_references` | Link between Market order and ECloe Pay payment order. | Pay owns the payment order. |
-| `outbox_events` | Reliable event publication records. | Written in the same PostgreSQL transaction as business state. |
+| `outbox_events` | Reliable event publication records. | Written in the same Azure SQL transaction as business state. |
 
 ## Checkout Transaction
 
@@ -301,7 +301,7 @@ The target architecture should use:
 - Microsoft Entra ID or Entra External ID;
 - Managed Identity between Azure services;
 - Azure Key Vault;
-- PostgreSQL connections over TLS;
+- Azure SQL connections over TLS;
 - Private Endpoint in protected environments;
 - scope-based authorization;
 - payload limits;
@@ -365,22 +365,22 @@ For the MVP, the low-consumption direction is:
 |:---|:---|:---|
 | Frontend | Azure Static Web Apps | Hosts ECloe Web when a demo UI exists. |
 | Runtime | Azure Container Apps | Runs ECloe BFF, Market API, Pay API, Engine API, and Outbox Worker. |
-| Transactions | Azure Database for PostgreSQL Flexible Server | Market and Pay may share one server with separate schemas for cost control. |
+| Transactions | Azure SQL Database | Market and Pay may share one low-consumption database with separate schemas for cost control. |
 | Events | Azure Service Bus | Distributes confirmed domain events. |
 | Event records and projections | Cosmos DB Serverless | Stores Engine decisions/rewards and future denormalized read models. |
 | Secrets | Azure Key Vault | Stores credentials and service configuration. |
 | Observability | Application Insights | Tracks latency, errors, fallback, funnel, and recommendation metrics. |
 | Artifacts | Azure Blob Storage | Stores exports, reports, metrics, and training artifacts. |
 
-Sharing PostgreSQL infrastructure does not allow Market to write Pay-owned tables or Pay to write Market-owned tables.
+Sharing Azure SQL infrastructure does not allow Market to write Pay-owned tables or Pay to write Market-owned tables.
 
 ## Implementation Sequence
 
 | PR | Scope | Notes |
 |:---|:---|:---|
 | 1 | Market foundation | Create planned `src/market/`, settings, health checks, and domain boundaries. |
-| 2 | PostgreSQL and migrations | Add SQLAlchemy, Alembic, connection handling, and initial migrations. |
-| 3 | Catalog | Categories, products, variants, `JSONB` attributes, prices, and read endpoints. |
+| 2 | Azure SQL and migrations | Add SQLAlchemy, Alembic, connection handling, and initial migrations. |
+| 3 | Catalog | Categories, products, variants, JSON attributes, prices, and read endpoints. |
 | 4 | Inventory | Availability, reservation, release, concurrency checks, and conflict tests. |
 | 5 | Cart | Cart creation, item add/remove, expiry, and quantity revalidation. |
 | 6 | Checkout | Cart snapshot, price and stock revalidation, context aggregation, and idempotency. |
@@ -389,7 +389,7 @@ Sharing PostgreSQL infrastructure does not allow Market to write Pay-owned table
 | 9 | ECloe Engine integration | Eligible offers, decision call, displayed offer, reward registration, and fallback. |
 | 10 | Events and outbox | Outbox table, worker, Service Bus, retries, dead-letter, and event versions. |
 | 11 | ECloe BFF | Integrated demo session, journey orchestration, context aggregation, and timeline. |
-| 12 | Azure infrastructure | Container Apps, PostgreSQL, Service Bus, Key Vault, Managed Identities, and Application Insights. |
+| 12 | Azure infrastructure | Container Apps, Azure SQL, Service Bus, Key Vault, Managed Identities, and Application Insights. |
 
 ## Acceptance Criteria
 

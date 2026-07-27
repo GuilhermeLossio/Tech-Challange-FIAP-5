@@ -58,7 +58,7 @@ Use `ecloe-raw` for immutable Kaggle source files and `ecloe-processed` for clea
 
 ## Azure Event Store
 
-For the MVP, use either Cosmos DB Serverless or a small PostgreSQL instance. The planned event collections/tables are:
+For the MVP, use either Cosmos DB Serverless or Azure SQL Database serverless. The planned event collections/tables are:
 
 ```text
 decisions

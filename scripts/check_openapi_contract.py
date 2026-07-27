@@ -1,13 +1,15 @@
 from __future__ import annotations
 
-from pathlib import Path
+# ruff: noqa: E402, I001
+
 import sys
+from pathlib import Path
 
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT_DIR))
 
-from src.api.main import create_app  # noqa: E402
+from src.api.main import create_app
 
 
 REQUIRED_OPERATIONS = {

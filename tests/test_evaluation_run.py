@@ -102,3 +102,16 @@ def test_run_evaluation_rejects_too_small_max_rows(tmp_path) -> None:
         assert "--max-rows must be at least 2" in str(error)
     else:
         raise AssertionError("Expected max rows validation error")
+
+
+def test_run_evaluation_rejects_empty_input(tmp_path) -> None:
+    input_file = tmp_path / "processed.csv"
+    output_dir = tmp_path / "policy_training"
+    processed_dataframe().head(0).to_csv(input_file, index=False)
+
+    try:
+        run_evaluation(input_file=input_file, output_dir=output_dir, seed=42)
+    except ValueError as error:
+        assert "at least 2 rows" in str(error)
+    else:
+        raise AssertionError("Expected empty input validation error")
