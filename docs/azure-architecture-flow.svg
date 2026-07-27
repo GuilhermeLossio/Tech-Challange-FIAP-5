@@ -36,8 +36,8 @@
   </defs>
 
   <rect width="1240" height="640" fill="#ffffff"/>
-  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Arquitetura Azure de Baixo Consumo</text>
-  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Arquitetura alvo para demo: runtime pequeno, estado gerenciado, segredos fora do codigo e telemetria essencial.</text>
+  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Low-Consumption Azure Architecture</text>
+  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Target demo architecture: small runtime, managed state, secrets outside code, and essential telemetry.</text>
 
   <rect x="40" y="112" width="226" height="356" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
   <text x="70" y="140" class="sectionText">Local / Demo</text>

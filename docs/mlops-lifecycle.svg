@@ -35,11 +35,11 @@
   </defs>
 
   <rect width="1240" height="520" fill="#ffffff"/>
-  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Ciclo de Vida MLOps Leve</text>
-  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Pipeline local-first para rastrear, validar e promover uma politica demonstravel com baixo custo operacional.</text>
+  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Lightweight MLOps Lifecycle</text>
+  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Local-first pipeline to track, validate, and promote a demonstrable policy with low operational cost.</text>
 
   <rect x="40" y="112" width="1160" height="288" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="70" y="140" class="sectionText">Pipeline de avaliacao e promocao</text>
+  <text x="70" y="140" class="sectionText">Evaluation and promotion pipeline</text>
 
   <path d="M 240 254 C 258 238, 274 238, 292 254" fill="none" stroke="#57606a" stroke-width="2.3" marker-end="url(#arrowGray)"/>
   <path d="M 422 254 C 440 236, 456 236, 474 254" fill="none" stroke="#4f79c9" stroke-width="2.7" marker-end="url(#arrowBlue)" opacity="0.78"/>
@@ -154,9 +154,9 @@
   <g transform="translate(160 432)">
     <rect width="920" height="48" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
     <circle cx="28" cy="24" r="6" fill="#2563eb"/>
-    <text x="46" y="21" class="bodyText">MLflow: rastreamento de experimentos, metricas e artefatos.</text>
+    <text x="46" y="21" class="bodyText">MLflow: experiment tracking, metrics, and artifacts.</text>
     <circle cx="486" cy="24" r="6" fill="#57606a"/>
-    <text x="504" y="21" class="bodyText">Golden Set: casos deterministas para validacao explicavel.</text>
-    <text x="46" y="38" class="bodyText">Fluxo principal em azul; seta tracejada indica aprendizado offline.</text>
+    <text x="504" y="21" class="bodyText">Golden Set: deterministic cases for explainable validation.</text>
+    <text x="46" y="38" class="bodyText">Main flow is blue; dashed arrow indicates offline learning.</text>
   </g>
 </svg>

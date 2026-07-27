@@ -2,6 +2,8 @@
 
 ECloe is a low-cost adaptive experimentation MVP for next-best-action recommendations in an integrated marketplace and digital wallet ecosystem. The product story is composed of ECloe Market, ECloe Pay, and ECloe Engine. It currently contains Hillstrom data ingestion/processing code, offline policy evaluation, a lightweight purchase-likelihood validator, a local FastAPI service, validation reports, storage configuration shapes, tests, notebooks, and documentation for a future demo interface.
 
+Author: Guilherme Lossio, Senior ML Engineer. Academic context: project for the fifth step of the FIAP MBA in Machine Learning.
+
 ## Overview
 
 ![Decision flow](docs/decision-flow.svg)

@@ -36,11 +36,11 @@
   </defs>
 
   <rect width="1240" height="620" fill="#ffffff"/>
-  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Fluxo de Decisao e Aprendizado</text>
-  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">O caminho online responde a decisao; o caminho offline usa recompensa atrasada para revisar a politica.</text>
+  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Decision and Learning Flow</text>
+  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">The online path returns a decision; the offline path uses delayed rewards to review the policy.</text>
 
   <rect x="40" y="112" width="1160" height="226" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.4"/>
-  <text x="70" y="140" class="sectionText">Caminho online de decisao</text>
+  <text x="70" y="140" class="sectionText">Online decision path</text>
 
   <path d="M 256 238 C 276 220, 294 220, 314 238" fill="none" stroke="#57606a" stroke-width="2.3" marker-end="url(#arrowGray)"/>
   <path d="M 484 238 C 504 218, 522 218, 542 238" fill="none" stroke="#3d6fd0" stroke-width="2.9" marker-end="url(#arrowBlue)" opacity="0.85"/>
@@ -130,7 +130,7 @@
   </g>
 
   <rect x="40" y="368" width="1160" height="126" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.4"/>
-  <text x="70" y="396" class="sectionText">Caminho offline de aprendizado</text>
+  <text x="70" y="396" class="sectionText">Offline learning path</text>
 
   <g transform="translate(500 426)" filter="url(#softShadow)">
     <rect width="240" height="42" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2.2"/>

@@ -4,6 +4,8 @@
 
 ECloe is a low-cost adaptive experimentation MVP for recommending next-best eligible actions in an integrated marketplace and digital wallet ecosystem. The system is framed as ECloe Market for simulated commerce behavior, ECloe Pay for simulated wallet context, and ECloe Engine for adaptive decisioning. It combines Kaggle-based data preparation, offline bandit policy evaluation, purchase-likelihood validation, Golden Set validation, local reports, and a lightweight local API.
 
+Author: Guilherme Lossio, Senior ML Engineer. Academic context: project for the fifth step of the FIAP MBA in Machine Learning.
+
 ## Main Components
 
 | Component | Responsibility |

@@ -21,7 +21,7 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 - [Validation Evidence](#validation-evidence)
 - [Golden Set](#golden-set)
 - [Deployment Strategy](#deployment-strategy)
-- [Team Identification](#team-identification)
+- [Author and Project Identification](#author-and-project-identification)
 - [Related Docs](#related-docs)
 - [Limitations](#limitations)
 
@@ -518,9 +518,13 @@ Cloud deployment assets are present in `Dockerfile`, `.github/workflows/deploy.y
 
 ---
 
-## Team Identification
+## Author and Project Identification
 
-FIAP submissions often require team members and RM identifiers in the central README. The repository currently identifies the project license holder as **Guilherme Ferreira Medeiros Lossio**, but no RM or full group roster was found in the tracked documentation. Add the final FIAP group/RM information here before the Demo Day submission if the challenge rubric requires it.
+| Field | Value |
+|:---|:---|
+| Author | Guilherme Lossio |
+| Role | Senior ML Engineer |
+| Academic context | Project for the fifth step of the FIAP MBA in Machine Learning |
 
 ---
 
