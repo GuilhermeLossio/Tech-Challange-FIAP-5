@@ -5,8 +5,10 @@
 | Area | Status | Notes |
 |:---|:---|:---|
 | ECloe Pay product surface | Planned for demo | Simulated wallet experience inside the ECloe Demo application. |
-| Wallet summary and benefits UI | Planned for demo | Shows demo balance, cashback, goals, benefits, and accepted-offer status. |
-| Offer interaction flow | Planned for demo | Opens, accepts, dismisses, or returns from the selected eligible offer. |
+| Wallet summary and benefits UI | Implemented | First static demo slice in `src/demo/ecloe_pay/` shows demo balance, cashback, goals, benefits, and accepted-offer status. |
+| Offer interaction flow | Implemented | First static demo slice opens, accepts, dismisses, and records deterministic reward-event evidence. |
+| Terms of service and demo disclaimer | Implemented | The static demo requires explicit acceptance that no real money is processed and no real user is created. |
+| Azure SQL Pay schema direction | Implemented | `src/demo/ecloe_pay/schema.sql` defines Pay-owned tables under the `ecloe_pay` schema and should evolve toward Azure SQL compatibility. |
 | Reward registration | Implemented | Uses the existing `POST /v1/rewards` endpoint after a verified demo interaction. |
 | Real payment account integration | Future | Requires governed upstream wallet, identity, security, compliance, and consent controls. |
 | Credit, fraud, risk, compliance, and eligibility decisions | Out of scope | These decisions remain upstream and are not performed by ECloe Pay or ECloe Engine. |
@@ -16,6 +18,10 @@
 ECloe Pay is the planned digital wallet surface for the ECloe demo. It turns the recommendation returned by ECloe Engine into a customer-facing wallet benefit, then records the customer interaction as an append-only reward event.
 
 In the MVP, ECloe Pay is not a real wallet, bank account, credit product, payment processor, or risk system. It is a simulated experience that demonstrates how wallet context and marketplace behavior can support responsible next-best-action personalization after upstream systems have already decided which offers are eligible.
+
+The first implemented demo slice is available in [`../src/demo/ecloe_pay/`](../src/demo/ecloe_pay/). It is a runnable Flask frontend/API that can also be opened as a static fallback without creating an account. It includes mandatory demo terms, deterministic simulated-payment confirmation, transaction idempotency evidence, technical mode, and a dedicated Azure SQL schema direction for future Pay-owned persistence.
+
+The Flask root route now serves the ECloe Pay landing page, while the runnable wallet demo is available at `/pay`.
 
 ## Architecture Diagrams
 
@@ -207,7 +213,9 @@ The current repository documents a low-consumption Azure target architecture for
 |:---|:---|:---|
 | Frontend hosting | Azure Static Web Apps or App Service | Future demo UI hosting option. |
 | Runtime integration | Demo Backend-for-Frontend | Aggregates session state and calls ECloe Engine. |
-| Decision and reward events | Cosmos DB Serverless or small PostgreSQL | Must preserve idempotency and append-only reward behavior. |
+| Decision and reward events | Cosmos DB Serverless or Azure SQL Database serverless | Must preserve idempotency and append-only reward behavior. |
+| Pay transactional state | Azure SQL Database | Dedicated `ecloe_pay` schema owns demo sessions, wallet snapshots, payment orders, benefit interactions, and outbox events. |
+| Pay artifact bucket | Azure Blob Storage | Dedicated `ecloe-pay-demo-artifacts` bucket stores only demo-safe Pay evidence such as simulated receipts or screenshots. |
 | Secrets | Azure Key Vault | Keeps API credentials and service configuration outside code. |
 | Observability | Application Insights | Tracks UI actions, Engine latency, failures, and fallback mode without logging sensitive context. |
 
@@ -224,6 +232,39 @@ ECloe Pay is ready for the planned demo when:
 - technical mode exposes request, decision, reward, and policy evidence;
 - the UI never claims credit approval, eligibility approval, fraud detection, risk decisions, or immediate online learning;
 - fallback presentation mode works when the local Engine API is unavailable.
+
+## Implemented Static Demo Slice
+
+The initial implementation lives in:
+
+```text
+src/demo/ecloe_pay/
+```
+
+Files:
+
+| File | Purpose |
+|:---|:---|
+| `app.py` | Flask app with landing, wallet, session, terms, simulated payment, reset, and benefit interaction routes. |
+| `landing.html` | ECloe Pay landing page explaining the simulated product, secure demo flow, private bucket, and Azure SQL ownership. |
+| `index.html` | ECloe Pay wallet, benefit, activity, security, and terms UI. |
+| `styles.css` | Responsive kawaii-inspired visual system for the static demo. |
+| `app.js` | Browser client for Flask APIs, plus static fallback state, terms gate, simulated transaction validation, idempotency guard, and reward-event evidence. |
+| `schema.sql` | Pay-owned `ecloe_pay` schema and dedicated Pay bucket record, with Azure SQL as the target database direction. |
+
+The static slice deliberately does not create users, collect credentials, store real payment data, or call external financial services.
+
+Run locally:
+
+```powershell
+.venv\Scripts\python.exe -m flask --app src.demo.ecloe_pay.app run --host 127.0.0.1 --port 5000
+```
+
+Create the dedicated private Azure Blob container:
+
+```powershell
+.\scripts\create_ecloe_pay_bucket.ps1
+```
 
 ## Related Documentation
 

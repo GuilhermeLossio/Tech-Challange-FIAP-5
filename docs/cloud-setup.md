@@ -52,6 +52,14 @@ AZURE_COSMOS_CONTAINER_POLICIES=policy_versions
 
 Use `AZURE_COSMOS_KEY` only for local experiments when Managed Identity is not available. Azure App Service or Container Apps must use Managed Identity and a Cosmos DB data-plane role assignment. Startup is expected to fail in cloud when `AUTH_MODE=disabled`, `AZURE_COSMOS_KEY` is present, or `AZURE_COSMOS_AUTH_MODE` is not `managed_identity`.
 
+For local Azure CLI authentication without storing a Cosmos DB master key, grant the signed-in user data-plane access:
+
+```powershell
+.\scripts\grant_cosmos_data_contributor.ps1
+```
+
+The script assigns the built-in Cosmos DB data contributor role on the `ecloe` database scope for `ecloe5cosmos1266cl`. It does not read or write `.env` and does not print or store Cosmos DB keys.
+
 ## Region Notes
 
 The subscription policy allowed only a limited set of regions. Serverless creation failed in `northcentralus`, `canadacentral`, and `southcentralus` due to regional capacity constraints. `chilecentral` accepted the Serverless account.
@@ -62,3 +70,27 @@ The subscription policy allowed only a limited set of regions. Serverless creati
 - Keep training reports local unless cloud upload is explicitly needed.
 - Avoid AKS, Azure Machine Learning, API Management, and Azure AI Search for this stage.
 - Delete unused experimental Cosmos accounts if they were left in failed provisioning state.
+
+## ECloe Pay Demo Artifact Bucket
+
+ECloe Pay uses a dedicated private Azure Blob container for simulated Pay evidence such as demo-safe receipts, UI screenshots, and exported technical artifacts. It must not store real payment credentials, user account data, CPF, card data, or bank details.
+
+Create or reuse the ECloe Pay storage resources with Azure CLI:
+
+```powershell
+.\scripts\create_ecloe_pay_bucket.ps1
+```
+
+Defaults:
+
+| Setting | Value |
+|:---|:---|
+| Resource group | `FIAPTechChallange5` |
+| Region | `chilecentral` |
+| Storage account base name | `ecloepaydemo` |
+| Container | `ecloe-pay-demo-artifacts` |
+| Access level | Private |
+| SKU | `Standard_LRS` |
+| Minimum TLS | `TLS1_2` |
+
+The script does not read or write `.env`. It requires an active Azure CLI login and creates the container with `--auth-mode login`.

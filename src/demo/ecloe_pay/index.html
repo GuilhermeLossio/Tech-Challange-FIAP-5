@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ECloe Pay Demo</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="ECloe Pay navigation">
+        <div class="brand">
+          <span class="brand-mark" aria-hidden="true">EP</span>
+          <div>
+            <p class="eyebrow">Simulated wallet</p>
+            <h1>ECloe Pay</h1>
+          </div>
+        </div>
+        <nav class="nav-list" aria-label="Primary">
+          <a href="/">Landing</a>
+          <a href="#wallet" aria-current="page">Wallet</a>
+          <a href="#benefit">Benefit</a>
+          <a href="#activity">Activity</a>
+          <a href="#security">Security</a>
+          <a href="#terms">Terms</a>
+        </nav>
+        <div class="status-panel">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span>Demo mode only</span>
+        </div>
+      </aside>
+
+      <main class="content">
+        <section class="topbar" aria-label="Session controls">
+          <div>
+            <p class="eyebrow">Session</p>
+            <strong id="sessionId">sess_pay_demo_001</strong>
+          </div>
+          <div class="segmented-control" aria-label="Display mode">
+            <button type="button" id="customerModeButton" class="active">Customer</button>
+            <button type="button" id="technicalModeButton">Technical</button>
+          </div>
+        </section>
+
+        <section id="wallet" class="wallet-grid" aria-label="Wallet summary">
+          <article class="balance-panel">
+            <div>
+              <p class="eyebrow">Demo balance</p>
+              <strong>R$ 428,70</strong>
+              <span>No real funds are stored or moved.</span>
+            </div>
+            <button type="button" id="openTermsButton" class="icon-button" aria-label="Open terms">
+              i
+            </button>
+          </article>
+
+          <article class="metric-panel">
+            <p class="eyebrow">Cashback</p>
+            <strong>R$ 18,40</strong>
+            <span>Simulated wallet benefit</span>
+          </article>
+
+          <article class="metric-panel">
+            <p class="eyebrow">Goal</p>
+            <strong>64%</strong>
+            <span>Next recurring purchase</span>
+          </article>
+        </section>
+
+        <section id="benefit" class="main-grid">
+          <article class="benefit-panel">
+            <div class="benefit-header">
+              <div>
+                <p class="eyebrow">Selected eligible benefit</p>
+                <h2 id="benefitTitle">Cashback for recurring purchases</h2>
+              </div>
+              <span id="benefitState" class="pill">Ready</span>
+            </div>
+            <p id="benefitMessage">
+              Earn cashback on your recurring purchases. This is a simulated wallet benefit
+              selected from offers that were already eligible for the demo session.
+            </p>
+
+            <div class="payment-card" aria-label="Simulated payment order">
+              <div>
+                <p class="eyebrow">Payment order</p>
+                <strong>R$ 127,90</strong>
+              </div>
+              <span>order_demo_7841</span>
+            </div>
+
+            <form id="transactionForm" class="transaction-form">
+              <label for="confirmationCode">Security confirmation</label>
+              <div class="input-row">
+                <input
+                  id="confirmationCode"
+                  name="confirmationCode"
+                  autocomplete="off"
+                  inputmode="numeric"
+                  maxlength="6"
+                  placeholder="Enter 0426"
+                  aria-describedby="securityHint"
+                />
+                <button type="submit">Simulate payment</button>
+              </div>
+              <p id="securityHint">
+                The transaction is accepted only with the deterministic demo code, an
+                idempotency key, and a locked session.
+              </p>
+            </form>
+
+            <div class="action-row" aria-label="Benefit actions">
+              <button type="button" id="viewBenefitButton">Open benefit</button>
+              <button type="button" id="dismissBenefitButton" class="secondary-button">
+                Dismiss
+              </button>
+              <button type="button" id="acceptBenefitButton" class="secondary-button">
+                Accept benefit
+              </button>
+            </div>
+          </article>
+
+          <aside class="summary-panel" aria-label="Technical evidence">
+            <div class="summary-header">
+              <p class="eyebrow">Security controls</p>
+              <span id="securityState" class="pill success">Locked</span>
+            </div>
+            <ul class="check-list">
+              <li>Generated demo session, no user creation</li>
+              <li>Idempotency key for the payment order</li>
+              <li>No card, bank, CPF, or account data fields</li>
+              <li>Append-only reward event after verified action</li>
+            </ul>
+
+            <div id="technicalPanel" class="technical-panel" hidden>
+              <p class="eyebrow">Technical mode</p>
+              <dl>
+                <div>
+                  <dt>decision_id</dt>
+                  <dd>dec_demo_001</dd>
+                </div>
+                <div>
+                  <dt>offer_id</dt>
+                  <dd>cashback_recurring_purchase</dd>
+                </div>
+                <div>
+                  <dt>policy</dt>
+                  <dd>likelihood_ranker</dd>
+                </div>
+                <div>
+                  <dt>bucket</dt>
+                  <dd>ecloe-pay-demo-artifacts</dd>
+                </div>
+              </dl>
+            </div>
+          </aside>
+        </section>
+
+        <section id="activity" class="activity-panel" aria-label="Simulated activity">
+          <div class="section-heading">
+            <div>
+              <p class="eyebrow">Timeline</p>
+              <h2>Simulated transaction evidence</h2>
+            </div>
+            <button type="button" id="resetButton" class="secondary-button">Reset</button>
+          </div>
+          <ol id="timeline" class="timeline"></ol>
+        </section>
+
+        <section id="security" class="terms-inline" aria-label="Security statement">
+          <h2>Security baseline</h2>
+          <p>
+            ECloe Pay validates the simulated confirmation step, locks the session, uses
+            idempotency, separates Pay-owned state in PostgreSQL, and never asks for real
+            payment credentials.
+          </p>
+        </section>
+      </main>
+    </div>
+
+    <dialog id="termsDialog" aria-labelledby="termsTitle">
+      <form method="dialog" class="terms-dialog">
+        <h2 id="termsTitle">ECloe Pay demo terms</h2>
+        <p>
+          ECloe Pay is a demonstration application. It does not create real users,
+          process real money, move funds, authorize payments, approve credit, perform
+          fraud checks, or provide regulated financial services.
+        </p>
+        <p>
+          All balances, transactions, wallet benefits, rewards, and confirmations are
+          synthetic and session-scoped. Do not enter real card, bank, CPF, password, or account information.
+        </p>
+        <label class="terms-check">
+          <input id="termsCheckbox" type="checkbox" />
+          I understand this is a demo and no real money is processed.
+        </label>
+        <button id="acceptTermsButton" type="button" disabled>Continue</button>
+      </form>
+    </dialog>
+
+    <script src="./app.js" type="module"></script>
+  </body>
+</html>

@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ECloe Pay</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body class="landing-body">
+    <main class="landing-shell">
+      <section class="landing-hero" aria-label="ECloe Pay demo landing page">
+        <div class="landing-copy">
+          <p class="eyebrow">Simulated payments demo</p>
+          <h1>ECloe Pay</h1>
+          <p class="landing-lede">
+            A runnable wallet demo for secure simulated payments, eligible benefits,
+            and reward-event evidence without creating users or processing real money.
+          </p>
+          <div class="landing-actions">
+            <a class="primary-link" href="/pay">Open wallet demo</a>
+            <a class="secondary-link" href="#security">Review safety model</a>
+          </div>
+        </div>
+        <div class="landing-device" aria-label="ECloe Pay preview">
+          <div class="device-top">
+            <span>ECloe Pay</span>
+            <strong>Demo</strong>
+          </div>
+          <div class="device-balance">
+            <span>Demo balance</span>
+            <strong>R$ 428,70</strong>
+          </div>
+          <div class="device-benefit">
+            <span>Selected eligible benefit</span>
+            <strong>Cashback for recurring purchases</strong>
+          </div>
+          <div class="device-row">
+            <span>Private bucket</span>
+            <strong>ecloe-pay-demo-artifacts</strong>
+          </div>
+        </div>
+      </section>
+
+      <section id="security" class="landing-band" aria-label="Security and data boundaries">
+        <article>
+          <p class="eyebrow">Safety</p>
+          <h2>Secure simulation only</h2>
+          <p>
+            ECloe Pay validates a deterministic confirmation step, locks duplicate
+            payment attempts with idempotency, and records only synthetic evidence.
+          </p>
+        </article>
+        <article>
+          <p class="eyebrow">Storage</p>
+          <h2>Private Pay artifacts</h2>
+          <p>
+            Demo receipts and Pay evidence use a dedicated private Azure Blob container:
+            <strong>ecloe-pay-demo-artifacts</strong>.
+          </p>
+        </article>
+        <article>
+          <p class="eyebrow">PostgreSQL</p>
+          <h2>Pay-owned schema</h2>
+          <p>
+            Simulated sessions, payment orders, benefit interactions, and outbox rows
+            belong to the dedicated <strong>ecloe_pay</strong> schema.
+          </p>
+        </article>
+      </section>
+
+      <section class="landing-terms" aria-label="Demo disclaimer">
+        <h2>No real financial service is provided</h2>
+        <p>
+          ECloe Pay does not create real users, process real money, move funds, authorize
+          payments, approve credit, perform fraud checks, open accounts, or provide
+          regulated payment services.
+        </p>
+      </section>
+    </main>
+  </body>
+</html>

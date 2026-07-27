@@ -37,7 +37,7 @@ ECloe Market is the planned marketplace surface inside the demo application. It 
 | Concern | Status | Architecture boundary |
 |:---|:---|:---|
 | Catalog and cart presentation | Planned for demo | Simulated products, categories, product details, cart state, and checkout entry. |
-| Transactional source of truth | Planned for demo | PostgreSQL stores catalog, inventory, carts, checkout sessions, orders, order items, and outbox rows. |
+| Transactional source of truth | Planned for demo | Azure SQL stores catalog, inventory, carts, checkout sessions, orders, order items, and outbox rows. |
 | Checkout consistency | Planned for demo | Market revalidates price, stock, idempotency, and order state before committing. |
 | Event publication | Planned for demo | Outbox Worker publishes committed Market events to Azure Service Bus. |
 | Recommendation handoff | Planned for demo | BFF sends minimized context and eligible offers to ECloe Engine after upstream eligibility. |
@@ -128,7 +128,7 @@ The target cloud architecture keeps the MVP low-consumption:
 |:---|:---|:---|
 | Runtime | Azure App Service or Azure Container Apps | Runs a future script-backed API or lightweight FastAPI service. |
 | Artifacts | Azure Blob Storage | Stores processed datasets, Golden Set files, metrics, and policy artifacts. |
-| Events | Cosmos DB Serverless or small PostgreSQL | Stores decision events, reward events, and policy versions. |
+| Events | Cosmos DB Serverless or Azure SQL Database serverless | Stores decision events, reward events, and policy versions. |
 | Secrets | Azure Key Vault | Keeps Kaggle, storage, and runtime credentials outside code. |
 | Observability | Application Insights | Tracks latency, error rate, decision count, and reward count. |
 

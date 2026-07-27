@@ -1,6 +1,6 @@
 <svg viewBox="0 0 1180 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">ECloe Pay overview</title>
-  <desc id="desc">Overview of the planned ECloe Pay architecture showing customer, demo web frontend, BFF, Pay API, Engine API, outbox worker, Azure PostgreSQL, Service Bus, Cosmos DB, and Blob Storage.</desc>
+  <desc id="desc">Overview of the planned ECloe Pay architecture showing customer, demo web frontend, BFF, Pay API, Engine API, outbox worker, Azure SQL, Service Bus, Cosmos DB, and Blob Storage.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
@@ -66,7 +66,7 @@
   <text x="220" y="497" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Data and artifacts</text>
 
   <rect x="250" y="525" width="190" height="48" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="345" y="545" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Azure PostgreSQL</text>
+  <text x="345" y="545" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Azure SQL</text>
   <text x="345" y="562" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">Pay state and outbox</text>
 
   <rect x="530" y="525" width="190" height="48" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>

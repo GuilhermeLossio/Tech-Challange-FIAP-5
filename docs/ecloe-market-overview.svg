@@ -1,6 +1,6 @@
 <svg viewBox="0 0 1180 650" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">ECloe Market overview</title>
-  <desc id="desc">Overview of ECloe Market showing the customer, ECloe Web, BFF, Market API, Pay API, Engine API, PostgreSQL, Service Bus, Cosmos DB, Blob Storage, and outbox worker.</desc>
+  <desc id="desc">Overview of ECloe Market showing the customer, ECloe Web, BFF, Market API, Pay API, Engine API, Azure SQL, Service Bus, Cosmos DB, Blob Storage, and outbox worker.</desc>
   <defs>
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
@@ -53,7 +53,7 @@
   <text x="790" y="125" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">State and integration</text>
 
   <rect x="815" y="158" width="130" height="54" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="880" y="181" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">PostgreSQL</text>
+  <text x="880" y="181" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Azure SQL</text>
   <text x="880" y="198" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">Source of truth</text>
 
   <rect x="980" y="158" width="120" height="54" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>

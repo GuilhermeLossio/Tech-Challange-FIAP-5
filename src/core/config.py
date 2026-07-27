@@ -11,6 +11,8 @@ except ModuleNotFoundError:
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
+ECLOE_COSMOS_ACCOUNT = "ecloe5cosmos1266cl"
+DEFAULT_AZURE_COSMOS_ENDPOINT = f"https://{ECLOE_COSMOS_ACCOUNT}.documents.azure.com:443/"
 
 
 def _load_env_file(path: Path) -> None:
@@ -90,8 +92,9 @@ class Settings:
         return self.processed_data_dir / self.processed_filename
 
 
-def load_settings() -> Settings:
-    _load_env_file(ROOT_DIR / ".env")
+def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) -> Settings:
+    if use_env_file:
+        _load_env_file(env_file or ROOT_DIR / ".env")
 
     data_dir = ROOT_DIR / _env("DATA_DIR", "data")
     raw_data_dir = ROOT_DIR / _env("RAW_DATA_DIR", "data/raw")
@@ -115,7 +118,7 @@ def load_settings() -> Settings:
         azure_storage_connection_string=_env("AZURE_STORAGE_CONNECTION_STRING"),
         azure_blob_container_raw=_env("AZURE_BLOB_CONTAINER_RAW", "ecloe-raw"),
         azure_blob_container_processed=_env("AZURE_BLOB_CONTAINER_PROCESSED", "ecloe-processed"),
-        azure_cosmos_endpoint=_env("AZURE_COSMOS_ENDPOINT"),
+        azure_cosmos_endpoint=_env("AZURE_COSMOS_ENDPOINT", DEFAULT_AZURE_COSMOS_ENDPOINT),
         azure_cosmos_key=_env("AZURE_COSMOS_KEY"),
         azure_cosmos_database=_env("AZURE_COSMOS_DATABASE", "ecloe"),
         azure_cosmos_container_decisions=_env("AZURE_COSMOS_CONTAINER_DECISIONS", "decisions"),
