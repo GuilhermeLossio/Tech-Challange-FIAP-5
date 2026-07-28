@@ -153,3 +153,52 @@ Defaults:
 | Minimum TLS | `TLS1_2` |
 
 The script does not read or write `.env`. It requires an active Azure CLI login and creates the container with `--auth-mode login`.
+
+## ECloe Pay Azure SQL Database
+
+ECloe Pay can persist its simulated banking state in Azure SQL. The default local mode remains `memory`; Azure SQL is opt-in and stores only personas and synthetic wallet/session/payment evidence.
+
+Confirmed database:
+
+| Setting | Value |
+|:---|:---|
+| Resource group | `FIAPTechChallange5` |
+| Server | `ecloe-sql-1266.database.windows.net` |
+| Database | `ecloe_validation` |
+| Schema | `ecloe_pay` |
+| Region | `chilecentral` |
+| Authentication | Microsoft Entra ID only |
+
+Local development settings:
+
+```text
+ECLOE_PAY_DATABASE_MODE=azure_sql
+ECLOE_PAY_SQL_SERVER=ecloe-sql-1266.database.windows.net
+ECLOE_PAY_SQL_DATABASE=ecloe_validation
+ECLOE_PAY_SQL_AUTH_MODE=azure_cli
+ECLOE_PAY_SQL_DRIVER=ODBC Driver 18 for SQL Server
+```
+
+`entra_interactive` is allowed only for local development. Cloud runtime must use:
+
+```text
+ECLOE_PAY_DATABASE_MODE=azure_sql
+ECLOE_PAY_SQL_AUTH_MODE=managed_identity
+ECLOE_PAY_COOKIE_SECURE=true
+```
+
+Open local firewall access only for the current client IP:
+
+```powershell
+.\scripts\allow_ecloe_pay_sql_current_ip.ps1
+```
+
+This script does not create a `0.0.0.0` rule and does not enable broad "Allow Azure Services" access.
+
+Apply the schema and seed the synthetic demo persona after installing the optional SQL dependencies:
+
+```powershell
+python scripts\migrate_ecloe_pay_azure_sql.py
+```
+
+The schema must not store CPF, card, bank account, agency, real banking password, or real payment credentials.

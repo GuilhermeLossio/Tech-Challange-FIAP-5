@@ -8,7 +8,7 @@
 | Wallet summary and benefits UI | Implemented | First static demo slice in `src/demo/ecloe_pay/` shows demo balance, cashback, goals, benefits, and accepted-offer status. |
 | Offer interaction flow | Implemented | First static demo slice opens, accepts, dismisses, and records deterministic reward-event evidence. |
 | Terms of service and demo disclaimer | Implemented | The static demo requires explicit acceptance that no real money is processed and no real user is created. |
-| Azure SQL Pay schema direction | Implemented | `src/demo/ecloe_pay/schema.sql` defines Pay-owned tables under the `ecloe_pay` schema and should evolve toward Azure SQL compatibility. |
+| Azure SQL Pay schema | Implemented | `src/demo/ecloe_pay/schema.sql` defines Pay-owned Azure SQL tables under the `ecloe_pay` schema. |
 | Reward registration | Implemented | Uses the existing `POST /v1/rewards` endpoint after a verified demo interaction. |
 | Real payment account integration | Future | Requires governed upstream wallet, identity, security, compliance, and consent controls. |
 | Credit, fraud, risk, compliance, and eligibility decisions | Out of scope | These decisions remain upstream and are not performed by ECloe Pay or ECloe Engine. |
@@ -19,7 +19,7 @@ ECloe Pay is the planned digital wallet surface for the ECloe demo. It turns the
 
 In the MVP, ECloe Pay is not a real wallet, bank account, credit product, payment processor, or risk system. It is a simulated experience that demonstrates how wallet context and marketplace behavior can support responsible next-best-action personalization after upstream systems have already decided which offers are eligible.
 
-The first implemented demo slice is available in [`../src/demo/ecloe_pay/`](../src/demo/ecloe_pay/). It is a runnable Flask frontend/API that can also be opened as a static fallback without creating an account. It includes mandatory demo terms, deterministic simulated-payment confirmation, transaction idempotency evidence, technical mode, and a dedicated Azure SQL schema direction for future Pay-owned persistence.
+The first implemented demo slice is available in [`../src/demo/ecloe_pay/`](../src/demo/ecloe_pay/). It is a runnable Flask frontend/API that can also be opened as a static fallback presentation. It includes demo-persona authentication, mandatory demo terms, deterministic simulated-payment confirmation, transaction idempotency evidence, technical mode, and optional Azure SQL persistence for Pay-owned state.
 
 The Flask root route now serves the ECloe Pay landing page, while the runnable wallet demo is available at `/pay`.
 
@@ -250,7 +250,8 @@ Files:
 | `index.html` | ECloe Pay wallet, benefit, activity, security, and terms UI. |
 | `styles.css` | Responsive kawaii-inspired visual system for the static demo. |
 | `app.js` | Browser client for Flask APIs, plus static fallback state, terms gate, simulated transaction validation, idempotency guard, and reward-event evidence. |
-| `schema.sql` | Pay-owned `ecloe_pay` schema and dedicated Pay bucket record, with Azure SQL as the target database direction. |
+| `schema.sql` | Pay-owned Azure SQL `ecloe_pay` schema and dedicated Pay bucket record. |
+| `repository.py` | Memory and Azure SQL repository implementations for simulated Pay state. |
 
 The static slice deliberately does not create users, collect credentials, store real payment data, or call external financial services.
 

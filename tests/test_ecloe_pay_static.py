@@ -13,14 +13,20 @@ def test_pay_demo_declares_simulation_boundaries() -> None:
     assert "No real funds are stored or moved" in html
 
 
-def test_pay_demo_has_dedicated_postgres_schema_and_bucket() -> None:
+def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
     schema = (PAY_DEMO / "schema.sql").read_text(encoding="utf-8")
 
-    assert "CREATE SCHEMA IF NOT EXISTS ecloe_pay" in schema
+    assert "CREATE SCHEMA ecloe_pay" in schema
     assert "ecloe_pay.payment_orders" in schema
     assert "ecloe_pay.benefit_interactions" in schema
+    assert "ecloe_pay.demo_users" in schema
+    assert "ecloe_pay.auth_sessions" in schema
     assert "ecloe-pay-demo-artifacts" in schema
-    assert "CHECK (pii_allowed = false)" in schema
+    assert "CHECK (pii_allowed = 0)" in schema
+    assert "TIMESTAMPTZ" not in schema
+    assert "JSONB" not in schema
+    assert "ON CONFLICT" not in schema
+    assert "CREATE TABLE IF NOT EXISTS" not in schema
 
 
 def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
@@ -30,6 +36,10 @@ def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     assert "Duplicate simulated payment blocked by idempotency" in script
     assert "confirmationCode" in script
     assert "POST /v1/rewards" in script
+    assert "localStorage" not in script
+    assert "/api/auth/me" in script
+    assert "/api/auth/logout" in script
+    assert "postgres_schema" not in script
 
 
 def test_pay_demo_documents_flask_run_command() -> None:
@@ -47,6 +57,7 @@ def test_pay_landing_declares_demo_storage_and_financial_boundaries() -> None:
     assert "ecloe-pay-demo-artifacts" in landing
     assert "ecloe_pay" in landing
     assert "does not create real users" in landing
+    assert "azure sql" in landing
 
 
 def test_pay_bucket_script_documents_private_azure_container() -> None:

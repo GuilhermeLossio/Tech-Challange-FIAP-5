@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ECloe Pay Demo Login</title>
+    <link rel="stylesheet" href="../styles.css" />
+  </head>
+  <body>
+    <main class="login-shell" aria-label="ECloe Pay demo login">
+      <section class="login-panel">
+        <p class="eyebrow">Simulated banking persona</p>
+        <h1>ECloe Pay</h1>
+        <p>
+          Sign in with a demo persona to validate Azure SQL-backed sessions. This does
+          not create a real bank account, move funds, process payments, or collect CPF,
+          card, agency, account, or banking-password data.
+        </p>
+        <form id="loginForm" class="login-form">
+          <label for="email">Demo email</label>
+          <input id="email" name="email" type="email" value="demo.pay@ecloe.local" autocomplete="username" />
+          <label for="password">Demo password</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="Configured demo password"
+            autocomplete="current-password"
+          />
+          <button type="submit">Sign in</button>
+          <p id="loginStatus" role="status"></p>
+        </form>
+        <a href="/">Back to landing</a>
+      </section>
+    </main>
+    <script type="module">
+      const form = document.querySelector("#loginForm");
+      const status = document.querySelector("#loginStatus");
+
+      form.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        status.textContent = "";
+        const payload = {
+          email: form.email.value.trim(),
+          password: form.password.value,
+        };
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const body = await response.json();
+        if (!response.ok) {
+          status.textContent = body.error || "Login failed.";
+          return;
+        }
+        window.location.assign("/pay");
+      });
+    </script>
+  </body>
+</html>

@@ -13,6 +13,9 @@ except ModuleNotFoundError:
 ROOT_DIR = Path(__file__).resolve().parents[2]
 ECLOE_COSMOS_ACCOUNT = "ecloe5cosmos1266cl"
 DEFAULT_AZURE_COSMOS_ENDPOINT = f"https://{ECLOE_COSMOS_ACCOUNT}.documents.azure.com:443/"
+ECLOE_PAY_DATABASE_MODES = {"memory", "azure_sql"}
+ECLOE_PAY_SQL_AUTH_MODES = {"entra_interactive", "azure_cli", "managed_identity"}
+CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
 
 
 def _load_env_file(path: Path) -> None:
@@ -38,6 +41,15 @@ def _env(name: str, default: str = "") -> str:
 
 def _split_csv(value: str) -> tuple[str, ...]:
     return tuple(item.strip() for item in value.split(",") if item.strip())
+
+
+def _bool_env(name: str, default: bool = False) -> bool:
+    value = _env(name, str(default)).lower()
+    if value in {"1", "true", "yes", "y", "on"}:
+        return True
+    if value in {"0", "false", "no", "n", "off"}:
+        return False
+    raise ValueError(f"{name} must be a boolean value.")
 
 
 @dataclass(frozen=True)
@@ -87,6 +99,15 @@ class Settings:
     decision_events_file: Path
     observability_enabled: bool
     applicationinsights_connection_string: str
+    ecloe_pay_database_mode: str
+    ecloe_pay_sql_server: str
+    ecloe_pay_sql_database: str
+    ecloe_pay_sql_auth_mode: str
+    ecloe_pay_sql_driver: str
+    ecloe_pay_session_ttl_seconds: int
+    ecloe_pay_cookie_secure: bool
+    ecloe_pay_demo_user_email: str
+    ecloe_pay_demo_user_password: str
 
     @property
     def raw_file(self) -> Path:
@@ -106,7 +127,7 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
     processed_data_dir = ROOT_DIR / _env("PROCESSED_DATA_DIR", "data/processed")
     reports_dir = ROOT_DIR / _env("REPORTS_DIR", "reports")
 
-    return Settings(
+    settings = Settings(
         kaggle_dataset=_env(
             "KAGGLE_DATASET",
             "bofulee/kevin-hillstrom-minethatdata-e-mailanalytics",
@@ -156,9 +177,55 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         decision_event_ttl_seconds=int(_env("DECISION_EVENT_TTL_SECONDS", "157680000")),
         decision_repository_mode=_env("DECISION_REPOSITORY_MODE", "file").lower(),
         decision_events_file=ROOT_DIR / _env("DECISION_EVENTS_FILE", "reports/decision_events.jsonl"),
-        observability_enabled=_env("OBSERVABILITY_ENABLED", "true").lower() == "true",
+        observability_enabled=_bool_env("OBSERVABILITY_ENABLED", True),
         applicationinsights_connection_string=_env("APPLICATIONINSIGHTS_CONNECTION_STRING"),
+        ecloe_pay_database_mode=_env("ECLOE_PAY_DATABASE_MODE", "memory").lower(),
+        ecloe_pay_sql_server=_env(
+            "ECLOE_PAY_SQL_SERVER",
+            "ecloe-sql-1266.database.windows.net",
+        ),
+        ecloe_pay_sql_database=_env("ECLOE_PAY_SQL_DATABASE", "ecloe_validation"),
+        ecloe_pay_sql_auth_mode=_env("ECLOE_PAY_SQL_AUTH_MODE", "entra_interactive").lower(),
+        ecloe_pay_sql_driver=_env("ECLOE_PAY_SQL_DRIVER", "ODBC Driver 18 for SQL Server"),
+        ecloe_pay_session_ttl_seconds=int(_env("ECLOE_PAY_SESSION_TTL_SECONDS", "3600")),
+        ecloe_pay_cookie_secure=_bool_env("ECLOE_PAY_COOKIE_SECURE", False),
+        ecloe_pay_demo_user_email=_env("ECLOE_PAY_DEMO_USER_EMAIL", "demo.pay@ecloe.local"),
+        ecloe_pay_demo_user_password=_env(
+            "ECLOE_PAY_DEMO_USER_PASSWORD",
+            "change-this-demo-password",
+        ),
     )
+    _validate_ecloe_pay_settings(settings)
+    return settings
+
+
+def _validate_ecloe_pay_settings(settings: Settings) -> None:
+    if settings.ecloe_pay_database_mode not in ECLOE_PAY_DATABASE_MODES:
+        raise ValueError(f"Unsupported ECLOE_PAY_DATABASE_MODE: {settings.ecloe_pay_database_mode}")
+    if settings.ecloe_pay_sql_auth_mode not in ECLOE_PAY_SQL_AUTH_MODES:
+        raise ValueError(f"Unsupported ECLOE_PAY_SQL_AUTH_MODE: {settings.ecloe_pay_sql_auth_mode}")
+    if settings.ecloe_pay_session_ttl_seconds <= 0:
+        raise ValueError("ECLOE_PAY_SESSION_TTL_SECONDS must be greater than zero.")
+
+    if settings.ecloe_pay_database_mode == "azure_sql":
+        missing = []
+        if not settings.ecloe_pay_sql_server:
+            missing.append("ECLOE_PAY_SQL_SERVER")
+        if not settings.ecloe_pay_sql_database:
+            missing.append("ECLOE_PAY_SQL_DATABASE")
+        if not settings.ecloe_pay_sql_driver:
+            missing.append("ECLOE_PAY_SQL_DRIVER")
+        if missing:
+            raise ValueError(f"Missing ECloe Pay Azure SQL settings: {missing}")
+
+    if settings.app_environment in CLOUD_ENVIRONMENTS:
+        if settings.ecloe_pay_sql_auth_mode == "entra_interactive":
+            raise ValueError("ECLOE_PAY_SQL_AUTH_MODE=entra_interactive is local-only.")
+        if (
+            settings.ecloe_pay_database_mode == "azure_sql"
+            and settings.ecloe_pay_sql_auth_mode != "managed_identity"
+        ):
+            raise ValueError("Cloud ECloe Pay Azure SQL must use managed_identity.")
 
 
 settings = load_settings(use_env_file=False)

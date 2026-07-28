@@ -1,4 +1,7 @@
-from src.demo.ecloe_pay.app import DEMO_BUCKET_NAME, create_app
+from datetime import UTC, datetime, timedelta
+
+from src.demo.ecloe_pay.app import create_app
+from src.demo.ecloe_pay.repository import DEMO_BUCKET_NAME, MemoryPayRepository
 
 
 def test_pay_flask_landing_page_exposes_demo_boundaries() -> None:
@@ -40,7 +43,7 @@ def test_pay_flask_session_exposes_demo_boundaries() -> None:
     assert body["security"]["user_creation_allowed"] is False
     assert body["security"]["real_money_processed"] is False
     assert body["security"]["bucket_name"] == DEMO_BUCKET_NAME
-    assert body["security"]["postgres_schema"] == "ecloe_pay"
+    assert body["security"]["sql_schema"] == "ecloe_pay"
 
 
 def test_pay_flask_requires_terms_before_interaction() -> None:
@@ -71,7 +74,58 @@ def test_pay_flask_accepts_terms_and_simulates_payment_once() -> None:
     assert payment_response.status_code == 200
     body = payment_response.get_json()
     assert body["status"] == "verified"
-    assert body["postgres_schema"] == "ecloe_pay"
+    assert body["sql_schema"] == "ecloe_pay"
     assert body["bucket_name"] == DEMO_BUCKET_NAME
     assert body["reward_event"]["event_type"] == "conversion"
     assert duplicate_response.status_code == 409
+
+
+def test_pay_flask_login_logout_flow() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    invalid = client.post(
+        "/api/auth/login",
+        json={"email": "demo.pay@ecloe.local", "password": "wrong"},
+    )
+    valid = client.post(
+        "/api/auth/login",
+        json={"email": "demo.pay@ecloe.local", "password": "change-this-demo-password"},
+    )
+    me = client.get("/api/auth/me")
+    logout = client.post("/api/auth/logout", json={})
+
+    assert invalid.status_code == 401
+    assert valid.status_code == 200
+    assert valid.get_json()["user"]["email"] == "demo.pay@ecloe.local"
+    assert me.status_code == 200
+    assert logout.status_code == 200
+
+
+def test_pay_flask_azure_sql_mode_requires_login(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "memory")
+    app = create_app()
+    repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
+    repository.requires_authentication = True
+    client = app.test_client()
+
+    response = client.get("/api/session")
+
+    assert response.status_code == 401
+
+
+def test_pay_flask_rejects_expired_session() -> None:
+    app = create_app()
+    repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
+    repository.requires_authentication = True
+    user = repository.authenticate("demo.pay@ecloe.local", "change-this-demo-password")
+    assert user is not None
+    auth_session = repository.create_auth_session(user.user_id)
+    auth_session.expires_at = datetime.now(UTC) - timedelta(seconds=1)
+    client = app.test_client()
+    with client.session_transaction() as flask_session:
+        flask_session["pay_auth_session_id"] = auth_session.auth_session_id
+
+    response = client.get("/api/auth/me")
+
+    assert response.status_code == 401

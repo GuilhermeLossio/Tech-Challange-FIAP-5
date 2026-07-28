@@ -29,6 +29,15 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "AZURE_ARTIFACT_PROMOTION_BLOB",
         "ARTIFACT_SOURCE",
         "ARTIFACT_CACHE_DIR",
+        "ECLOE_PAY_DATABASE_MODE",
+        "ECLOE_PAY_SQL_SERVER",
+        "ECLOE_PAY_SQL_DATABASE",
+        "ECLOE_PAY_SQL_AUTH_MODE",
+        "ECLOE_PAY_SQL_DRIVER",
+        "ECLOE_PAY_SESSION_TTL_SECONDS",
+        "ECLOE_PAY_COOKIE_SECURE",
+        "ECLOE_PAY_DEMO_USER_EMAIL",
+        "ECLOE_PAY_DEMO_USER_PASSWORD",
     ]:
         monkeypatch.delenv(name, raising=False)
 
@@ -54,3 +63,33 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.azure_blob_container_artifacts == "ecloe-artifacts"
     assert settings.azure_artifact_promotion_blob == "promoted/current.json"
     assert settings.artifact_cache_dir == ROOT_DIR / ".artifact_cache"
+    assert settings.ecloe_pay_database_mode == "memory"
+    assert settings.ecloe_pay_sql_server == "ecloe-sql-1266.database.windows.net"
+    assert settings.ecloe_pay_sql_database == "ecloe_validation"
+    assert settings.ecloe_pay_sql_auth_mode == "entra_interactive"
+    assert settings.ecloe_pay_cookie_secure is False
+
+
+def test_config_rejects_unknown_ecloe_pay_database_mode(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "postgres")
+
+    try:
+        load_settings(use_env_file=False)
+    except ValueError as error:
+        assert "Unsupported ECLOE_PAY_DATABASE_MODE" in str(error)
+    else:
+        raise AssertionError("Expected invalid ECLOE_PAY_DATABASE_MODE to fail")
+
+
+def test_config_requires_managed_identity_for_pay_sql_in_cloud(monkeypatch) -> None:
+    monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
+    monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "azure_cli")
+
+    try:
+        load_settings(use_env_file=False)
+    except ValueError as error:
+        assert "managed_identity" in str(error)
+        assert "change-this-demo-password" not in str(error)
+    else:
+        raise AssertionError("Expected cloud ECloe Pay SQL auth validation to fail")

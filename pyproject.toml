@@ -32,6 +32,11 @@ azure = [
     "azure-identity>=1.17.0",
     "azure-storage-blob>=12.22.0",
 ]
+azure-sql = [
+    "azure-identity>=1.17.0",
+    "pyodbc>=5.1.0",
+    "sqlalchemy>=2.0.0",
+]
 
 [build-system]
 requires = ["setuptools>=69.0"]

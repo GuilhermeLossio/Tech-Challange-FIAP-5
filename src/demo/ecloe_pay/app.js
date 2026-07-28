@@ -17,11 +17,26 @@ const securityState = document.querySelector("#securityState");
 const benefitState = document.querySelector("#benefitState");
 const transactionForm = document.querySelector("#transactionForm");
 const confirmationCode = document.querySelector("#confirmationCode");
+const sessionId = document.querySelector("#sessionId");
+const authIdentity = document.querySelector("#authIdentity");
+const logoutButton = document.querySelector("#logoutButton");
 
 let eventCounter = 1;
-let termsAccepted = localStorage.getItem("ecloePayTermsAccepted") === "true";
+let termsAccepted = false;
 let transactionLocked = false;
 let flaskAvailable = false;
+let backendRequiresAuth = false;
+
+async function getJson(url) {
+  const response = await fetch(url);
+  const body = await response.json();
+  if (!response.ok) {
+    const error = new Error(body.error || "Request failed");
+    error.status = response.status;
+    throw error;
+  }
+  return body;
+}
 
 async function postJson(url, payload) {
   const response = await fetch(url, {
@@ -31,7 +46,9 @@ async function postJson(url, payload) {
   });
   const body = await response.json();
   if (!response.ok) {
-    throw new Error(body.error || body.reason || "Request failed");
+    const error = new Error(body.error || body.reason || "Request failed");
+    error.status = response.status;
+    throw error;
   }
   return body;
 }
@@ -61,6 +78,14 @@ function requireTerms() {
   return termsAccepted;
 }
 
+function redirectToLoginWhenNeeded(error) {
+  if (error.status === 401) {
+    window.location.assign("/pay/login");
+    return true;
+  }
+  return false;
+}
+
 function recordReward(action, eventType, reward) {
   if (!requireTerms()) {
     return;
@@ -81,14 +106,18 @@ function recordReward(action, eventType, reward) {
           `${event.event_id}, ${event.event_type}, reward=${event.reward}, decision=${event.decision_id}`,
         );
       })
-      .catch((error) => appendTimeline(`Interaction rejected by Flask API: ${error.message}`));
+      .catch((error) => {
+        if (!redirectToLoginWhenNeeded(error)) {
+          appendTimeline(`Interaction rejected by Flask API: ${error.message}`);
+        }
+      });
     return;
   }
 
   const eventId = nextEventId();
   setBenefitState(action, reward === 1 ? "success" : "default");
   appendTimeline(
-    `${action}. Reward event prepared for POST /v1/rewards.`,
+    `${action}. Offline presentation reward event prepared for POST /v1/rewards.`,
     `${eventId}, ${eventType}, reward=${reward}, decision=${DEMO_STATE.decisionId}`,
   );
 }
@@ -104,9 +133,8 @@ termsCheckbox.addEventListener("change", () => {
 acceptTermsButton.addEventListener("click", () => {
   const finish = () => {
     termsAccepted = true;
-    localStorage.setItem("ecloePayTermsAccepted", "true");
     termsDialog.close();
-    appendTimeline("Demo terms accepted for this browser session.");
+    appendTimeline("Demo terms accepted for this backend session.");
   };
 
   if (!flaskAvailable) {
@@ -116,7 +144,11 @@ acceptTermsButton.addEventListener("click", () => {
 
   postJson("/api/terms", { accepted: true })
     .then(finish)
-    .catch((error) => appendTimeline(`Terms rejected by Flask API: ${error.message}`));
+    .catch((error) => {
+      if (!redirectToLoginWhenNeeded(error)) {
+        appendTimeline(`Terms rejected by Flask API: ${error.message}`);
+      }
+    });
 });
 
 document.querySelector("#customerModeButton").addEventListener("click", (event) => {
@@ -173,10 +205,13 @@ transactionForm.addEventListener("submit", (event) => {
         setBenefitState("Simulated payment accepted", "success");
         appendTimeline(
           "Flask API verified simulated payment and prepared reward event.",
-          `${body.reward_event.event_id}, schema=${body.postgres_schema}, bucket=${body.bucket_name}`,
+          `${body.reward_event.event_id}, schema=${body.sql_schema}, bucket=${body.bucket_name}`,
         );
       })
       .catch((error) => {
+        if (redirectToLoginWhenNeeded(error)) {
+          return;
+        }
         securityState.textContent = "Rejected";
         securityState.classList.remove("success");
         appendTimeline(`Simulated payment rejected by Flask API: ${error.message}`);
@@ -189,21 +224,24 @@ transactionForm.addEventListener("submit", (event) => {
   securityState.classList.add("success");
   recordReward("Simulated payment accepted", "conversion", 1);
   appendTimeline(
-    "Pay-owned PostgreSQL transaction would commit payment order and outbox event.",
+    "Pay-owned offline presentation transaction would commit payment order and outbox event.",
     `idempotency=${DEMO_STATE.idempotencyKey}, bucket=${DEMO_STATE.bucketName}`,
   );
 });
 
 document.querySelector("#resetButton").addEventListener("click", () => {
-  const finish = () => {
+  const finish = (body = {}) => {
     eventCounter = 1;
     transactionLocked = false;
+    termsAccepted = false;
     confirmationCode.value = "";
     securityState.textContent = "Locked";
     securityState.classList.add("success");
     setBenefitState("Ready");
     timeline.replaceChildren();
+    sessionId.textContent = body.session_id || DEMO_STATE.sessionId;
     appendTimeline("Session reset with deterministic demo data.");
+    termsDialog.showModal();
   };
 
   if (!flaskAvailable) {
@@ -213,23 +251,42 @@ document.querySelector("#resetButton").addEventListener("click", () => {
 
   postJson("/api/reset", {})
     .then(finish)
-    .catch((error) => appendTimeline(`Reset rejected by Flask API: ${error.message}`));
+    .catch((error) => {
+      if (!redirectToLoginWhenNeeded(error)) {
+        appendTimeline(`Reset rejected by Flask API: ${error.message}`);
+      }
+    });
 });
 
-fetch("/api/session")
-  .then((response) => response.json())
-  .then((body) => {
+logoutButton.addEventListener("click", () => {
+  postJson("/api/auth/logout", {})
+    .then(() => window.location.assign("/pay/login"))
+    .catch(() => window.location.assign("/pay/login"));
+});
+
+async function bootstrap() {
+  try {
+    const auth = await getJson("/api/auth/me");
     flaskAvailable = true;
+    backendRequiresAuth = Boolean(auth.requires_authentication);
+    authIdentity.textContent = auth.user?.email || "Demo persona";
+    const body = await getJson("/api/session");
+    sessionId.textContent = body.session.session_id;
+    termsAccepted = Boolean(body.session.terms_accepted);
     appendTimeline(
       "ECloe Pay Flask API connected with synthetic wallet data.",
-      `schema=${body.security.postgres_schema}, bucket=${body.security.bucket_name}`,
+      `schema=${body.security.sql_schema}, bucket=${body.security.bucket_name}`,
     );
-  })
-  .catch(() => {
-    appendTimeline("ECloe Pay loaded in static fallback mode with synthetic wallet data.");
-  })
-  .finally(() => {
+  } catch (error) {
+    if (redirectToLoginWhenNeeded(error)) {
+      return;
+    }
+    appendTimeline("ECloe Pay loaded in static fallback presentation mode with synthetic wallet data.");
+  } finally {
     if (!termsAccepted) {
       termsDialog.showModal();
     }
-  });
+  }
+}
+
+bootstrap();

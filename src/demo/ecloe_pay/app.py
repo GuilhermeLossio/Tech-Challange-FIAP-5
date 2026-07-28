@@ -1,66 +1,58 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
-from datetime import UTC, datetime
+from dataclasses import asdict
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_from_directory, session
+
+from src.core.config import Settings, load_settings
+from src.demo.ecloe_pay.repository import (
+    MemoryPayRepository,
+    PayRepository,
+    create_pay_repository,
+)
 
 DEMO_DIR = Path(__file__).resolve().parent
-DEMO_BUCKET_NAME = "ecloe-pay-demo-artifacts"
-DEMO_CONFIRMATION_CODE = "0426"
 
 
-@dataclass
-class DemoSession:
-    session_id: str
-    demo_subject_key: str
-    selected_decision_id: str
-    selected_offer_id: str
-    idempotency_key: str
-    bucket_name: str
-    payment_order_id: str
-    market_order_id: str
-    payment_amount_cents: int
-    payment_status: str = "created"
-    terms_accepted: bool = False
+def _current_user(app: Flask) -> tuple[dict[str, object] | None, str | None]:
+    repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+    auth_session_id = session.get("pay_auth_session_id")
+    if isinstance(auth_session_id, str):
+        auth_session = repository.get_auth_session(auth_session_id)
+        if auth_session is not None:
+            user = repository.get_user(auth_session.user_id)
+            if user is not None:
+                return asdict(user), auth_session.user_id
+    if not repository.requires_authentication:
+        memory_repository = repository
+        if isinstance(memory_repository, MemoryPayRepository):
+            seeded = next(iter(memory_repository.users.values()))[0]
+            return asdict(seeded), seeded.user_id
+    return None, None
 
 
-def _initial_session() -> DemoSession:
-    return DemoSession(
-        session_id="sess_pay_demo_001",
-        demo_subject_key="demo-subject-pay-001",
-        selected_decision_id="dec_demo_001",
-        selected_offer_id="cashback_recurring_purchase",
-        idempotency_key="pay-demo:order_demo_7841:0426",
-        bucket_name=DEMO_BUCKET_NAME,
-        payment_order_id="pay_order_demo_7841",
-        market_order_id="order_demo_7841",
-        payment_amount_cents=12790,
-    )
+def _session_or_error(app: Flask):
+    repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+    _, user_id = _current_user(app)
+    if user_id is None:
+        return None, jsonify({"error": "ECloe Pay login is required."}), 401
+    demo_session = repository.get_or_create_demo_session(user_id)
+    return demo_session, None, None
 
 
-def _event_payload(
-    session: DemoSession,
-    event_id: str,
-    event_type: str,
-    reward: float,
-) -> dict[str, object]:
-    return {
-        "decision_id": session.selected_decision_id,
-        "event_id": event_id,
-        "event_type": event_type,
-        "reward": reward,
-        "occurred_at": datetime.now(UTC).isoformat(),
-        "accepted": event_type == "conversion",
-    }
-
-
-def create_app() -> Flask:
+def create_app(
+    settings: Settings | None = None,
+    repository: PayRepository | None = None,
+) -> Flask:
+    settings = settings or load_settings(use_env_file=False)
     app = Flask(__name__, static_folder=str(DEMO_DIR), static_url_path="")
     app.config["JSON_SORT_KEYS"] = False
-    app.demo_session = _initial_session()  # type: ignore[attr-defined]
-    app.benefit_events = []  # type: ignore[attr-defined]
+    app.config["SESSION_COOKIE_SECURE"] = settings.ecloe_pay_cookie_secure
+    app.config["PERMANENT_SESSION_LIFETIME"] = settings.ecloe_pay_session_ttl_seconds
+    app.secret_key = settings.subject_key_salt
+    app.pay_settings = settings  # type: ignore[attr-defined]
+    app.pay_repository = repository or create_pay_repository(settings)  # type: ignore[attr-defined]
 
     @app.get("/")
     def landing():
@@ -70,47 +62,96 @@ def create_app() -> Flask:
     def pay():
         return send_from_directory(DEMO_DIR, "index.html")
 
-    @app.get("/api/session")
-    def get_session():
-        session: DemoSession = app.demo_session  # type: ignore[attr-defined]
+    @app.get("/pay/login")
+    def login_page():
+        return send_from_directory(DEMO_DIR, "login.html")
+
+    @app.post("/api/auth/login")
+    def login():
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        payload = request.get_json(silent=True) or {}
+        email = str(payload.get("email", "")).strip()
+        password = str(payload.get("password", ""))
+        user = repository.authenticate(email, password)
+        if user is None:
+            return jsonify({"error": "Invalid ECloe Pay demo credentials."}), 401
+        auth_session = repository.create_auth_session(user.user_id)
+        session.clear()
+        session.permanent = True
+        session["pay_auth_session_id"] = auth_session.auth_session_id
+        repository.get_or_create_demo_session(user.user_id)
+        return jsonify({"authenticated": True, "user": asdict(user)})
+
+    @app.post("/api/auth/logout")
+    def logout():
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        auth_session_id = session.get("pay_auth_session_id")
+        if isinstance(auth_session_id, str):
+            repository.revoke_auth_session(auth_session_id)
+        session.clear()
+        return jsonify({"authenticated": False})
+
+    @app.get("/api/auth/me")
+    def me():
+        user, _ = _current_user(app)
+        if user is None:
+            return jsonify({"authenticated": False}), 401
         return jsonify(
             {
-                "session": asdict(session),
-                "wallet": {
-                    "demo_balance_cents": 42870,
-                    "cashback_cents": 1840,
-                    "savings_goal_percent": 64,
-                    "currency": "BRL",
-                },
+                "authenticated": True,
+                "user": user,
+                "requires_authentication": app.pay_repository.requires_authentication,  # type: ignore[attr-defined]
+            }
+        )
+
+    @app.get("/api/session")
+    def get_session():
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        demo_session, response, status = _session_or_error(app)
+        if response is not None:
+            return response, status
+        wallet = repository.wallet_snapshot(demo_session.session_id)
+        return jsonify(
+            {
+                "session": asdict(demo_session),
+                "wallet": asdict(wallet),
                 "benefit": {
                     "title": "Cashback for recurring purchases",
                     "message": "Earn cashback on your recurring purchases.",
-                    "offer_id": session.selected_offer_id,
+                    "offer_id": demo_session.selected_offer_id,
                 },
                 "security": {
                     "user_creation_allowed": False,
                     "real_money_processed": False,
                     "requires_terms": True,
-                    "bucket_name": session.bucket_name,
-                    "postgres_schema": "ecloe_pay",
+                    "bucket_name": demo_session.bucket_name,
+                    "sql_schema": "ecloe_pay",
+                    "database_engine": "azure_sql"
+                    if repository.requires_authentication
+                    else "memory",
                 },
             }
         )
 
     @app.post("/api/terms")
     def accept_terms():
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        demo_session, response, status = _session_or_error(app)
+        if response is not None:
+            return response, status
         payload = request.get_json(silent=True) or {}
         if payload.get("accepted") is not True:
             return jsonify({"error": "Terms must be accepted before using ECloe Pay."}), 400
-
-        session: DemoSession = app.demo_session  # type: ignore[attr-defined]
-        session.terms_accepted = True
-        return jsonify({"accepted": True, "session_id": session.session_id})
+        demo_session = repository.accept_terms(demo_session.session_id)
+        return jsonify({"accepted": True, "session_id": demo_session.session_id})
 
     @app.post("/api/benefit-interactions")
     def create_benefit_interaction():
-        session: DemoSession = app.demo_session  # type: ignore[attr-defined]
-        if not session.terms_accepted:
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        demo_session, response, status = _session_or_error(app)
+        if response is not None:
+            return response, status
+        if not demo_session.terms_accepted:
             return jsonify({"error": "Demo terms are required before recording interactions."}), 403
 
         payload = request.get_json(silent=True) or {}
@@ -124,51 +165,58 @@ def create_app() -> Flask:
             return jsonify({"error": "Unsupported benefit action."}), 400
 
         event_type, reward = mapping[action]
-        event_id = f"evt_pay_demo_{len(app.benefit_events) + 1:03d}"  # type: ignore[attr-defined]
-        reward_payload = _event_payload(session, event_id, event_type, reward)
-        app.benefit_events.append(reward_payload)  # type: ignore[attr-defined]
-        return jsonify({"reward_event": reward_payload, "engine_endpoint": "POST /v1/rewards"})
+        reward_event = repository.record_benefit_interaction(
+            demo_session.session_id,
+            event_type,
+            reward,
+        )
+        return jsonify({"reward_event": reward_event, "engine_endpoint": "POST /v1/rewards"})
 
     @app.post("/api/payment-orders/<payment_order_id>/simulate")
     def simulate_payment(payment_order_id: str):
-        session: DemoSession = app.demo_session  # type: ignore[attr-defined]
-        if not session.terms_accepted:
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        demo_session, response, status = _session_or_error(app)
+        if response is not None:
+            return response, status
+        if not demo_session.terms_accepted:
             return jsonify({"error": "Demo terms are required before simulating payment."}), 403
-        if payment_order_id != session.payment_order_id:
+        if payment_order_id != demo_session.payment_order_id:
             return jsonify({"error": "Payment order was not found in this demo session."}), 404
-        if session.payment_status == "verified":
-            return jsonify({"error": "Duplicate simulated payment blocked by idempotency."}), 409
 
         payload = request.get_json(silent=True) or {}
-        if str(payload.get("confirmation_code", "")).strip() != DEMO_CONFIRMATION_CODE:
-            session.payment_status = "rejected"
+        result, reward_event = repository.simulate_payment(
+            demo_session.session_id,
+            str(payload.get("confirmation_code", "")).strip(),
+        )
+        if result == "duplicate":
+            return jsonify({"error": "Duplicate simulated payment blocked by idempotency."}), 409
+        if result == "rejected":
             return jsonify({"status": "rejected", "reason": "confirmation_code_mismatch"}), 400
 
-        session.payment_status = "verified"
-        event_id = f"evt_pay_demo_{len(app.benefit_events) + 1:03d}"  # type: ignore[attr-defined]
-        reward_payload = _event_payload(session, event_id, "conversion", 1.0)
-        app.benefit_events.append(reward_payload)  # type: ignore[attr-defined]
         return jsonify(
             {
                 "status": "verified",
                 "payment_order": {
-                    "payment_order_id": session.payment_order_id,
-                    "market_order_id": session.market_order_id,
-                    "amount_cents": session.payment_amount_cents,
+                    "payment_order_id": demo_session.payment_order_id,
+                    "market_order_id": demo_session.market_order_id,
+                    "amount_cents": demo_session.payment_amount_cents,
                     "currency": "BRL",
-                    "idempotency_key": session.idempotency_key,
+                    "idempotency_key": demo_session.idempotency_key,
                 },
-                "bucket_name": session.bucket_name,
-                "postgres_schema": "ecloe_pay",
-                "reward_event": reward_payload,
+                "bucket_name": demo_session.bucket_name,
+                "sql_schema": "ecloe_pay",
+                "reward_event": reward_event,
             }
         )
 
     @app.post("/api/reset")
     def reset_session():
-        app.demo_session = _initial_session()  # type: ignore[attr-defined]
-        app.benefit_events = []  # type: ignore[attr-defined]
-        return jsonify({"reset": True, "session_id": app.demo_session.session_id})  # type: ignore[attr-defined]
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        demo_session, response, status = _session_or_error(app)
+        if response is not None:
+            return response, status
+        new_session = repository.reset_session(demo_session.session_id)
+        return jsonify({"reset": True, "session_id": new_session.session_id})
 
     return app
 

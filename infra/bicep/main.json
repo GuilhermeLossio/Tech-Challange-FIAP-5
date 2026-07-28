@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.45.15.27210",
-      "templateHash": "14244149628474644685"
+      "templateHash": "11169623932283566832"
     }
   },
   "parameters": {
@@ -41,6 +41,27 @@
       "defaultValue": "ecloe",
       "metadata": {
         "description": "Existing Cosmos DB database name."
+      }
+    },
+    "ecloePaySqlServerName": {
+      "type": "string",
+      "defaultValue": "ecloe-sql-1266",
+      "metadata": {
+        "description": "Existing Azure SQL logical server name for ECloe Pay demo persistence."
+      }
+    },
+    "ecloePaySqlDatabaseName": {
+      "type": "string",
+      "defaultValue": "ecloe_validation",
+      "metadata": {
+        "description": "Existing Azure SQL database name for ECloe Pay demo persistence."
+      }
+    },
+    "ecloePaySqlDriver": {
+      "type": "string",
+      "defaultValue": "ODBC Driver 18 for SQL Server",
+      "metadata": {
+        "description": "ODBC driver expected in the ECloe Pay runtime image."
       }
     },
     "entraTenantId": {
@@ -267,6 +288,30 @@
                 {
                   "name": "APPLICATIONINSIGHTS_CONNECTION_STRING",
                   "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString]"
+                },
+                {
+                  "name": "ECLOE_PAY_DATABASE_MODE",
+                  "value": "azure_sql"
+                },
+                {
+                  "name": "ECLOE_PAY_SQL_SERVER",
+                  "value": "[format('{0}{1}', parameters('ecloePaySqlServerName'), environment().suffixes.sqlServerHostname)]"
+                },
+                {
+                  "name": "ECLOE_PAY_SQL_DATABASE",
+                  "value": "[parameters('ecloePaySqlDatabaseName')]"
+                },
+                {
+                  "name": "ECLOE_PAY_SQL_AUTH_MODE",
+                  "value": "managed_identity"
+                },
+                {
+                  "name": "ECLOE_PAY_SQL_DRIVER",
+                  "value": "[parameters('ecloePaySqlDriver')]"
+                },
+                {
+                  "name": "ECLOE_PAY_COOKIE_SECURE",
+                  "value": "true"
                 }
               ],
               "resources": {
@@ -343,6 +388,14 @@
     "cosmosDataContributorCommand": {
       "type": "string",
       "value": "[format('scripts/grant_cosmos_data_contributor.ps1 -AccountName {0} -DatabaseName {1} -PrincipalId {2}', parameters('cosmosAccountName'), parameters('cosmosDatabaseName'), reference(resourceId('Microsoft.App/containerApps', variables('appName')), '2024-03-01', 'full').identity.principalId)]"
+    },
+    "ecloePaySqlServer": {
+      "type": "string",
+      "value": "[reference(resourceId('Microsoft.Sql/servers', parameters('ecloePaySqlServerName')), '2023-08-01-preview').fullyQualifiedDomainName]"
+    },
+    "ecloePaySqlDatabase": {
+      "type": "string",
+      "value": "[parameters('ecloePaySqlDatabaseName')]"
     }
   }
 }

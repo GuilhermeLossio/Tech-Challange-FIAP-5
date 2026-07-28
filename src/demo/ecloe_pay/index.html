@@ -35,11 +35,13 @@
           <div>
             <p class="eyebrow">Session</p>
             <strong id="sessionId">sess_pay_demo_001</strong>
+            <span id="authIdentity">Demo persona</span>
           </div>
           <div class="segmented-control" aria-label="Display mode">
             <button type="button" id="customerModeButton" class="active">Customer</button>
             <button type="button" id="technicalModeButton">Technical</button>
           </div>
+          <button type="button" id="logoutButton" class="secondary-button">Logout</button>
         </section>
 
         <section id="wallet" class="wallet-grid" aria-label="Wallet summary">
@@ -126,7 +128,7 @@
               <span id="securityState" class="pill success">Locked</span>
             </div>
             <ul class="check-list">
-              <li>Generated demo session, no user creation</li>
+              <li>Generated demo persona, no real user creation</li>
               <li>Idempotency key for the payment order</li>
               <li>No card, bank, CPF, or account data fields</li>
               <li>Append-only reward event after verified action</li>
@@ -171,7 +173,7 @@
           <h2>Security baseline</h2>
           <p>
             ECloe Pay validates the simulated confirmation step, locks the session, uses
-            idempotency, separates Pay-owned state in PostgreSQL, and never asks for real
+            idempotency, separates Pay-owned state in Azure SQL, and never asks for real
             payment credentials.
           </p>
         </section>
