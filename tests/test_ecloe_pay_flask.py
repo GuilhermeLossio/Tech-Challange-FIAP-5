@@ -1,7 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
 from src.demo.ecloe_pay.app import create_app
-from src.demo.ecloe_pay.repository import DEMO_BUCKET_NAME, MemoryPayRepository
+from src.demo.ecloe_pay.repositories import DEMO_BUCKET_NAME, MemoryPayRepository
 
 
 def test_pay_flask_landing_page_exposes_demo_boundaries() -> None:

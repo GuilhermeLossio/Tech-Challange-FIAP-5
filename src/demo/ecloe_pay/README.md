@@ -31,7 +31,9 @@ Implemented in this slice:
 - Flask API routes for session state, terms, simulated payment orders, reset,
   and benefit interactions;
 - optional demo-persona login;
-- Azure SQL-compatible schema for Pay-owned state under the `ecloe_pay` schema.
+- Azure SQL-compatible schema for Pay-owned state under the `ecloe_pay` schema;
+- repository-based persistence with memory and Azure SQL implementations behind
+  the same PayRepository contract.
 
 The default repository mode is memory and does not require SQL dependencies:
 

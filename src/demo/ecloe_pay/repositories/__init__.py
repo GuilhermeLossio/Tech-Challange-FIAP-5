@@ -1,15 +1,15 @@
-from src.demo.ecloe_pay.repositories import (
+from src.demo.ecloe_pay.repositories.base import (
     DEMO_BUCKET_NAME,
     DEMO_CONFIRMATION_CODE,
     AuthSession,
     DemoSession,
     DemoUser,
-    MemoryPayRepository,
     PaymentOrder,
     PayRepository,
     WalletSnapshot,
-    create_pay_repository,
 )
+from src.demo.ecloe_pay.repositories.factory import create_pay_repository
+from src.demo.ecloe_pay.repositories.memory import MemoryPayRepository
 
 __all__ = [
     "DEMO_BUCKET_NAME",

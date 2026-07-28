@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import get_type_hints
 
 ROOT = Path(__file__).resolve().parents[1]
 PAY_DEMO = ROOT / "src" / "demo" / "ecloe_pay"
@@ -48,6 +49,50 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
     assert " card" not in schema.lower()
     assert "bank_account" not in schema.lower()
     assert "agency" not in schema.lower()
+
+
+def test_pay_repositories_expose_shared_contract_and_hide_sqlalchemy_from_routes() -> None:
+    from src.demo.ecloe_pay.repositories.azure_sql import AzureSqlPayRepository
+    from src.demo.ecloe_pay.repositories.base import PayRepository
+    from src.demo.ecloe_pay.repositories.memory import MemoryPayRepository
+
+    app_source = (PAY_DEMO / "app.py").read_text(encoding="utf-8")
+    contract = {
+        "get_user_by_email",
+        "create_or_update_demo_user",
+        "create_auth_session",
+        "get_auth_session",
+        "revoke_auth_session",
+        "get_demo_session",
+        "accept_terms",
+        "record_benefit_interaction",
+        "get_payment_order",
+        "simulate_payment",
+        "reset_demo_state",
+        "health_check",
+    }
+
+    assert "sqlalchemy" not in app_source.lower()
+    assert contract <= set(PayRepository.__dict__)
+    assert contract <= set(MemoryPayRepository.__dict__)
+    assert contract <= set(AzureSqlPayRepository.__dict__)
+    assert get_type_hints(PayRepository.create_auth_session)
+
+
+def test_pay_azure_sql_repository_uses_explicit_transactions_and_conditional_payment_update() -> None:
+    source = (PAY_DEMO / "repositories" / "azure_sql.py").read_text(encoding="utf-8")
+
+    assert "with self.engine.connect() as connection" in source
+    assert "transaction = connection.begin()" in source
+    assert "transaction.rollback()" in source
+    assert "transaction.commit()" in source
+    assert "WITH (UPDLOCK, ROWLOCK)" in source
+    assert "AND status IN (N'created', N'rejected')" in source
+    assert "result.rowcount != 1" in source
+    assert "_record_benefit_interaction(connection" in source
+    assert "_insert_outbox(" in source
+    assert "if demo_session.payment_status == \"verified\"" not in source
+    assert "with self.engine.begin()" not in source
 
 
 def test_pay_demo_blocks_duplicate_simulated_payment() -> None:

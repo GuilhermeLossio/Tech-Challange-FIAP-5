@@ -251,7 +251,8 @@ Files:
 | `styles.css` | Responsive kawaii-inspired visual system for the static demo. |
 | `app.js` | Browser client for Flask APIs, plus static fallback state, terms gate, simulated transaction validation, idempotency guard, and reward-event evidence. |
 | `schema.sql` | Pay-owned Azure SQL `ecloe_pay` schema and dedicated Pay bucket record. |
-| `repository.py` | Memory and Azure SQL repository implementations for simulated Pay state. |
+| `repository.py` | Compatibility re-export for the Pay persistence package. |
+| `repositories/` | PayRepository contract plus memory, Azure SQL, and factory implementations for simulated Pay state. |
 
 The static slice deliberately does not create users, collect credentials, store real payment data, or call external financial services.
 

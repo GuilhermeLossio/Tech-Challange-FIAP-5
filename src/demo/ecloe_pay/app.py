@@ -6,8 +6,7 @@ from pathlib import Path
 from flask import Flask, jsonify, request, send_from_directory, session
 
 from src.core.config import Settings, load_settings
-from src.demo.ecloe_pay.repository import (
-    MemoryPayRepository,
+from src.demo.ecloe_pay.repositories import (
     PayRepository,
     create_pay_repository,
 )
@@ -25,9 +24,9 @@ def _current_user(app: Flask) -> tuple[dict[str, object] | None, str | None]:
             if user is not None:
                 return asdict(user), auth_session.user_id
     if not repository.requires_authentication:
-        memory_repository = repository
-        if isinstance(memory_repository, MemoryPayRepository):
-            seeded = next(iter(memory_repository.users.values()))[0]
+        settings = app.pay_settings  # type: ignore[attr-defined]
+        seeded = repository.get_user_by_email(settings.ecloe_pay_demo_user_email)
+        if seeded is not None:
             return asdict(seeded), seeded.user_id
     return None, None
 
@@ -190,6 +189,8 @@ def create_app(
         )
         if result == "duplicate":
             return jsonify({"error": "Duplicate simulated payment blocked by idempotency."}), 409
+        if result == "terms_required":
+            return jsonify({"error": "Demo terms are required before simulating payment."}), 403
         if result == "rejected":
             return jsonify({"status": "rejected", "reason": "confirmation_code_mismatch"}), 400
 
@@ -215,7 +216,7 @@ def create_app(
         demo_session, response, status = _session_or_error(app)
         if response is not None:
             return response, status
-        new_session = repository.reset_session(demo_session.session_id)
+        new_session = repository.reset_demo_state(demo_session.session_id)
         return jsonify({"reset": True, "session_id": new_session.session_id})
 
     return app
