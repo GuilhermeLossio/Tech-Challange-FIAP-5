@@ -125,15 +125,32 @@ def test_pay_azure_sql_repository_uses_explicit_transactions_and_conditional_pay
 
 def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     script = (PAY_DEMO / "app.js").read_text(encoding="utf-8")
+    index = (PAY_DEMO / "index.html").read_text(encoding="utf-8")
 
     assert "transactionLocked" in script
-    assert "Duplicate simulated payment blocked by idempotency" in script
+    assert "Duplicate preview ignored" in script
     assert "confirmationCode" in script
-    assert "POST /v1/rewards" in script
+    assert "previewed only" in script
     assert "localStorage" not in script
     assert "/api/auth/me" in script
     assert "/api/auth/logout" in script
     assert "postgres_schema" not in script
+    assert "sql_schema" not in script
+    assert "database_provider" in script
+    assert "database_schema" in script
+    assert "Presentation mode — data is not being persisted." in script
+    assert "Presentation mode — data is not being persisted." in index
+    assert "postgres_schema" not in index
+    assert "PostgreSQL" not in index
+
+
+def test_pay_login_page_matches_demo_identity_and_csrf_flow() -> None:
+    login = (PAY_DEMO / "login.html").read_text(encoding="utf-8")
+
+    assert "Identidade demonstrativa — nenhuma conta bancária real" in login
+    assert "X-CSRF-Token" in login
+    assert "localStorage" not in login
+    assert "PostgreSQL" not in login
 
 
 def test_pay_demo_documents_flask_run_command() -> None:

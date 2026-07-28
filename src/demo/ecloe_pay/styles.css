@@ -70,10 +70,10 @@ a:focus-visible {
 .login-panel {
   width: min(100%, 420px);
   background: #ffffff;
-  border: 1px solid #d8ded2;
+  border: 1px solid var(--line);
   border-radius: 8px;
   padding: 28px;
-  box-shadow: 0 16px 48px rgba(40, 48, 35, 0.12);
+  box-shadow: var(--shadow);
 }
 
 .login-panel h1 {
@@ -86,9 +86,19 @@ a:focus-visible {
   margin: 20px 0;
 }
 
+.login-badge {
+  background: #fff8df;
+  border: 1px solid #f4e3a5;
+  border-radius: 8px;
+  color: #6b5200;
+  font-weight: 800;
+  margin: 0 0 16px;
+  padding: 10px 12px;
+}
+
 .login-form input {
   min-height: 42px;
-  border: 1px solid #c5ccbe;
+  border: 1px solid var(--line);
   border-radius: 6px;
   padding: 0 12px;
   font: inherit;

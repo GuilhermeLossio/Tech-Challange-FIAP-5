@@ -36,6 +36,7 @@ def test_pay_flask_wallet_runs_on_pay_route() -> None:
     assert "Demo balance" in body
     assert "Security confirmation" in body
     assert "ECloe Pay demo terms" in body
+    assert "Presentation mode — data is not being persisted." in body
 
 
 def test_pay_flask_session_exposes_demo_boundaries() -> None:
@@ -49,7 +50,8 @@ def test_pay_flask_session_exposes_demo_boundaries() -> None:
     assert body["security"]["user_creation_allowed"] is False
     assert body["security"]["real_money_processed"] is False
     assert body["security"]["bucket_name"] == DEMO_BUCKET_NAME
-    assert body["security"]["sql_schema"] == "ecloe_pay"
+    assert body["security"]["database_provider"] == "memory"
+    assert body["security"]["database_schema"] == "ecloe_pay"
 
 
 def test_pay_flask_requires_terms_before_interaction() -> None:
@@ -88,7 +90,8 @@ def test_pay_flask_accepts_terms_and_simulates_payment_once() -> None:
     assert payment_response.status_code == 200
     body = payment_response.get_json()
     assert body["status"] == "verified"
-    assert body["sql_schema"] == "ecloe_pay"
+    assert body["database_provider"] == "memory"
+    assert body["database_schema"] == "ecloe_pay"
     assert body["bucket_name"] == DEMO_BUCKET_NAME
     assert body["reward_event"]["event_type"] == "conversion"
     assert duplicate_response.status_code == 409
@@ -134,6 +137,18 @@ def test_pay_flask_login_logout_flow() -> None:
     assert me.status_code == 200
     assert logout.status_code == 200
     assert client.get_cookie(AUTH_COOKIE_NAME) is None
+
+
+def test_pay_login_page_has_demo_identity_copy() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/pay/login")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "Identidade demonstrativa — nenhuma conta bancária real" in body
+    assert "Azure SQL-backed sessions" in body
 
 
 def test_pay_flask_mutating_routes_require_csrf_token() -> None:

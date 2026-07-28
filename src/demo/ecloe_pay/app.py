@@ -241,10 +241,8 @@ def create_app(
                     "real_money_processed": False,
                     "requires_terms": True,
                     "bucket_name": demo_session.bucket_name,
-                    "sql_schema": "ecloe_pay",
-                    "database_engine": "azure_sql"
-                    if repository.requires_authentication
-                    else "memory",
+                    "database_provider": "azure_sql" if repository.requires_authentication else "memory",
+                    "database_schema": "ecloe_pay",
                 },
             }
         )
@@ -328,7 +326,8 @@ def create_app(
                     "idempotency_key": demo_session.idempotency_key,
                 },
                 "bucket_name": demo_session.bucket_name,
-                "sql_schema": "ecloe_pay",
+                "database_provider": "azure_sql" if repository.requires_authentication else "memory",
+                "database_schema": "ecloe_pay",
                 "reward_event": reward_event,
             }
         )

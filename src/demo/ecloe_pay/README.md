@@ -17,8 +17,10 @@ http://127.0.0.1:5000/pay
 
 The root route shows the landing page. The `/pay` route opens the runnable wallet
 demo. The HTML can still be opened directly in a browser as a fallback
-presentation mode. It does not require account creation, does not call a payment
-provider, and does not process real money.
+presentation mode. In that mode the UI explicitly says
+`Presentation mode — data is not being persisted.` and does not claim that login,
+terms, or payment state was saved in Azure SQL. It does not require account
+creation, does not call a payment provider, and does not process real money.
 
 Implemented in this slice:
 
@@ -56,10 +58,10 @@ Use `entra_interactive` only for local development, `azure_cli` after `az login`
 and `managed_identity` in cloud. The demo login persona is synthetic and must not
 be confused with a real banking account.
 
-Apply the Azure SQL schema and seed the demo persona with:
+Apply pending Azure SQL migrations and seed the deterministic demo state with:
 
 ```powershell
-python scripts\migrate_ecloe_pay_azure_sql.py
+python -m scripts.init_ecloe_pay_sql
 ```
 
 When Azure SQL mode is enabled, `/pay` and the Pay APIs require the demo persona

@@ -26,7 +26,7 @@
         </nav>
         <div class="status-panel">
           <span class="status-dot" aria-hidden="true"></span>
-          <span>Demo mode only</span>
+          <span id="runtimeMode">Presentation mode — data is not being persisted.</span>
         </div>
       </aside>
 
@@ -35,7 +35,7 @@
           <div>
             <p class="eyebrow">Session</p>
             <strong id="sessionId">sess_pay_demo_001</strong>
-            <span id="authIdentity">Demo persona</span>
+            <span id="authIdentity">Presentation mode — data is not being persisted.</span>
           </div>
           <div class="segmented-control" aria-label="Display mode">
             <button type="button" id="customerModeButton" class="active">Customer</button>
@@ -148,6 +148,14 @@
                 <div>
                   <dt>policy</dt>
                   <dd>likelihood_ranker</dd>
+                </div>
+                <div>
+                  <dt>database_provider</dt>
+                  <dd id="databaseProvider">presentation</dd>
+                </div>
+                <div>
+                  <dt>database_schema</dt>
+                  <dd id="databaseSchema">not persisted</dd>
                 </div>
                 <div>
                   <dt>bucket</dt>

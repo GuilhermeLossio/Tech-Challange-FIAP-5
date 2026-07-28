@@ -20,6 +20,9 @@ const confirmationCode = document.querySelector("#confirmationCode");
 const sessionId = document.querySelector("#sessionId");
 const authIdentity = document.querySelector("#authIdentity");
 const logoutButton = document.querySelector("#logoutButton");
+const runtimeMode = document.querySelector("#runtimeMode");
+const databaseProvider = document.querySelector("#databaseProvider");
+const databaseSchema = document.querySelector("#databaseSchema");
 
 let eventCounter = 1;
 let termsAccepted = false;
@@ -96,6 +99,23 @@ function redirectToLoginWhenNeeded(error) {
   return false;
 }
 
+function setPresentationMode() {
+  backendRequiresAuth = false;
+  authIdentity.textContent = "Presentation mode — data is not being persisted.";
+  runtimeMode.textContent = "Presentation mode — data is not being persisted.";
+  databaseProvider.textContent = "presentation";
+  databaseSchema.textContent = "not persisted";
+}
+
+function setAuthenticatedMode(auth, security) {
+  authIdentity.textContent = auth.user?.email || "Demo persona";
+  runtimeMode.textContent = security.database_provider === "azure_sql"
+    ? "Azure SQL authenticated demo"
+    : "Memory-backed local demo";
+  databaseProvider.textContent = security.database_provider;
+  databaseSchema.textContent = security.database_schema;
+}
+
 function recordReward(action, eventType, reward) {
   if (!requireTerms()) {
     return;
@@ -125,9 +145,9 @@ function recordReward(action, eventType, reward) {
   }
 
   const eventId = nextEventId();
-  setBenefitState(action, reward === 1 ? "success" : "default");
+  setBenefitState("Presentation preview");
   appendTimeline(
-    `${action}. Offline presentation reward event prepared for POST /v1/rewards.`,
+    `Presentation mode — data is not being persisted. ${action} was previewed only.`,
     `${eventId}, ${eventType}, reward=${reward}, decision=${DEMO_STATE.decisionId}`,
   );
 }
@@ -148,7 +168,8 @@ acceptTermsButton.addEventListener("click", () => {
   };
 
   if (!flaskAvailable) {
-    finish();
+    termsDialog.close();
+    appendTimeline("Presentation mode — data is not being persisted. Terms were previewed only.");
     return;
   }
 
@@ -193,14 +214,14 @@ transactionForm.addEventListener("submit", (event) => {
 
   const normalizedCode = confirmationCode.value.trim();
   if (transactionLocked && !flaskAvailable) {
-    appendTimeline("Duplicate simulated payment blocked by idempotency.");
+    appendTimeline("Presentation mode — data is not being persisted. Duplicate preview ignored.");
     return;
   }
 
   if (normalizedCode !== DEMO_STATE.confirmationCode) {
-    securityState.textContent = "Rejected";
+    securityState.textContent = "Preview only";
     securityState.classList.remove("success");
-    appendTimeline("Simulated payment rejected by confirmation validation.");
+    appendTimeline("Presentation mode — data is not being persisted. Confirmation preview rejected.");
     return;
   }
 
@@ -215,7 +236,7 @@ transactionForm.addEventListener("submit", (event) => {
         setBenefitState("Simulated payment accepted", "success");
         appendTimeline(
           "Flask API verified simulated payment and prepared reward event.",
-          `${body.reward_event.event_id}, schema=${body.sql_schema}, bucket=${body.bucket_name}`,
+          `${body.reward_event.event_id}, provider=${body.database_provider}, schema=${body.database_schema}, bucket=${body.bucket_name}`,
         );
       })
       .catch((error) => {
@@ -230,11 +251,11 @@ transactionForm.addEventListener("submit", (event) => {
   }
 
   transactionLocked = true;
-  securityState.textContent = "Verified";
-  securityState.classList.add("success");
+  securityState.textContent = "Preview only";
+  securityState.classList.remove("success");
   recordReward("Simulated payment accepted", "conversion", 1);
   appendTimeline(
-    "Pay-owned offline presentation transaction would commit payment order and outbox event.",
+    "Presentation mode — data is not being persisted. No Azure SQL payment order was updated.",
     `idempotency=${DEMO_STATE.idempotencyKey}, bucket=${DEMO_STATE.bucketName}`,
   );
 });
@@ -245,12 +266,16 @@ document.querySelector("#resetButton").addEventListener("click", () => {
     transactionLocked = false;
     termsAccepted = false;
     confirmationCode.value = "";
-    securityState.textContent = "Locked";
-    securityState.classList.add("success");
-    setBenefitState("Ready");
+    securityState.textContent = flaskAvailable ? "Locked" : "Preview only";
+    securityState.classList.toggle("success", flaskAvailable);
+    setBenefitState(flaskAvailable ? "Ready" : "Presentation preview");
     timeline.replaceChildren();
     sessionId.textContent = body.session_id || DEMO_STATE.sessionId;
-    appendTimeline("Session reset with deterministic demo data.");
+    appendTimeline(
+      flaskAvailable
+        ? "Session reset with deterministic demo data."
+        : "Presentation mode — data is not being persisted. Static state was reset.",
+    );
     termsDialog.showModal();
   };
 
@@ -279,19 +304,23 @@ async function bootstrap() {
     const auth = await getJson("/api/auth/me");
     flaskAvailable = true;
     backendRequiresAuth = Boolean(auth.requires_authentication);
-    authIdentity.textContent = auth.user?.email || "Demo persona";
     const body = await getJson("/api/session");
+    setAuthenticatedMode(auth, body.security);
     sessionId.textContent = body.session.session_id;
     termsAccepted = Boolean(body.session.terms_accepted);
     appendTimeline(
       "ECloe Pay Flask API connected with synthetic wallet data.",
-      `schema=${body.security.sql_schema}, bucket=${body.security.bucket_name}`,
+      `provider=${body.security.database_provider}, schema=${body.security.database_schema}, bucket=${body.security.bucket_name}`,
     );
   } catch (error) {
     if (redirectToLoginWhenNeeded(error)) {
       return;
     }
-    appendTimeline("ECloe Pay loaded in static fallback presentation mode with synthetic wallet data.");
+    setPresentationMode();
+    securityState.textContent = "Preview only";
+    securityState.classList.remove("success");
+    setBenefitState("Presentation preview");
+    appendTimeline("Presentation mode — data is not being persisted.");
   } finally {
     if (!termsAccepted) {
       termsDialog.showModal();

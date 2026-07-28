@@ -198,7 +198,7 @@ This script does not create a `0.0.0.0` rule and does not enable broad "Allow Az
 Apply the schema and seed the synthetic demo persona after installing the optional SQL dependencies:
 
 ```powershell
-python scripts\migrate_ecloe_pay_azure_sql.py
+python -m scripts.init_ecloe_pay_sql
 ```
 
 The schema must not store CPF, card, bank account, agency, real banking password, or real payment credentials.
