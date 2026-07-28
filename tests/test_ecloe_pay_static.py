@@ -21,12 +21,33 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
     assert "ecloe_pay.benefit_interactions" in schema
     assert "ecloe_pay.demo_users" in schema
     assert "ecloe_pay.auth_sessions" in schema
+    assert "ecloe_pay.demo_sessions" in schema
+    assert "ecloe_pay.wallet_snapshots" in schema
     assert "ecloe-pay-demo-artifacts" in schema
+    assert "ecloe_pay.schema_migrations" in schema
+    assert "email_normalized NVARCHAR(254) NOT NULL" in schema
+    assert "token_hash NVARCHAR(128) NOT NULL" in schema
+    assert "last_seen_at DATETIMEOFFSET(7) NULL" in schema
+    assert "DATETIMEOFFSET(7)" in schema
     assert "CHECK (pii_allowed = 0)" in schema
+    assert "CHECK (is_demo = 1)" in schema
+    assert "CHECK (currency = 'BRL')" in schema
+    assert "CHECK (ISJSON(payload) = 1)" in schema
+    assert "uq_auth_sessions_token_hash" in schema
+    assert "uq_payment_orders_idempotency_key" in schema
+    assert "uq_outbox_events_event_id" in schema
+    assert "ix_auth_sessions_valid" in schema
+    assert "ix_outbox_events_unpublished" in schema
     assert "TIMESTAMPTZ" not in schema
     assert "JSONB" not in schema
     assert "ON CONFLICT" not in schema
     assert "CREATE TABLE IF NOT EXISTS" not in schema
+    assert "DATETIME2" not in schema
+    assert "now()" not in schema.lower()
+    assert " cpf" not in schema.lower()
+    assert " card" not in schema.lower()
+    assert "bank_account" not in schema.lower()
+    assert "agency" not in schema.lower()
 
 
 def test_pay_demo_blocks_duplicate_simulated_payment() -> None:

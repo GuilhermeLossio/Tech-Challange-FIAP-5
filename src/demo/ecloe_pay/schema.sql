@@ -2,34 +2,44 @@ IF NOT EXISTS (SELECT 1 FROM sys.schemas WHERE name = N'ecloe_pay')
 BEGIN
     EXEC(N'CREATE SCHEMA ecloe_pay');
 END;
+GO
 
 IF OBJECT_ID(N'ecloe_pay.demo_users', N'U') IS NULL
 BEGIN
     CREATE TABLE ecloe_pay.demo_users (
         user_id NVARCHAR(64) NOT NULL CONSTRAINT pk_demo_users PRIMARY KEY,
-        email NVARCHAR(254) NOT NULL,
-        password_hash NVARCHAR(512) NOT NULL,
+        email_normalized NVARCHAR(254) NOT NULL,
         display_name NVARCHAR(120) NOT NULL,
         persona_label NVARCHAR(120) NOT NULL,
+        password_hash NVARCHAR(512) NOT NULL,
+        is_active BIT NOT NULL CONSTRAINT df_demo_users_is_active DEFAULT 1,
+        is_demo BIT NOT NULL CONSTRAINT df_demo_users_is_demo DEFAULT 1,
         pii_allowed BIT NOT NULL CONSTRAINT df_demo_users_pii_allowed DEFAULT 0,
-        created_at DATETIME2(3) NOT NULL CONSTRAINT df_demo_users_created_at DEFAULT SYSUTCDATETIME(),
-        CONSTRAINT uq_demo_users_email UNIQUE (email),
+        created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_demo_users_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+        updated_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_demo_users_updated_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+        CONSTRAINT uq_demo_users_email_normalized UNIQUE (email_normalized),
+        CONSTRAINT ck_demo_users_is_demo CHECK (is_demo = 1),
         CONSTRAINT ck_demo_users_pii_allowed CHECK (pii_allowed = 0)
     );
 END;
+GO
 
 IF OBJECT_ID(N'ecloe_pay.auth_sessions', N'U') IS NULL
 BEGIN
     CREATE TABLE ecloe_pay.auth_sessions (
         auth_session_id NVARCHAR(64) NOT NULL CONSTRAINT pk_auth_sessions PRIMARY KEY,
         user_id NVARCHAR(64) NOT NULL,
-        created_at DATETIME2(3) NOT NULL CONSTRAINT df_auth_sessions_created_at DEFAULT SYSUTCDATETIME(),
-        expires_at DATETIME2(3) NOT NULL,
-        revoked_at DATETIME2(3) NULL,
+        token_hash NVARCHAR(128) NOT NULL,
+        created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_auth_sessions_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+        expires_at DATETIMEOFFSET(7) NOT NULL,
+        revoked_at DATETIMEOFFSET(7) NULL,
+        last_seen_at DATETIMEOFFSET(7) NULL,
         CONSTRAINT fk_auth_sessions_demo_users
-            FOREIGN KEY (user_id) REFERENCES ecloe_pay.demo_users(user_id)
+            FOREIGN KEY (user_id) REFERENCES ecloe_pay.demo_users(user_id),
+        CONSTRAINT uq_auth_sessions_token_hash UNIQUE (token_hash)
     );
 END;
+GO
 
 IF OBJECT_ID(N'ecloe_pay.demo_sessions', N'U') IS NULL
 BEGIN
@@ -40,14 +50,15 @@ BEGIN
         selected_decision_id NVARCHAR(80) NULL,
         selected_offer_id NVARCHAR(80) NULL,
         terms_accepted BIT NOT NULL CONSTRAINT df_demo_sessions_terms_accepted DEFAULT 0,
-        created_at DATETIME2(3) NOT NULL CONSTRAINT df_demo_sessions_created_at DEFAULT SYSUTCDATETIME(),
-        expires_at DATETIME2(3) NOT NULL,
-        locked_at DATETIME2(3) NULL,
+        created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_demo_sessions_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+        expires_at DATETIMEOFFSET(7) NOT NULL,
+        locked_at DATETIMEOFFSET(7) NULL,
         CONSTRAINT fk_demo_sessions_demo_users
             FOREIGN KEY (user_id) REFERENCES ecloe_pay.demo_users(user_id),
         CONSTRAINT ck_demo_sessions_session_id CHECK (session_id LIKE N'sess_%')
     );
 END;
+GO
 
 IF OBJECT_ID(N'ecloe_pay.wallet_snapshots', N'U') IS NULL
 BEGIN
@@ -58,14 +69,16 @@ BEGIN
         cashback_cents INT NOT NULL,
         savings_goal_percent INT NOT NULL,
         currency CHAR(3) NOT NULL CONSTRAINT df_wallet_snapshots_currency DEFAULT 'BRL',
-        created_at DATETIME2(3) NOT NULL CONSTRAINT df_wallet_snapshots_created_at DEFAULT SYSUTCDATETIME(),
+        created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_wallet_snapshots_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
         CONSTRAINT fk_wallet_snapshots_demo_sessions
             FOREIGN KEY (session_id) REFERENCES ecloe_pay.demo_sessions(session_id),
         CONSTRAINT ck_wallet_snapshots_demo_balance CHECK (demo_balance_cents >= 0),
         CONSTRAINT ck_wallet_snapshots_cashback CHECK (cashback_cents >= 0),
-        CONSTRAINT ck_wallet_snapshots_savings_goal CHECK (savings_goal_percent BETWEEN 0 AND 100)
+        CONSTRAINT ck_wallet_snapshots_savings_goal CHECK (savings_goal_percent BETWEEN 0 AND 100),
+        CONSTRAINT ck_wallet_snapshots_currency CHECK (currency = 'BRL')
     );
 END;
+GO
 
 IF OBJECT_ID(N'ecloe_pay.payment_orders', N'U') IS NULL
 BEGIN
@@ -77,15 +90,17 @@ BEGIN
         currency CHAR(3) NOT NULL CONSTRAINT df_payment_orders_currency DEFAULT 'BRL',
         status NVARCHAR(20) NOT NULL,
         idempotency_key NVARCHAR(160) NOT NULL,
-        created_at DATETIME2(3) NOT NULL CONSTRAINT df_payment_orders_created_at DEFAULT SYSUTCDATETIME(),
-        updated_at DATETIME2(3) NOT NULL CONSTRAINT df_payment_orders_updated_at DEFAULT SYSUTCDATETIME(),
+        created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_payment_orders_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+        updated_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_payment_orders_updated_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
         CONSTRAINT fk_payment_orders_demo_sessions
             FOREIGN KEY (session_id) REFERENCES ecloe_pay.demo_sessions(session_id),
         CONSTRAINT uq_payment_orders_idempotency_key UNIQUE (idempotency_key),
-        CONSTRAINT ck_payment_orders_amount CHECK (amount_cents > 0),
+        CONSTRAINT ck_payment_orders_amount CHECK (amount_cents >= 0),
+        CONSTRAINT ck_payment_orders_currency CHECK (currency = 'BRL'),
         CONSTRAINT ck_payment_orders_status CHECK (status IN (N'created', N'verified', N'rejected', N'cancelled'))
     );
 END;
+GO
 
 IF OBJECT_ID(N'ecloe_pay.benefit_interactions', N'U') IS NULL
 BEGIN
@@ -97,8 +112,8 @@ BEGIN
         event_id NVARCHAR(80) NOT NULL,
         event_type NVARCHAR(20) NOT NULL,
         reward DECIMAL(4, 2) NOT NULL,
-        occurred_at DATETIME2(3) NOT NULL,
-        created_at DATETIME2(3) NOT NULL CONSTRAINT df_benefit_interactions_created_at DEFAULT SYSUTCDATETIME(),
+        occurred_at DATETIMEOFFSET(7) NOT NULL,
+        created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_benefit_interactions_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
         CONSTRAINT fk_benefit_interactions_demo_sessions
             FOREIGN KEY (session_id) REFERENCES ecloe_pay.demo_sessions(session_id),
         CONSTRAINT uq_benefit_interactions_event_id UNIQUE (event_id),
@@ -106,6 +121,7 @@ BEGIN
         CONSTRAINT ck_benefit_interactions_reward CHECK (reward IN (0.00, 0.20, 1.00))
     );
 END;
+GO
 
 IF OBJECT_ID(N'ecloe_pay.object_buckets', N'U') IS NULL
 BEGIN
@@ -113,26 +129,40 @@ BEGIN
         bucket_name NVARCHAR(80) NOT NULL CONSTRAINT pk_object_buckets PRIMARY KEY,
         purpose NVARCHAR(400) NOT NULL,
         pii_allowed BIT NOT NULL CONSTRAINT df_object_buckets_pii_allowed DEFAULT 0,
-        created_at DATETIME2(3) NOT NULL CONSTRAINT df_object_buckets_created_at DEFAULT SYSUTCDATETIME(),
+        created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_object_buckets_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
         CONSTRAINT ck_object_buckets_pii_allowed CHECK (pii_allowed = 0)
     );
 END;
+GO
 
 IF OBJECT_ID(N'ecloe_pay.outbox_events', N'U') IS NULL
 BEGIN
     CREATE TABLE ecloe_pay.outbox_events (
         outbox_event_id NVARCHAR(80) NOT NULL CONSTRAINT pk_outbox_events PRIMARY KEY,
+        event_id NVARCHAR(80) NOT NULL,
         aggregate_type NVARCHAR(80) NOT NULL,
         aggregate_id NVARCHAR(80) NOT NULL,
         event_type NVARCHAR(80) NOT NULL,
         payload NVARCHAR(MAX) NOT NULL,
-        occurred_at DATETIME2(3) NOT NULL,
-        published_at DATETIME2(3) NULL,
+        occurred_at DATETIMEOFFSET(7) NOT NULL,
+        published_at DATETIMEOFFSET(7) NULL,
         attempts INT NOT NULL CONSTRAINT df_outbox_events_attempts DEFAULT 0,
+        CONSTRAINT uq_outbox_events_event_id UNIQUE (event_id),
         CONSTRAINT ck_outbox_events_payload_json CHECK (ISJSON(payload) = 1),
-        CONSTRAINT ck_outbox_events_attempts CHECK (attempts >= 0)
+        CONSTRAINT ck_outbox_events_attempts CHECK (attempts >= 0),
+        CONSTRAINT ck_outbox_events_event_type CHECK (event_type IN (N'click', N'dismissal', N'conversion', N'payment_verified', N'payment_rejected'))
     );
 END;
+GO
+
+IF OBJECT_ID(N'ecloe_pay.schema_migrations', N'U') IS NULL
+BEGIN
+    CREATE TABLE ecloe_pay.schema_migrations (
+        migration_id NVARCHAR(120) NOT NULL CONSTRAINT pk_schema_migrations PRIMARY KEY,
+        applied_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_schema_migrations_applied_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00'))
+    );
+END;
+GO
 
 IF NOT EXISTS (
     SELECT 1 FROM ecloe_pay.object_buckets WHERE bucket_name = N'ecloe-pay-demo-artifacts'
@@ -145,3 +175,60 @@ BEGIN
         0
     );
 END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM ecloe_pay.schema_migrations WHERE migration_id = N'20260728_ecloe_pay_azure_sql_schema'
+)
+BEGIN
+    INSERT INTO ecloe_pay.schema_migrations (migration_id)
+    VALUES (N'20260728_ecloe_pay_azure_sql_schema');
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes WHERE name = N'ix_auth_sessions_valid' AND object_id = OBJECT_ID(N'ecloe_pay.auth_sessions')
+)
+BEGIN
+    CREATE INDEX ix_auth_sessions_valid
+        ON ecloe_pay.auth_sessions (user_id, expires_at)
+        WHERE revoked_at IS NULL;
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes WHERE name = N'ix_demo_sessions_user' AND object_id = OBJECT_ID(N'ecloe_pay.demo_sessions')
+)
+BEGIN
+    CREATE INDEX ix_demo_sessions_user
+        ON ecloe_pay.demo_sessions (user_id, created_at DESC);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes WHERE name = N'ix_payment_orders_session' AND object_id = OBJECT_ID(N'ecloe_pay.payment_orders')
+)
+BEGIN
+    CREATE INDEX ix_payment_orders_session
+        ON ecloe_pay.payment_orders (session_id, created_at DESC);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes WHERE name = N'ix_benefit_interactions_session' AND object_id = OBJECT_ID(N'ecloe_pay.benefit_interactions')
+)
+BEGIN
+    CREATE INDEX ix_benefit_interactions_session
+        ON ecloe_pay.benefit_interactions (session_id, occurred_at DESC);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes WHERE name = N'ix_outbox_events_unpublished' AND object_id = OBJECT_ID(N'ecloe_pay.outbox_events')
+)
+BEGIN
+    CREATE INDEX ix_outbox_events_unpublished
+        ON ecloe_pay.outbox_events (occurred_at)
+        WHERE published_at IS NULL;
+END;
+GO

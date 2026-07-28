@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import secrets
 import struct
 import uuid
 from dataclasses import asdict, dataclass
@@ -101,8 +102,16 @@ class PayRepository:
 
 
 def user_id_for_email(email: str) -> str:
-    digest = hashlib.sha256(email.lower().encode("utf-8")).hexdigest()[:24]
+    digest = hashlib.sha256(normalize_email(email).encode("utf-8")).hexdigest()[:24]
     return f"user_demo_{digest}"
+
+
+def normalize_email(email: str) -> str:
+    return email.strip().lower()
+
+
+def token_hash(token: str) -> str:
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def initial_session(user_id: str) -> DemoSession:
@@ -274,12 +283,20 @@ class AzureSqlPayRepository(PayRepository):
             row = connection.execute(
                 text(
                     """
-                    SELECT user_id, email, password_hash, display_name, persona_label
+                    SELECT
+                        user_id,
+                        email_normalized AS email,
+                        password_hash,
+                        display_name,
+                        persona_label
                     FROM ecloe_pay.demo_users
-                    WHERE LOWER(email) = LOWER(:email) AND pii_allowed = 0
+                    WHERE email_normalized = :email_normalized
+                        AND is_active = 1
+                        AND is_demo = 1
+                        AND pii_allowed = 0
                     """
                 ),
-                {"email": email},
+                {"email_normalized": normalize_email(email)},
             ).mappings().first()
         if row is None or not check_password_hash(row["password_hash"], password):
             return None
@@ -293,8 +310,9 @@ class AzureSqlPayRepository(PayRepository):
     def create_auth_session(self, user_id: str) -> AuthSession:
         from sqlalchemy import text
 
+        raw_token = f"paytok_{secrets.token_urlsafe(32)}"
         auth_session = AuthSession(
-            auth_session_id=f"auth_{uuid.uuid4().hex}",
+            auth_session_id=raw_token,
             user_id=user_id,
             expires_at=datetime.now(UTC) + timedelta(seconds=self.settings.ecloe_pay_session_ttl_seconds),
         )
@@ -302,11 +320,20 @@ class AzureSqlPayRepository(PayRepository):
             connection.execute(
                 text(
                     """
-                    INSERT INTO ecloe_pay.auth_sessions (auth_session_id, user_id, expires_at)
-                    VALUES (:auth_session_id, :user_id, :expires_at)
+                    INSERT INTO ecloe_pay.auth_sessions (
+                        auth_session_id, user_id, token_hash, expires_at
+                    )
+                    VALUES (
+                        :auth_session_id, :user_id, :token_hash, :expires_at
+                    )
                     """
                 ),
-                asdict(auth_session),
+                {
+                    "auth_session_id": f"auth_{uuid.uuid4().hex}",
+                    "user_id": user_id,
+                    "token_hash": token_hash(raw_token),
+                    "expires_at": auth_session.expires_at,
+                },
             )
         return auth_session
 
@@ -319,15 +346,26 @@ class AzureSqlPayRepository(PayRepository):
                     """
                     SELECT auth_session_id, user_id, expires_at, revoked_at
                     FROM ecloe_pay.auth_sessions
-                    WHERE auth_session_id = :auth_session_id
+                    WHERE token_hash = :token_hash
                     """
                 ),
-                {"auth_session_id": auth_session_id},
+                {"token_hash": token_hash(auth_session_id)},
             ).mappings().first()
+            if row is not None:
+                connection.execute(
+                    text(
+                        """
+                        UPDATE ecloe_pay.auth_sessions
+                        SET last_seen_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                        WHERE auth_session_id = :auth_session_id
+                        """
+                    ),
+                    {"auth_session_id": row["auth_session_id"]},
+                )
         if row is None:
             return None
         auth_session = AuthSession(
-            auth_session_id=row["auth_session_id"],
+            auth_session_id=auth_session_id,
             user_id=row["user_id"],
             expires_at=_aware(row["expires_at"]),
             revoked_at=_aware(row["revoked_at"]) if row["revoked_at"] else None,
@@ -342,11 +380,11 @@ class AzureSqlPayRepository(PayRepository):
                 text(
                     """
                     UPDATE ecloe_pay.auth_sessions
-                    SET revoked_at = SYSUTCDATETIME()
-                    WHERE auth_session_id = :auth_session_id
+                    SET revoked_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                    WHERE token_hash = :token_hash
                     """
                 ),
-                {"auth_session_id": auth_session_id},
+                {"token_hash": token_hash(auth_session_id)},
             )
 
     def get_user(self, user_id: str) -> DemoUser | None:
@@ -356,7 +394,7 @@ class AzureSqlPayRepository(PayRepository):
             row = connection.execute(
                 text(
                     """
-                    SELECT user_id, email, display_name, persona_label
+                    SELECT user_id, email_normalized AS email, display_name, persona_label
                     FROM ecloe_pay.demo_users
                     WHERE user_id = :user_id
                     """
@@ -532,7 +570,7 @@ class AzureSqlPayRepository(PayRepository):
                     text(
                         """
                         UPDATE ecloe_pay.payment_orders
-                        SET status = N'rejected', updated_at = SYSUTCDATETIME()
+                        SET status = N'rejected', updated_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
                         WHERE payment_order_id = :payment_order_id
                         """
                     ),
@@ -544,7 +582,7 @@ class AzureSqlPayRepository(PayRepository):
                 text(
                     """
                     UPDATE ecloe_pay.payment_orders
-                    SET status = N'verified', updated_at = SYSUTCDATETIME()
+                    SET status = N'verified', updated_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
                     WHERE payment_order_id = :payment_order_id AND status <> N'verified'
                     """
                 ),
@@ -586,16 +624,17 @@ class AzureSqlPayRepository(PayRepository):
             text(
                 """
                 INSERT INTO ecloe_pay.outbox_events (
-                    outbox_event_id, aggregate_type, aggregate_id, event_type, payload, occurred_at
+                    outbox_event_id, event_id, aggregate_type, aggregate_id, event_type, payload, occurred_at
                 )
                 VALUES (
-                    :outbox_event_id, :aggregate_type, :aggregate_id, :event_type,
+                    :outbox_event_id, :event_id, :aggregate_type, :aggregate_id, :event_type,
                     :payload, :occurred_at
                 )
                 """
             ),
             {
                 "outbox_event_id": f"out_{uuid.uuid4().hex}",
+                "event_id": aggregate_id,
                 "aggregate_type": aggregate_type,
                 "aggregate_id": aggregate_id,
                 "event_type": event_type,

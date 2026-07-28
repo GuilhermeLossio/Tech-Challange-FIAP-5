@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import struct
 import sys
 from pathlib import Path
@@ -24,8 +25,12 @@ def _require(name: str, default: str = "") -> str:
 
 
 def _user_id(email: str) -> str:
-    digest = hashlib.sha256(email.lower().encode("utf-8")).hexdigest()[:24]
+    digest = hashlib.sha256(_normalize_email(email).encode("utf-8")).hexdigest()[:24]
     return f"user_demo_{digest}"
+
+
+def _normalize_email(email: str) -> str:
+    return email.strip().lower()
 
 
 def _connection_url() -> tuple[str, dict[str, object]]:
@@ -84,38 +89,48 @@ def main() -> int:
     email = _require("ECLOE_PAY_DEMO_USER_EMAIL", "demo.pay@ecloe.local")
     password = _require("ECLOE_PAY_DEMO_USER_PASSWORD")
     password_hash = generate_password_hash(password)
+    email_normalized = _normalize_email(email)
     user_id = _user_id(email)
 
     with engine.begin() as connection:
-        for statement in schema_sql.split("\nGO\n"):
+        for statement in re.split(r"(?im)^\s*GO\s*$", schema_sql):
             if statement.strip():
                 connection.exec_driver_sql(statement)
         connection.execute(
             text(
                 """
-                IF NOT EXISTS (SELECT 1 FROM ecloe_pay.demo_users WHERE email = :email)
+                IF NOT EXISTS (
+                    SELECT 1
+                    FROM ecloe_pay.demo_users
+                    WHERE email_normalized = :email_normalized
+                )
                 BEGIN
                     INSERT INTO ecloe_pay.demo_users (
-                        user_id, email, password_hash, display_name, persona_label, pii_allowed
+                        user_id, email_normalized, display_name, persona_label, password_hash,
+                        is_active, is_demo, pii_allowed
                     )
                     VALUES (
-                        :user_id, :email, :password_hash, N'ECloe Pay Demo Persona',
-                        N'Synthetic wallet validation persona', 0
+                        :user_id, :email_normalized, N'ECloe Pay Demo Persona',
+                        N'Synthetic wallet validation persona', :password_hash, 1, 1, 0
                     )
                 END
                 ELSE
                 BEGIN
                     UPDATE ecloe_pay.demo_users
-                    SET password_hash = :password_hash
-                    WHERE email = :email
+                    SET password_hash = :password_hash,
+                        display_name = N'ECloe Pay Demo Persona',
+                        persona_label = N'Synthetic wallet validation persona',
+                        is_active = 1,
+                        updated_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                    WHERE email_normalized = :email_normalized
                 END
                 """
             ),
-            {"user_id": user_id, "email": email, "password_hash": password_hash},
+            {"user_id": user_id, "email_normalized": email_normalized, "password_hash": password_hash},
         )
         row = connection.execute(
-            text("SELECT COUNT(*) FROM ecloe_pay.demo_users WHERE email = :email"),
-            {"email": email},
+            text("SELECT COUNT(*) FROM ecloe_pay.demo_users WHERE email_normalized = :email_normalized"),
+            {"email_normalized": email_normalized},
         ).scalar_one()
 
     print(f"ECloe Pay Azure SQL migration complete. Demo personas ready: {row}")
