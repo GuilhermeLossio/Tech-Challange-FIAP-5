@@ -38,10 +38,20 @@ async function getJson(url) {
   return body;
 }
 
+function cookieValue(name) {
+  return document.cookie
+    .split("; ")
+    .find((entry) => entry.startsWith(`${name}=`))
+    ?.split("=")[1] || "";
+}
+
 async function postJson(url, payload) {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": decodeURIComponent(cookieValue("ecloe_pay_csrf")),
+    },
     body: JSON.stringify(payload),
   });
   const body = await response.json();

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -18,6 +19,7 @@ from src.demo.ecloe_pay.repositories.base import (
     initial_session,
     normalize_email,
     reward_payload,
+    token_hash,
     user_id_for_email,
 )
 
@@ -59,28 +61,32 @@ class MemoryPayRepository(PayRepository):
         return user
 
     def authenticate(self, email: str, password: str) -> DemoUser | None:
+        from src.demo.ecloe_pay.repositories.base import DUMMY_PASSWORD_HASH
+
         user = self.get_user_by_email(email)
         if user is None:
+            check_password_hash(DUMMY_PASSWORD_HASH, password)
             return None
         _, password_hash = self.users[user.user_id]
         return user if check_password_hash(password_hash, password) else None
 
     def create_auth_session(self, user_id: str) -> AuthSession:
         auth_session = AuthSession(
-            auth_session_id=f"auth_{uuid.uuid4().hex}",
+            auth_session_id=f"paytok_{secrets.token_urlsafe(32)}",
             user_id=user_id,
             expires_at=datetime.now(UTC) + timedelta(seconds=self.settings.ecloe_pay_session_ttl_seconds),
         )
-        self.auth_sessions[auth_session.auth_session_id] = auth_session
+        self.auth_sessions[token_hash(auth_session.auth_session_id)] = auth_session
         return auth_session
 
     def get_auth_session(self, auth_session_id: str) -> AuthSession | None:
-        session = self.auth_sessions.get(auth_session_id)
+        session = self.auth_sessions.get(token_hash(auth_session_id))
         return session if session and session.active else None
 
     def revoke_auth_session(self, auth_session_id: str) -> None:
-        if auth_session_id in self.auth_sessions:
-            self.auth_sessions[auth_session_id].revoked_at = datetime.now(UTC)
+        stored_session = self.auth_sessions.get(token_hash(auth_session_id))
+        if stored_session is not None:
+            stored_session.revoked_at = datetime.now(UTC)
 
     def get_user(self, user_id: str) -> DemoUser | None:
         entry = self.users.get(user_id)

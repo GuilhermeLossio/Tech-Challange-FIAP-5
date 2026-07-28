@@ -8,6 +8,7 @@
 | Wallet summary and benefits UI | Implemented | First static demo slice in `src/demo/ecloe_pay/` shows demo balance, cashback, goals, benefits, and accepted-offer status. |
 | Offer interaction flow | Implemented | First static demo slice opens, accepts, dismisses, and records deterministic reward-event evidence. |
 | Terms of service and demo disclaimer | Implemented | The static demo requires explicit acceptance that no real money is processed and no real user is created. |
+| Simulated authentication | Implemented | Azure SQL mode protects the Pay wallet and APIs with a demo persona, HttpOnly token cookie, CSRF checks, logout revocation, and login attempt limits. |
 | Azure SQL Pay schema | Implemented | `src/demo/ecloe_pay/schema.sql` defines Pay-owned Azure SQL tables under the `ecloe_pay` schema. |
 | Reward registration | Implemented | Uses the existing `POST /v1/rewards` endpoint after a verified demo interaction. |
 | Real payment account integration | Future | Requires governed upstream wallet, identity, security, compliance, and consent controls. |

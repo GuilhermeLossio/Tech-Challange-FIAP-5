@@ -31,6 +31,8 @@ Implemented in this slice:
 - Flask API routes for session state, terms, simulated payment orders, reset,
   and benefit interactions;
 - optional demo-persona login;
+- secure simulated authentication with HttpOnly session-token cookies, CSRF
+  checks, logout revocation, and login attempt limits;
 - Azure SQL-compatible schema for Pay-owned state under the `ecloe_pay` schema;
 - repository-based persistence with memory and Azure SQL implementations behind
   the same PayRepository contract.
@@ -59,6 +61,12 @@ Apply the Azure SQL schema and seed the demo persona with:
 ```powershell
 python scripts\migrate_ecloe_pay_azure_sql.py
 ```
+
+When Azure SQL mode is enabled, `/pay` and the Pay APIs require the demo persona
+login. The raw session token is only sent to the browser as the
+`ecloe_pay_session` HttpOnly cookie; repositories store only its SHA-256 hash.
+Mutable Pay routes require the `X-CSRF-Token` header paired with the
+`ecloe_pay_csrf` cookie.
 
 The planned dedicated artifact bucket is `ecloe-pay-demo-artifacts`. The SQL
 schema also records this bucket name so Pay exports and demo evidence do not

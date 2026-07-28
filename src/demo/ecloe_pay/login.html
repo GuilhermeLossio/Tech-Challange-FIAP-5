@@ -37,6 +37,13 @@
       const form = document.querySelector("#loginForm");
       const status = document.querySelector("#loginStatus");
 
+      function cookieValue(name) {
+        return document.cookie
+          .split("; ")
+          .find((entry) => entry.startsWith(`${name}=`))
+          ?.split("=")[1] || "";
+      }
+
       form.addEventListener("submit", async (event) => {
         event.preventDefault();
         status.textContent = "";
@@ -46,7 +53,10 @@
         };
         const response = await fetch("/api/auth/login", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-Token": decodeURIComponent(cookieValue("ecloe_pay_csrf")),
+          },
           body: JSON.stringify(payload),
         });
         const body = await response.json();

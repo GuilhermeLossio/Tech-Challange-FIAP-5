@@ -13,6 +13,7 @@ from werkzeug.security import check_password_hash
 from src.core.config import Settings
 from src.demo.ecloe_pay.repositories.base import (
     DEMO_CONFIRMATION_CODE,
+    DUMMY_PASSWORD_HASH,
     AuthSession,
     DemoSession,
     DemoUser,
@@ -161,6 +162,8 @@ class AzureSqlPayRepository(PayRepository):
                 {"email_normalized": normalize_email(email)},
             ).mappings().first()
         if row is None or not check_password_hash(row["password_hash"], password):
+            if row is None:
+                check_password_hash(DUMMY_PASSWORD_HASH, password)
             return None
         return DemoUser(
             user_id=row["user_id"],

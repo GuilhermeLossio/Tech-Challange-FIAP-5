@@ -79,6 +79,34 @@ def test_pay_repositories_expose_shared_contract_and_hide_sqlalchemy_from_routes
     assert get_type_hints(PayRepository.create_auth_session)
 
 
+def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
+    app_source = (PAY_DEMO / "app.py").read_text(encoding="utf-8")
+    script = (PAY_DEMO / "app.js").read_text(encoding="utf-8")
+    login = (PAY_DEMO / "login.html").read_text(encoding="utf-8")
+    azure_source = (PAY_DEMO / "repositories" / "azure_sql.py").read_text(encoding="utf-8")
+
+    assert "AUTH_COOKIE_NAME = \"ecloe_pay_session\"" in app_source
+    assert "CSRF_COOKIE_NAME = \"ecloe_pay_csrf\"" in app_source
+    assert "httponly=True" in app_source
+    assert "secure=_cookie_secure(settings)" in app_source
+    assert "samesite=\"Lax\"" in app_source
+    assert "path=\"/\"" in app_source
+    assert "max_age=settings.ecloe_pay_session_ttl_seconds" in app_source
+    assert "settings.app_environment != \"local\"" in app_source
+    assert "hmac.compare_digest" in app_source
+    assert "LOGIN_RATE_LIMIT_ATTEMPTS" in app_source
+    assert "Cache-Control" in app_source
+    assert "redirect(\"/pay/login\")" in app_source
+    assert "from flask import Flask, jsonify, redirect, request, send_from_directory" in app_source
+    assert "session[" not in app_source
+    assert "X-CSRF-Token" in script
+    assert "X-CSRF-Token" in login
+    assert "token_hash(raw_token)" in azure_source
+    logger_lines = [line.lower() for line in app_source.splitlines() if "LOGGER.info" in line]
+    assert logger_lines
+    assert all("password" not in line and "email" not in line for line in logger_lines)
+
+
 def test_pay_azure_sql_repository_uses_explicit_transactions_and_conditional_payment_update() -> None:
     source = (PAY_DEMO / "repositories" / "azure_sql.py").read_text(encoding="utf-8")
 

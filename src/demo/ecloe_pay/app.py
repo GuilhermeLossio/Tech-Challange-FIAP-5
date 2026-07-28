@@ -1,9 +1,13 @@
 from __future__ import annotations
 
+import hmac
+import logging
+import secrets
+import time
 from dataclasses import asdict
 from pathlib import Path
 
-from flask import Flask, jsonify, request, send_from_directory, session
+from flask import Flask, jsonify, redirect, request, send_from_directory
 
 from src.core.config import Settings, load_settings
 from src.demo.ecloe_pay.repositories import (
@@ -12,11 +16,99 @@ from src.demo.ecloe_pay.repositories import (
 )
 
 DEMO_DIR = Path(__file__).resolve().parent
+AUTH_COOKIE_NAME = "ecloe_pay_session"
+CSRF_COOKIE_NAME = "ecloe_pay_csrf"
+CSRF_HEADER_NAME = "X-CSRF-Token"
+LOGIN_RATE_LIMIT_ATTEMPTS = 5
+LOGIN_RATE_LIMIT_WINDOW_SECONDS = 300
+LOGGER = logging.getLogger(__name__)
+
+
+def _cookie_secure(settings: Settings) -> bool:
+    return settings.app_environment != "local"
+
+
+def _set_auth_cookie(response, token: str, settings: Settings) -> None:
+    response.set_cookie(
+        AUTH_COOKIE_NAME,
+        token,
+        httponly=True,
+        secure=_cookie_secure(settings),
+        samesite="Lax",
+        path="/",
+        max_age=settings.ecloe_pay_session_ttl_seconds,
+    )
+
+
+def _clear_auth_cookie(response, settings: Settings) -> None:
+    response.delete_cookie(
+        AUTH_COOKIE_NAME,
+        secure=_cookie_secure(settings),
+        samesite="Lax",
+        path="/",
+    )
+
+
+def _set_csrf_cookie(response, settings: Settings) -> str:
+    token = request.cookies.get(CSRF_COOKIE_NAME) or secrets.token_urlsafe(32)
+    response.set_cookie(
+        CSRF_COOKIE_NAME,
+        token,
+        httponly=False,
+        secure=_cookie_secure(settings),
+        samesite="Lax",
+        path="/",
+        max_age=settings.ecloe_pay_session_ttl_seconds,
+    )
+    return token
+
+
+def _csrf_valid() -> bool:
+    cookie_token = request.cookies.get(CSRF_COOKIE_NAME, "")
+    header_token = request.headers.get(CSRF_HEADER_NAME, "")
+    return bool(cookie_token and header_token) and hmac.compare_digest(cookie_token, header_token)
+
+
+def _csrf_error():
+    response = jsonify({"error": "Invalid ECloe Pay request token."})
+    response.status_code = 403
+    return response
+
+
+def _auth_json(payload: dict[str, object], status: int = 200):
+    response = jsonify(payload)
+    response.status_code = status
+    response.headers["Cache-Control"] = "no-store"
+    return response
+
+
+def _rate_limit_key(email: str) -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    ip_address = forwarded.split(",", 1)[0].strip() or request.remote_addr or "unknown"
+    return f"{ip_address}:{email}"
+
+
+def _login_rate_limited(app: Flask, email: str) -> bool:
+    now = time.monotonic()
+    attempts: dict[str, list[float]] = app.pay_login_attempts  # type: ignore[attr-defined]
+    key = _rate_limit_key(email)
+    recent = [stamp for stamp in attempts.get(key, []) if now - stamp < LOGIN_RATE_LIMIT_WINDOW_SECONDS]
+    if len(recent) >= LOGIN_RATE_LIMIT_ATTEMPTS:
+        attempts[key] = recent
+        return True
+    recent.append(now)
+    attempts[key] = recent
+    return False
+
+
+def _clear_login_attempts(app: Flask, email: str) -> None:
+    attempts: dict[str, list[float]] = app.pay_login_attempts  # type: ignore[attr-defined]
+    attempts.pop(_rate_limit_key(email), None)
 
 
 def _current_user(app: Flask) -> tuple[dict[str, object] | None, str | None]:
     repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
-    auth_session_id = session.get("pay_auth_session_id")
+    auth_session_id = request.cookies.get(AUTH_COOKIE_NAME)
     if isinstance(auth_session_id, str):
         auth_session = repository.get_auth_session(auth_session_id)
         if auth_session is not None:
@@ -47,11 +139,18 @@ def create_app(
     settings = settings or load_settings(use_env_file=False)
     app = Flask(__name__, static_folder=str(DEMO_DIR), static_url_path="")
     app.config["JSON_SORT_KEYS"] = False
-    app.config["SESSION_COOKIE_SECURE"] = settings.ecloe_pay_cookie_secure
-    app.config["PERMANENT_SESSION_LIFETIME"] = settings.ecloe_pay_session_ttl_seconds
     app.secret_key = settings.subject_key_salt
     app.pay_settings = settings  # type: ignore[attr-defined]
     app.pay_repository = repository or create_pay_repository(settings)  # type: ignore[attr-defined]
+    app.pay_login_attempts = {}  # type: ignore[attr-defined]
+
+    @app.after_request
+    def harden_auth_responses(response):
+        if request.path.startswith("/api/auth/"):
+            response.headers["Cache-Control"] = "no-store"
+        if request.method == "GET" and request.path in {"/pay/login", "/pay"}:
+            _set_csrf_cookie(response, settings)
+        return response
 
     @app.get("/")
     def landing():
@@ -59,6 +158,11 @@ def create_app(
 
     @app.get("/pay")
     def pay():
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        if repository.requires_authentication:
+            user, _ = _current_user(app)
+            if user is None:
+                return redirect("/pay/login")
         return send_from_directory(DEMO_DIR, "index.html")
 
     @app.get("/pay/login")
@@ -67,35 +171,48 @@ def create_app(
 
     @app.post("/api/auth/login")
     def login():
+        if not _csrf_valid():
+            return _csrf_error()
         repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
         payload = request.get_json(silent=True) or {}
-        email = str(payload.get("email", "")).strip()
+        email = str(payload.get("email", "")).strip().lower()
         password = str(payload.get("password", ""))
+        if _login_rate_limited(app, email):
+            LOGGER.info("ecloe_pay_login result=rate_limited")
+            return _auth_json({"error": "Too many login attempts. Try again later."}, 429)
         user = repository.authenticate(email, password)
         if user is None:
-            return jsonify({"error": "Invalid ECloe Pay demo credentials."}), 401
+            LOGGER.info("ecloe_pay_login result=invalid")
+            return _auth_json({"error": "Invalid ECloe Pay demo credentials."}, 401)
         auth_session = repository.create_auth_session(user.user_id)
-        session.clear()
-        session.permanent = True
-        session["pay_auth_session_id"] = auth_session.auth_session_id
         repository.get_or_create_demo_session(user.user_id)
-        return jsonify({"authenticated": True, "user": asdict(user)})
+        _clear_login_attempts(app, email)
+        response = _auth_json({"authenticated": True, "user": asdict(user)})
+        _set_auth_cookie(response, auth_session.auth_session_id, settings)
+        _set_csrf_cookie(response, settings)
+        LOGGER.info("ecloe_pay_login user_id=%s result=success", user.user_id)
+        return response
 
     @app.post("/api/auth/logout")
     def logout():
+        if not _csrf_valid():
+            return _csrf_error()
         repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
-        auth_session_id = session.get("pay_auth_session_id")
+        auth_session_id = request.cookies.get(AUTH_COOKIE_NAME)
         if isinstance(auth_session_id, str):
             repository.revoke_auth_session(auth_session_id)
-        session.clear()
-        return jsonify({"authenticated": False})
+        response = _auth_json({"authenticated": False})
+        _clear_auth_cookie(response, settings)
+        _set_csrf_cookie(response, settings)
+        LOGGER.info("ecloe_pay_logout result=success")
+        return response
 
     @app.get("/api/auth/me")
     def me():
         user, _ = _current_user(app)
         if user is None:
-            return jsonify({"authenticated": False}), 401
-        return jsonify(
+            return _auth_json({"authenticated": False}, 401)
+        return _auth_json(
             {
                 "authenticated": True,
                 "user": user,
@@ -138,6 +255,8 @@ def create_app(
         demo_session, response, status = _session_or_error(app)
         if response is not None:
             return response, status
+        if not _csrf_valid():
+            return _csrf_error()
         payload = request.get_json(silent=True) or {}
         if payload.get("accepted") is not True:
             return jsonify({"error": "Terms must be accepted before using ECloe Pay."}), 400
@@ -150,6 +269,8 @@ def create_app(
         demo_session, response, status = _session_or_error(app)
         if response is not None:
             return response, status
+        if not _csrf_valid():
+            return _csrf_error()
         if not demo_session.terms_accepted:
             return jsonify({"error": "Demo terms are required before recording interactions."}), 403
 
@@ -177,6 +298,8 @@ def create_app(
         demo_session, response, status = _session_or_error(app)
         if response is not None:
             return response, status
+        if not _csrf_valid():
+            return _csrf_error()
         if not demo_session.terms_accepted:
             return jsonify({"error": "Demo terms are required before simulating payment."}), 403
         if payment_order_id != demo_session.payment_order_id:
@@ -216,6 +339,8 @@ def create_app(
         demo_session, response, status = _session_or_error(app)
         if response is not None:
             return response, status
+        if not _csrf_valid():
+            return _csrf_error()
         new_session = repository.reset_demo_state(demo_session.session_id)
         return jsonify({"reset": True, "session_id": new_session.session_id})
 

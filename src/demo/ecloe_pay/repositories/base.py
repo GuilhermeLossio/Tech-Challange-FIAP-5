@@ -7,6 +7,11 @@ from typing import Any, Protocol
 
 DEMO_BUCKET_NAME = "ecloe-pay-demo-artifacts"
 DEMO_CONFIRMATION_CODE = "0426"
+DUMMY_PASSWORD_HASH = (
+    "scrypt:32768:8:1$demoMissingPersonaSalt$"
+    "8b8ab077e81740d9916f3cf5183f16bea14e97be7115cd89aa86f28ecb9156e4370d44"
+    "fd99f74d07fbb47dfb453f23323d95ca0e1cf2cf3ec5931760949f8eb0"
+)
 
 
 @dataclass
