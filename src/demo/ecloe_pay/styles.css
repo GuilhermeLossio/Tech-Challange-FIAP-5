@@ -1988,6 +1988,12 @@ dialog::backdrop {
   margin: 0;
 }
 
+.landing-feature p strong {
+  color: var(--ink-soft);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
 .landing-terms {
   align-items: center;
   background: linear-gradient(115deg, var(--ink), #286c61);
