@@ -16,6 +16,7 @@ def test_pay_demo_declares_simulation_boundaries() -> None:
 
 def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
     schema = (PAY_DEMO / "schema.sql").read_text(encoding="utf-8")
+    schema_lower = schema.lower()
 
     assert "CREATE SCHEMA ecloe_pay" in schema
     assert "ecloe_pay.payment_orders" in schema
@@ -38,17 +39,28 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
     assert "uq_payment_orders_idempotency_key" in schema
     assert "uq_outbox_events_event_id" in schema
     assert "ix_auth_sessions_valid" in schema
+    assert "ix_demo_sessions_user" in schema
+    assert "ix_payment_orders_session" in schema
+    assert "ix_benefit_interactions_session" in schema
     assert "ix_outbox_events_unpublished" in schema
     assert "TIMESTAMPTZ" not in schema
     assert "JSONB" not in schema
     assert "ON CONFLICT" not in schema
     assert "CREATE TABLE IF NOT EXISTS" not in schema
     assert "DATETIME2" not in schema
-    assert "now()" not in schema.lower()
-    assert " cpf" not in schema.lower()
-    assert " card" not in schema.lower()
-    assert "bank_account" not in schema.lower()
-    assert "agency" not in schema.lower()
+    assert "now()" not in schema_lower
+    for forbidden_column in [
+        "cpf",
+        "document_number",
+        "card_number",
+        "cardholder",
+        "cvv",
+        "bank_account",
+        "agency",
+        "routing_number",
+        "account_number",
+    ]:
+        assert forbidden_column not in schema_lower
 
 
 def test_pay_repositories_expose_shared_contract_and_hide_sqlalchemy_from_routes() -> None:
@@ -158,6 +170,8 @@ def test_pay_demo_documents_flask_run_command() -> None:
 
     assert "python.exe -m flask --app src.demo.ecloe_pay.app run" in readme
     assert "http://127.0.0.1:5000/" in readme
+    assert ".\\scripts\\allow_current_sql_client_ip.ps1" in readme
+    assert ".\\scripts\\remove_current_sql_client_ip.ps1" in readme
 
 
 def test_pay_landing_declares_demo_storage_and_financial_boundaries() -> None:
@@ -184,3 +198,21 @@ def test_pay_bucket_script_documents_private_azure_container() -> None:
     assert ".\\scripts\\create_ecloe_pay_bucket.ps1" in cloud_doc
     assert ".\\scripts\\create_ecloe_pay_bucket.ps1" in pay_doc
     assert ".\\scripts\\create_ecloe_pay_bucket.ps1" in readme
+
+
+def test_pay_sql_firewall_scripts_keep_local_ip_rule_narrow() -> None:
+    allow_script = (ROOT / "scripts" / "allow_current_sql_client_ip.ps1").read_text(encoding="utf-8")
+    remove_script = (ROOT / "scripts" / "remove_current_sql_client_ip.ps1").read_text(encoding="utf-8")
+    legacy_script = (ROOT / "scripts" / "allow_ecloe_pay_sql_current_ip.ps1").read_text(encoding="utf-8")
+
+    assert "AllowCurrentClientIp" in allow_script
+    assert "ecloe-sql-1266" in allow_script
+    assert "Type ENABLE" in allow_script
+    assert "--enable-public-network" in allow_script
+    assert '$ip -eq "0.0.0.0"' in allow_script
+    assert "--start-ip-address" in allow_script
+    assert "--end-ip-address" in allow_script
+    assert ".\\scripts\\remove_current_sql_client_ip.ps1" in allow_script
+    assert "firewall-rule" in remove_script
+    assert "delete" in remove_script
+    assert "allow_current_sql_client_ip.ps1" in legacy_script

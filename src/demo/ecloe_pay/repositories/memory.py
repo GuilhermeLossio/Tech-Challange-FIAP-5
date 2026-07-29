@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import copy
 import secrets
 import uuid
 from datetime import UTC, datetime, timedelta
@@ -136,20 +137,34 @@ class MemoryPayRepository(PayRepository):
         return None
 
     def simulate_payment(self, session_id: str, confirmation_code: str) -> tuple[str, dict[str, Any] | None]:
-        session = self.demo_sessions[session_id]
-        if not session.terms_accepted:
-            return "terms_required", None
-        if confirmation_code != DEMO_CONFIRMATION_CODE:
-            if session.payment_status != "verified":
-                session.payment_status = "rejected"
-                self._insert_outbox("payment_order", session.payment_order_id, "payment_rejected", {"status": "rejected"})
-            return "rejected", None
-        if session.payment_status not in {"created", "rejected"}:
-            return "duplicate", None
-        session.payment_status = "verified"
-        reward_event = self.record_benefit_interaction(session_id, "conversion", 1.0)
-        self._insert_outbox("payment_order", session.payment_order_id, "payment_verified", reward_event)
-        return "verified", reward_event
+        sessions_before = copy.deepcopy(self.demo_sessions)
+        benefit_events_before = copy.deepcopy(self.benefit_events)
+        outbox_events_before = copy.deepcopy(self.outbox_events)
+        try:
+            session = self.demo_sessions[session_id]
+            if not session.terms_accepted:
+                return "terms_required", None
+            if confirmation_code != DEMO_CONFIRMATION_CODE:
+                if session.payment_status != "verified":
+                    session.payment_status = "rejected"
+                    self._insert_outbox(
+                        "payment_order",
+                        session.payment_order_id,
+                        "payment_rejected",
+                        {"status": "rejected"},
+                    )
+                return "rejected", None
+            if session.payment_status not in {"created", "rejected"}:
+                return "duplicate", None
+            session.payment_status = "verified"
+            reward_event = self.record_benefit_interaction(session_id, "conversion", 1.0)
+            self._insert_outbox("payment_order", session.payment_order_id, "payment_verified", reward_event)
+            return "verified", reward_event
+        except Exception:
+            self.demo_sessions = sessions_before
+            self.benefit_events = benefit_events_before
+            self.outbox_events = outbox_events_before
+            raise
 
     def reset_demo_state(self, session_id: str) -> DemoSession:
         current = self.demo_sessions[session_id]

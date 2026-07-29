@@ -214,3 +214,25 @@ python -m scripts.init_ecloe_pay_sql
 ```
 
 The schema must not store CPF, card, bank account, agency, real banking password, or real payment credentials.
+
+Manual Azure SQL smoke test:
+
+1. Run `az login`.
+2. Run `.\scripts\allow_current_sql_client_ip.ps1` to allow only the current public IP.
+3. Confirm `ODBC Driver 18 for SQL Server` is installed.
+4. Configure local `ECLOE_PAY_DATABASE_MODE=azure_sql`, `ECLOE_PAY_SQL_SERVER`, `ECLOE_PAY_SQL_DATABASE`, `ECLOE_PAY_SQL_AUTH_MODE=azure_cli`, `ECLOE_PAY_SQL_DRIVER`, and an explicit `ECLOE_PAY_DEMO_USER_PASSWORD`.
+5. Run `python -m scripts.init_ecloe_pay_sql`.
+6. Start Flask with `.venv\Scripts\python.exe -m flask --app src.demo.ecloe_pay.app run --host 127.0.0.1 --port 5000`.
+7. Open `http://127.0.0.1:5000/pay/login` and authenticate the demo persona.
+8. Open `http://127.0.0.1:5000/pay`, accept the terms, and register a benefit interaction.
+9. Simulate payment with confirmation code `0426`.
+10. Repeat the same payment request and confirm idempotency blocks the duplicate.
+11. Confirm `ecloe_pay.payment_orders`, `ecloe_pay.benefit_interactions`, and `ecloe_pay.outbox_events` in Azure SQL.
+12. Log out and confirm authenticated routes return `401`.
+13. Run `.\scripts\remove_current_sql_client_ip.ps1`.
+
+Azure SQL repository contract tests are opt-in. Common CI runs do not depend on the real Azure SQL database. To run the same Pay API rules against a configured SQL test database, set `ECLOE_PAY_SQL_CONTRACT_TESTS=1` with the local SQL environment variables above, then run:
+
+```powershell
+python -m pytest tests/test_ecloe_pay_contract.py
+```

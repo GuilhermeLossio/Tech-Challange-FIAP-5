@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from src.core.config import DEFAULT_AZURE_COSMOS_ENDPOINT, ROOT_DIR, load_settings
 
 
@@ -73,12 +75,47 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
 def test_config_rejects_unknown_ecloe_pay_database_mode(monkeypatch) -> None:
     monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "postgres")
 
-    try:
+    with pytest.raises(ValueError, match="Unsupported ECLOE_PAY_DATABASE_MODE"):
         load_settings(use_env_file=False)
-    except ValueError as error:
-        assert "Unsupported ECLOE_PAY_DATABASE_MODE" in str(error)
-    else:
-        raise AssertionError("Expected invalid ECLOE_PAY_DATABASE_MODE to fail")
+
+
+def test_config_rejects_unknown_ecloe_pay_sql_auth_mode(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "password")
+
+    with pytest.raises(ValueError, match="Unsupported ECLOE_PAY_SQL_AUTH_MODE"):
+        load_settings(use_env_file=False)
+
+
+def test_config_rejects_non_positive_ecloe_pay_session_ttl(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_SESSION_TTL_SECONDS", "0")
+
+    with pytest.raises(ValueError, match="ECLOE_PAY_SESSION_TTL_SECONDS"):
+        load_settings(use_env_file=False)
+
+
+def test_config_rejects_missing_azure_sql_settings_when_sql_mode_is_enabled(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
+    monkeypatch.setenv("ECLOE_PAY_SQL_SERVER", "")
+    monkeypatch.setenv("ECLOE_PAY_SQL_DATABASE", "")
+    monkeypatch.setenv("ECLOE_PAY_SQL_DRIVER", "")
+
+    with pytest.raises(ValueError) as error:
+        load_settings(use_env_file=False)
+
+    message = str(error.value)
+    assert "Missing ECloe Pay Azure SQL settings" in message
+    assert "ECLOE_PAY_SQL_SERVER" in message
+    assert "ECLOE_PAY_SQL_DATABASE" in message
+    assert "ECLOE_PAY_SQL_DRIVER" in message
+
+
+def test_config_rejects_entra_interactive_in_cloud(monkeypatch) -> None:
+    monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "memory")
+    monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "entra_interactive")
+
+    with pytest.raises(ValueError, match="entra_interactive is local-only"):
+        load_settings(use_env_file=False)
 
 
 def test_config_requires_managed_identity_for_pay_sql_in_cloud(monkeypatch) -> None:
@@ -86,10 +123,8 @@ def test_config_requires_managed_identity_for_pay_sql_in_cloud(monkeypatch) -> N
     monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
     monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "azure_cli")
 
-    try:
+    with pytest.raises(ValueError) as error:
         load_settings(use_env_file=False)
-    except ValueError as error:
-        assert "managed_identity" in str(error)
-        assert "change-this-demo-password" not in str(error)
-    else:
-        raise AssertionError("Expected cloud ECloe Pay SQL auth validation to fail")
+
+    assert "managed_identity" in str(error.value)
+    assert "change-this-demo-password" not in str(error.value)

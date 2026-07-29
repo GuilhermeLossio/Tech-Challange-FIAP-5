@@ -1,5 +1,7 @@
 from datetime import UTC, datetime, timedelta
 
+import pytest
+
 from src.demo.ecloe_pay.app import AUTH_COOKIE_NAME, CSRF_COOKIE_NAME, create_app
 from src.demo.ecloe_pay.repositories import DEMO_BUCKET_NAME, MemoryPayRepository
 
@@ -128,6 +130,7 @@ def test_pay_flask_login_logout_flow() -> None:
     assert auth_cookie.same_site == "Lax"
     assert auth_cookie.secure is False
     assert "demo.pay" not in auth_cookie.value
+    assert "change-this-demo-password" not in auth_cookie.value
     csrf_cookie = client.get_cookie(CSRF_COOKIE_NAME)
     assert csrf_cookie is not None
     assert csrf_cookie.http_only is False
@@ -217,3 +220,58 @@ def test_pay_flask_rejects_expired_session() -> None:
     response = client.get("/api/auth/me")
 
     assert response.status_code == 401
+
+
+def test_pay_flask_rejects_revoked_session_token() -> None:
+    app = create_app()
+    repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
+    repository.requires_authentication = True
+    user = repository.authenticate("demo.pay@ecloe.local", "change-this-demo-password")
+    assert user is not None
+    auth_session = repository.create_auth_session(user.user_id)
+    repository.revoke_auth_session(auth_session.auth_session_id)
+    client = app.test_client()
+    client.set_cookie(AUTH_COOKIE_NAME, auth_session.auth_session_id)
+
+    response = client.get("/api/auth/me")
+
+    assert response.status_code == 401
+
+
+def test_pay_flask_reset_requires_authentication() -> None:
+    app = create_app()
+    repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
+    repository.requires_authentication = True
+    client = app.test_client()
+    client.get("/pay/login")
+
+    response = client.post("/api/reset", json={}, headers=csrf_headers(client))
+
+    assert response.status_code == 401
+
+
+def test_memory_pay_repository_rolls_back_payment_state_when_outbox_fails() -> None:
+    app = create_app()
+    repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
+    user = repository.get_user_by_email("demo.pay@ecloe.local")
+    assert user is not None
+    session = repository.get_or_create_demo_session(user.user_id)
+    repository.accept_terms(session.session_id)
+
+    original_insert_outbox = repository._insert_outbox
+
+    def fail_payment_verified(*args, **kwargs):
+        if args[2] == "payment_verified":
+            raise RuntimeError("forced outbox failure")
+        return original_insert_outbox(*args, **kwargs)
+
+    repository._insert_outbox = fail_payment_verified  # type: ignore[method-assign]
+
+    with pytest.raises(RuntimeError, match="forced outbox failure"):
+        repository.simulate_payment(session.session_id, "0426")
+
+    restored = repository.get_demo_session(session.session_id)
+    assert restored is not None
+    assert restored.payment_status == "created"
+    assert repository.benefit_events[session.session_id] == []
+    assert repository.outbox_events == []
