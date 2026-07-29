@@ -190,10 +190,22 @@ ECLOE_PAY_COOKIE_SECURE=true
 Open local firewall access only for the current client IP:
 
 ```powershell
-.\scripts\allow_ecloe_pay_sql_current_ip.ps1
+.\scripts\allow_current_sql_client_ip.ps1
 ```
 
-This script does not create a `0.0.0.0` rule and does not enable broad "Allow Azure Services" access.
+If `publicNetworkAccess` is currently `Disabled`, the script stops unless `-EnablePublicNetworkAccess` is provided, and still asks for explicit confirmation before changing it to `Enabled`:
+
+```powershell
+.\scripts\allow_current_sql_client_ip.ps1 -EnablePublicNetworkAccess
+```
+
+This script validates that the detected public IP is a single IPv4 or IPv6 value, creates or updates only the `AllowCurrentClientIp` rule with the same start and end IP, does not create a `0.0.0.0` rule, and does not enable broad "Allow Azure Services" access.
+
+Remove the local development firewall rule after use:
+
+```powershell
+.\scripts\remove_current_sql_client_ip.ps1
+```
 
 Apply the schema and seed the synthetic demo persona after installing the optional SQL dependencies:
 
