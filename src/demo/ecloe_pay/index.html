@@ -3,154 +3,314 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ECloe Pay Demo</title>
+    <meta
+      name="description"
+      content="ECloe Pay: a playful, secure simulated wallet experience."
+    />
+    <title>ECloe Pay · Demo wallet</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
+  <body class="wallet-body">
+    <a class="skip-link" href="#wallet">Skip to wallet</a>
+
+    <div class="ambient-layer" aria-hidden="true">
+      <span class="ambient-orb orb-mint"></span>
+      <span class="ambient-orb orb-rose"></span>
+      <span class="ambient-orb orb-lemon"></span>
+    </div>
+
     <div class="app-shell">
       <aside class="sidebar" aria-label="ECloe Pay navigation">
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true">EP</span>
+        <a class="brand" href="/" aria-label="ECloe Pay home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" role="img">
+              <path d="M11 27c-3-8 3-16 11-15 3-7 14-5 14 4 8 2 8 14 0 16-1 8-13 9-16 2-5 2-8-1-9-7Z" />
+              <path class="brand-face" d="M18 25h.1M30 25h.1M20 30c2 2 6 2 8 0" />
+            </svg>
+          </span>
+          <span>
+            <small>simulated wallet</small>
+            <strong>ECloe Pay</strong>
+          </span>
+        </a>
+
+        <nav class="nav-list" aria-label="Primary navigation">
+          <a class="nav-item active" href="#wallet" aria-current="page">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Z" />
+              <path d="M4 9h16M15 14h2" />
+            </svg>
+            <span>Wallet</span>
+          </a>
+          <a class="nav-item" href="#benefit">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7c-2-5-7-4-6-1 .5 1.5 3 1 6 1Zm0 0c2-5 7-4 6-1-.5 1.5-3 1-6 1Z" />
+            </svg>
+            <span>Benefits</span>
+          </a>
+          <a class="nav-item" href="#activity">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M4 19V9m5 10V5m6 14v-7m5 7V8" />
+            </svg>
+            <span>Activity</span>
+          </a>
+          <a class="nav-item" href="#security">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3 5 6v5c0 4.5 2.8 8 7 10 4.2-2 7-5.5 7-10V6l-7-3Z" />
+              <path d="m9 12 2 2 4-5" />
+            </svg>
+            <span>Security</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-companion" aria-label="Cloe assistant status">
+          <div class="mini-companion" aria-hidden="true">
+            <span class="mini-ear left"></span>
+            <span class="mini-ear right"></span>
+            <span class="mini-face">•ᴗ•</span>
+          </div>
           <div>
-            <p class="eyebrow">Simulated wallet</p>
-            <h1>ECloe Pay</h1>
+            <strong>Cloe is online</strong>
+            <span>Demo mode · safe to explore</span>
           </div>
         </div>
-        <nav class="nav-list" aria-label="Primary">
-          <a href="/">Landing</a>
-          <a href="#wallet" aria-current="page">Wallet</a>
-          <a href="#benefit">Benefit</a>
-          <a href="#activity">Activity</a>
-          <a href="#security">Security</a>
-          <a href="#terms">Terms</a>
-        </nav>
+
         <div class="status-panel">
           <span class="status-dot" aria-hidden="true"></span>
-          <span>Demo mode only</span>
+          <div>
+            <strong>Protected simulation</strong>
+            <span>No real funds or credentials</span>
+          </div>
         </div>
       </aside>
 
       <main class="content">
-        <section class="topbar" aria-label="Session controls">
-          <div>
-            <p class="eyebrow">Session</p>
-            <strong id="sessionId">sess_pay_demo_001</strong>
+        <header class="topbar" aria-label="Session controls">
+          <div class="welcome-copy">
+            <p class="eyebrow">Tuesday, July 28</p>
+            <h1>Good evening, Cloe <span aria-hidden="true">✦</span></h1>
           </div>
-          <div class="segmented-control" aria-label="Display mode">
-            <button type="button" id="customerModeButton" class="active">Customer</button>
-            <button type="button" id="technicalModeButton">Technical</button>
+
+          <div class="topbar-actions">
+            <div class="segmented-control" aria-label="Display mode">
+              <button type="button" id="customerModeButton" class="active">Customer</button>
+              <button type="button" id="technicalModeButton">Technical</button>
+            </div>
+            <button type="button" id="openTermsButton" class="round-button" aria-label="Open demo terms">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 8h.01M11 12h1v5h1" />
+                <circle cx="12" cy="12" r="9" />
+              </svg>
+            </button>
+            <div class="avatar" aria-label="Demo profile">CL</div>
+          </div>
+        </header>
+
+        <section id="wallet" class="wallet-grid" aria-label="Wallet summary">
+          <article class="balance-panel tilt-card">
+            <div class="balance-decoration" aria-hidden="true">
+              <span class="card-loop loop-one"></span>
+              <span class="card-loop loop-two"></span>
+              <span class="spark spark-one">✦</span>
+              <span class="spark spark-two">✧</span>
+            </div>
+            <div class="balance-topline">
+              <span class="card-chip" aria-hidden="true"></span>
+              <span class="demo-badge">DEMO</span>
+            </div>
+            <div class="balance-copy">
+              <p>Demo balance</p>
+              <strong id="balanceValue">R$ 428,70</strong>
+              <span>No real funds are stored or moved.</span>
+            </div>
+            <div class="balance-footer">
+              <span>ECLOE DIGITAL</span>
+              <span>•••• 0426</span>
+            </div>
+          </article>
+
+          <div class="wallet-side">
+            <article class="metric-panel cashback-card">
+              <div class="metric-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24">
+                  <path d="M12 3v18M16 7.5c0-2-1.8-3-4-3s-4 1-4 3 1.8 3 4 3 4 1 4 3-1.8 3-4 3-4-1-4-3" />
+                </svg>
+              </div>
+              <div>
+                <p>Cashback</p>
+                <strong>R$ 18,40</strong>
+                <span>+12% this cycle</span>
+              </div>
+              <span class="trend-chip">↗ 12%</span>
+            </article>
+
+            <article class="metric-panel goal-card">
+              <div class="metric-heading">
+                <div>
+                  <p>Monthly goal</p>
+                  <strong>64%</strong>
+                </div>
+                <div class="goal-ring" style="--progress: 64" aria-label="64 percent complete">
+                  <span>64</span>
+                </div>
+              </div>
+              <div class="progress-track" aria-hidden="true">
+                <span style="width: 64%"></span>
+              </div>
+              <span>R$ 320 of R$ 500 simulated</span>
+            </article>
           </div>
         </section>
 
-        <section id="wallet" class="wallet-grid" aria-label="Wallet summary">
-          <article class="balance-panel">
-            <div>
-              <p class="eyebrow">Demo balance</p>
-              <strong>R$ 428,70</strong>
-              <span>No real funds are stored or moved.</span>
-            </div>
-            <button type="button" id="openTermsButton" class="icon-button" aria-label="Open terms">
-              i
-            </button>
-          </article>
-
-          <article class="metric-panel">
-            <p class="eyebrow">Cashback</p>
-            <strong>R$ 18,40</strong>
-            <span>Simulated wallet benefit</span>
-          </article>
-
-          <article class="metric-panel">
-            <p class="eyebrow">Goal</p>
-            <strong>64%</strong>
-            <span>Next recurring purchase</span>
-          </article>
+        <section class="quick-actions" aria-label="Quick actions">
+          <button type="button" class="quick-action" data-quick-action="Pix simulation">
+            <span class="quick-icon mint" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="m7 7 5-5 5 5-5 5-5-5Zm0 10 5-5 5 5-5 5-5-5ZM2 12l5-5 5 5-5 5-5-5Zm10 0 5-5 5 5-5 5-5-5Z" />
+              </svg>
+            </span>
+            <span><strong>Pix</strong><small>Instant demo</small></span>
+          </button>
+          <button type="button" class="quick-action" data-quick-action="Payment simulation">
+            <span class="quick-icon rose" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 7h16v11H4zM4 10h16M7 15h4" />
+              </svg>
+            </span>
+            <span><strong>Pay</strong><small>Try a payment</small></span>
+          </button>
+          <button type="button" class="quick-action" data-quick-action="Benefit center">
+            <span class="quick-icon lemon" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7C9 2 5 4 6 6c1 1.5 3.5 1 6 1Zm0 0c3-5 7-3 6-1-1 1.5-3.5 1-6 1Z" />
+              </svg>
+            </span>
+            <span><strong>Rewards</strong><small>See your perks</small></span>
+          </button>
+          <button type="button" class="quick-action" data-quick-action="Security center">
+            <span class="quick-icon violet" aria-hidden="true">
+              <svg viewBox="0 0 24 24">
+                <path d="M12 3 5 6v5c0 4.5 2.8 8 7 10 4.2-2 7-5.5 7-10V6l-7-3Z" />
+                <path d="m9 12 2 2 4-5" />
+              </svg>
+            </span>
+            <span><strong>Security</strong><small>View safeguards</small></span>
+          </button>
         </section>
 
         <section id="benefit" class="main-grid">
           <article class="benefit-panel">
-            <div class="benefit-header">
-              <div>
-                <p class="eyebrow">Selected eligible benefit</p>
-                <h2 id="benefitTitle">Cashback for recurring purchases</h2>
+            <div class="benefit-art" aria-hidden="true">
+              <div class="benefit-planet">
+                <span class="planet-face">•‿•</span>
               </div>
-              <span id="benefitState" class="pill">Ready</span>
+              <span class="benefit-star star-a">✦</span>
+              <span class="benefit-star star-b">✧</span>
+              <span class="benefit-star star-c">✦</span>
             </div>
-            <p id="benefitMessage">
-              Earn cashback on your recurring purchases. This is a simulated wallet benefit
-              selected from offers that were already eligible for the demo session.
-            </p>
 
-            <div class="payment-card" aria-label="Simulated payment order">
-              <div>
-                <p class="eyebrow">Payment order</p>
+            <div class="benefit-content">
+              <div class="benefit-header">
+                <div>
+                  <p class="eyebrow">Selected eligible benefit</p>
+                  <h2 id="benefitTitle">A softer bill, every month.</h2>
+                </div>
+                <span id="benefitState" class="pill">Ready</span>
+              </div>
+              <p id="benefitMessage">
+                Earn cashback on recurring purchases. Your eligible demo offer is ready
+                to be explored—without entering any real financial data.
+              </p>
+
+              <div class="payment-card" aria-label="Simulated payment order">
+                <div class="merchant">
+                  <span class="merchant-logo" aria-hidden="true">E</span>
+                  <div>
+                    <p>ECloe Market · recurring order</p>
+                    <span>order_demo_7841</span>
+                  </div>
+                </div>
                 <strong>R$ 127,90</strong>
               </div>
-              <span>order_demo_7841</span>
-            </div>
 
-            <form id="transactionForm" class="transaction-form">
-              <label for="confirmationCode">Security confirmation</label>
-              <div class="input-row">
-                <input
-                  id="confirmationCode"
-                  name="confirmationCode"
-                  autocomplete="off"
-                  inputmode="numeric"
-                  maxlength="6"
-                  placeholder="Enter 0426"
-                  aria-describedby="securityHint"
-                />
-                <button type="submit">Simulate payment</button>
+              <form id="transactionForm" class="transaction-form">
+                <label for="confirmationCode">Security confirmation</label>
+                <div class="input-row">
+                  <div class="code-input">
+                    <svg viewBox="0 0 24 24" aria-hidden="true">
+                      <path d="M7 10V8a5 5 0 0 1 10 0v2M5 10h14v11H5z" />
+                    </svg>
+                    <input
+                      id="confirmationCode"
+                      name="confirmationCode"
+                      autocomplete="off"
+                      inputmode="numeric"
+                      maxlength="6"
+                      placeholder="Demo code: 0426"
+                      aria-describedby="securityHint"
+                    />
+                  </div>
+                  <button type="submit" class="primary-button">
+                    Simulate payment
+                    <span aria-hidden="true">→</span>
+                  </button>
+                </div>
+                <p id="securityHint">
+                  Deterministic demo code · idempotency protected · synthetic evidence only
+                </p>
+              </form>
+
+              <div class="action-row" aria-label="Benefit actions">
+                <button type="button" id="viewBenefitButton" class="text-button">Open benefit</button>
+                <button type="button" id="acceptBenefitButton" class="text-button">
+                  Accept benefit
+                </button>
+                <button type="button" id="dismissBenefitButton" class="text-button muted">
+                  Not now
+                </button>
               </div>
-              <p id="securityHint">
-                The transaction is accepted only with the deterministic demo code, an
-                idempotency key, and a locked session.
-              </p>
-            </form>
-
-            <div class="action-row" aria-label="Benefit actions">
-              <button type="button" id="viewBenefitButton">Open benefit</button>
-              <button type="button" id="dismissBenefitButton" class="secondary-button">
-                Dismiss
-              </button>
-              <button type="button" id="acceptBenefitButton" class="secondary-button">
-                Accept benefit
-              </button>
             </div>
           </article>
 
           <aside class="summary-panel" aria-label="Technical evidence">
             <div class="summary-header">
-              <p class="eyebrow">Security controls</p>
-              <span id="securityState" class="pill success">Locked</span>
+              <div>
+                <p class="eyebrow">Protection status</p>
+                <h2>Safe by design</h2>
+              </div>
+              <span id="securityState" class="pill success">
+                <span class="pulse-dot" aria-hidden="true"></span>
+                Locked
+              </span>
             </div>
+
+            <div class="security-score">
+              <div>
+                <span>Demo safety score</span>
+                <strong>100%</strong>
+              </div>
+              <span class="security-wave" aria-hidden="true">
+                <i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+              </span>
+            </div>
+
             <ul class="check-list">
-              <li>Generated demo session, no user creation</li>
-              <li>Idempotency key for the payment order</li>
-              <li>No card, bank, CPF, or account data fields</li>
-              <li>Append-only reward event after verified action</li>
+              <li><span aria-hidden="true">✓</span> Generated session, no user creation</li>
+              <li><span aria-hidden="true">✓</span> Idempotency-protected payment order</li>
+              <li><span aria-hidden="true">✓</span> No card, bank, CPF, or account fields</li>
+              <li><span aria-hidden="true">✓</span> Append-only synthetic reward event</li>
             </ul>
 
             <div id="technicalPanel" class="technical-panel" hidden>
-              <p class="eyebrow">Technical mode</p>
+              <div class="technical-heading">
+                <p class="eyebrow">Technical mode</p>
+                <span id="sessionId">sess_pay_demo_001</span>
+              </div>
               <dl>
-                <div>
-                  <dt>decision_id</dt>
-                  <dd>dec_demo_001</dd>
-                </div>
-                <div>
-                  <dt>offer_id</dt>
-                  <dd>cashback_recurring_purchase</dd>
-                </div>
-                <div>
-                  <dt>policy</dt>
-                  <dd>likelihood_ranker</dd>
-                </div>
-                <div>
-                  <dt>bucket</dt>
-                  <dd>ecloe-pay-demo-artifacts</dd>
-                </div>
+                <div><dt>decision_id</dt><dd>dec_demo_001</dd></div>
+                <div><dt>offer_id</dt><dd>cashback_recurring_purchase</dd></div>
+                <div><dt>policy</dt><dd>likelihood_ranker</dd></div>
+                <div><dt>bucket</dt><dd>ecloe-pay-demo-artifacts</dd></div>
               </dl>
             </div>
           </aside>
@@ -159,27 +319,59 @@
         <section id="activity" class="activity-panel" aria-label="Simulated activity">
           <div class="section-heading">
             <div>
-              <p class="eyebrow">Timeline</p>
-              <h2>Simulated transaction evidence</h2>
+              <p class="eyebrow">Live evidence</p>
+              <h2>Simulation activity</h2>
             </div>
-            <button type="button" id="resetButton" class="secondary-button">Reset</button>
+            <button type="button" id="resetButton" class="secondary-button">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 12a8 8 0 1 0 2-5M4 4v5h5" />
+              </svg>
+              Reset demo
+            </button>
           </div>
-          <ol id="timeline" class="timeline"></ol>
+          <ol id="timeline" class="timeline" aria-live="polite"></ol>
+          <div id="emptyTimeline" class="empty-timeline">
+            <span aria-hidden="true">✦</span>
+            <p>Your safe demo actions will appear here.</p>
+          </div>
         </section>
 
         <section id="security" class="terms-inline" aria-label="Security statement">
-          <h2>Security baseline</h2>
-          <p>
-            ECloe Pay validates the simulated confirmation step, locks the session, uses
-            idempotency, separates Pay-owned state in PostgreSQL, and never asks for real
-            payment credentials.
-          </p>
+          <div class="terms-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 3 5 6v5c0 4.5 2.8 8 7 10 4.2-2 7-5.5 7-10V6l-7-3Z" />
+              <path d="m9 12 2 2 4-5" />
+            </svg>
+          </div>
+          <div>
+            <h2>Built to demonstrate, never to transact.</h2>
+            <p>
+              ECloe Pay validates a simulated confirmation step, locks the session, uses
+              idempotency, and never asks for real payment credentials.
+            </p>
+          </div>
+          <button type="button" class="text-button" data-open-terms>Read safety model →</button>
         </section>
+
+        <footer class="app-footer">
+          <span>ECloe Pay · FIAP Tech Challenge</span>
+          <span>Simulation environment · v0.2</span>
+        </footer>
       </main>
     </div>
 
     <dialog id="termsDialog" aria-labelledby="termsTitle">
       <form method="dialog" class="terms-dialog">
+        <div class="dialog-illustration" aria-hidden="true">
+          <span class="dialog-shield">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 3 5 6v5c0 4.5 2.8 8 7 10 4.2-2 7-5.5 7-10V6l-7-3Z" />
+              <path d="m9 12 2 2 4-5" />
+            </svg>
+          </span>
+          <span class="dialog-spark">✦</span>
+        </div>
+        <p class="eyebrow">Before you explore</p>
         <h2 id="termsTitle">ECloe Pay demo terms</h2>
         <p>
           ECloe Pay is a demonstration application. It does not create real users,
@@ -188,15 +380,27 @@
         </p>
         <p>
           All balances, transactions, wallet benefits, rewards, and confirmations are
-          synthetic and session-scoped. Do not enter real card, bank, CPF, password, or account information.
+          synthetic and session-scoped.
+          Do not enter real card, bank, CPF, password, or account information.
         </p>
         <label class="terms-check">
           <input id="termsCheckbox" type="checkbox" />
-          I understand this is a demo and no real money is processed.
+          <span>
+            <strong>I understand this is a safe simulation.</strong>
+            <small>No real money is processed and no account is created.</small>
+          </span>
         </label>
-        <button id="acceptTermsButton" type="button" disabled>Continue</button>
+        <button id="acceptTermsButton" type="button" class="primary-button" disabled>
+          Enter the demo
+          <span aria-hidden="true">→</span>
+        </button>
       </form>
     </dialog>
+
+    <div id="toast" class="toast" role="status" aria-live="polite" hidden>
+      <span class="toast-icon" aria-hidden="true">✦</span>
+      <span id="toastMessage"></span>
+    </div>
 
     <script src="./app.js" type="module"></script>
   </body>

@@ -3,46 +3,125 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ECloe Pay</title>
+    <meta
+      name="description"
+      content="ECloe Pay is a playful, secure simulated wallet for the FIAP Tech Challenge."
+    />
+    <title>ECloe Pay · Money can feel lighter</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body class="landing-body">
+    <div class="ambient-layer" aria-hidden="true">
+      <span class="ambient-orb orb-mint"></span>
+      <span class="ambient-orb orb-rose"></span>
+      <span class="ambient-orb orb-lemon"></span>
+    </div>
+
     <main class="landing-shell">
-      <section class="landing-hero" aria-label="ECloe Pay demo landing page">
+      <nav class="landing-nav" aria-label="Landing navigation">
+        <a class="brand" href="/" aria-label="ECloe Pay home">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 48 48" role="img">
+              <path d="M11 27c-3-8 3-16 11-15 3-7 14-5 14 4 8 2 8 14 0 16-1 8-13 9-16 2-5 2-8-1-9-7Z" />
+              <path class="brand-face" d="M18 25h.1M30 25h.1M20 30c2 2 6 2 8 0" />
+            </svg>
+          </span>
+          <span>
+            <small>your playful wallet</small>
+            <strong>ECloe Pay</strong>
+          </span>
+        </a>
+
+        <div class="landing-nav-links">
+          <a href="#experience">Architecture</a>
+          <a href="#security">Safety</a>
+          <a class="nav-cta" href="/pay/login">
+            Open demo
+            <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      </nav>
+
+      <section class="landing-hero" aria-label="ECloe Pay simulated payments demo">
         <div class="landing-copy">
-          <p class="eyebrow">Simulated payments demo</p>
-          <h1>ECloe Pay</h1>
+          <span class="landing-kicker">
+            <span aria-hidden="true"></span>
+            Simulated payments demo
+          </span>
+          <h1>ECloe Pay feels <em>lighter.</em></h1>
           <p class="landing-lede">
             A runnable wallet demo for secure simulated payments, eligible benefits,
             and reward-event evidence without creating users or processing real money.
           </p>
           <div class="landing-actions">
-            <a class="primary-link" href="/pay">Open wallet demo</a>
+            <a class="primary-link" href="/pay/login">
+              Open wallet demo
+              <span aria-hidden="true">→</span>
+            </a>
             <a class="secondary-link" href="#security">Review safety model</a>
           </div>
+          <div class="landing-trust" aria-label="Demo safeguards">
+            <span class="trust-item">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M12 3 5 6v5c0 4.5 2.8 8 7 10 4.2-2 7-5.5 7-10V6l-7-3Z" />
+                <path d="m9 12 2 2 4-5" />
+              </svg>
+              No real credentials
+            </span>
+            <span class="trust-item">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 12a8 8 0 1 0 2-5M4 4v5h5" />
+              </svg>
+              Reset anytime
+            </span>
+            <span class="trust-item">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M4 7h16v11H4zM4 10h16M7 15h4" />
+              </svg>
+              Synthetic money only
+            </span>
+          </div>
         </div>
-        <div class="landing-device" aria-label="ECloe Pay preview">
-          <div class="device-top">
-            <span>ECloe Pay</span>
-            <strong>Demo</strong>
+
+        <div class="hero-scene" aria-label="A friendly ECloe companion resting beside a demo card">
+          <div class="scene-window" aria-hidden="true"></div>
+          <div class="scene-sofa" aria-hidden="true"></div>
+          <div class="scene-companion" aria-hidden="true">
+            <span class="companion-tail"></span>
+            <span class="companion-body"></span>
+            <span class="companion-head">
+              <span class="companion-face">•ᴗ•</span>
+            </span>
           </div>
-          <div class="device-balance">
-            <span>Demo balance</span>
+          <div class="scene-card" aria-hidden="true">
+            <span>ECLOE DIGITAL · DEMO</span>
             <strong>R$ 428,70</strong>
+            <span>No real funds</span>
           </div>
-          <div class="device-benefit">
-            <span>Selected eligible benefit</span>
-            <strong>Cashback for recurring purchases</strong>
+          <div class="scene-plant" aria-hidden="true">
+            <span class="plant-leaf one"></span>
+            <span class="plant-leaf two"></span>
+            <span class="plant-leaf three"></span>
+            <span class="plant-pot"></span>
           </div>
-          <div class="device-row">
-            <span>Private bucket</span>
-            <strong>ecloe-pay-demo-artifacts</strong>
-          </div>
+          <span class="scene-spark one" aria-hidden="true">✦</span>
+          <span class="scene-spark two" aria-hidden="true">✧</span>
+          <span class="scene-spark three" aria-hidden="true">✦</span>
         </div>
       </section>
 
-      <section id="security" class="landing-band" aria-label="Security and data boundaries">
-        <article>
+      <section
+        id="experience"
+        class="landing-band"
+        aria-label="Security and data boundaries"
+      >
+        <article class="landing-feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M12 3 5 6v5c0 4.5 2.8 8 7 10 4.2-2 7-5.5 7-10V6l-7-3Z" />
+              <path d="m9 12 2 2 4-5" />
+            </svg>
+          </span>
           <p class="eyebrow">Safety</p>
           <h2>Secure simulation only</h2>
           <p>
@@ -50,7 +129,13 @@
             payment attempts with idempotency, and records only synthetic evidence.
           </p>
         </article>
-        <article>
+
+        <article class="landing-feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 7h16v12H4zM8 7V5h8v2M8 11h8M8 15h5" />
+            </svg>
+          </span>
           <p class="eyebrow">Storage</p>
           <h2>Private Pay artifacts</h2>
           <p>
@@ -58,8 +143,15 @@
             <strong>ecloe-pay-demo-artifacts</strong>.
           </p>
         </article>
-        <article>
-          <p class="eyebrow">PostgreSQL</p>
+
+        <article id="security" class="landing-feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <ellipse cx="12" cy="6" rx="7" ry="3" />
+              <path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
+            </svg>
+          </span>
+          <p class="eyebrow">Azure SQL</p>
           <h2>Pay-owned schema</h2>
           <p>
             Simulated sessions, payment orders, benefit interactions, and outbox rows
@@ -69,13 +161,27 @@
       </section>
 
       <section class="landing-terms" aria-label="Demo disclaimer">
-        <h2>No real financial service is provided</h2>
-        <p>
-          ECloe Pay does not create real users, process real money, move funds, authorize
-          payments, approve credit, perform fraud checks, open accounts, or provide
-          regulated payment services.
-        </p>
+        <div>
+          <h2>No real financial service is provided</h2>
+          <p>
+            ECloe Pay does not create real users, process real money, move funds, authorize
+            payments, approve credit, perform fraud checks, open accounts, or provide
+            regulated payment services.
+          </p>
+        </div>
+        <strong>100% synthetic</strong>
       </section>
     </main>
+
+    <script>
+      const scene = document.querySelector(".hero-scene");
+      if (scene && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        window.addEventListener("pointermove", (event) => {
+          const x = (event.clientX / window.innerWidth - 0.5) * 8;
+          const y = (event.clientY / window.innerHeight - 0.5) * 8;
+          scene.style.translate = `${x}px ${y}px`;
+        });
+      }
+    </script>
   </body>
 </html>
