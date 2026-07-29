@@ -33,9 +33,12 @@
         </a>
 
         <div class="landing-nav-links">
-          <a href="#experience">Experience</a>
+          <a href="#experience">Architecture</a>
           <a href="#security">Safety</a>
-          <a class="nav-cta" href="/pay">Open demo <span aria-hidden="true">→</span></a>
+          <a class="nav-cta" href="/pay/login">
+            Open demo
+            <span aria-hidden="true">→</span>
+          </a>
         </div>
       </nav>
 
@@ -45,18 +48,17 @@
             <span aria-hidden="true"></span>
             Simulated payments demo
           </span>
-          <h1>Money can feel <em>lighter.</em></h1>
+          <h1>ECloe Pay feels <em>lighter.</em></h1>
           <p class="landing-lede">
-            Meet a wallet experience designed to feel clear, warm, and alive. Explore
-            simulated payments, eligible benefits, and transparent reward evidence—all
-            without creating users or processing real money.
+            A runnable wallet demo for secure simulated payments, eligible benefits,
+            and reward-event evidence without creating users or processing real money.
           </p>
           <div class="landing-actions">
-            <a class="primary-link" href="/pay">
-              Enter ECloe Pay
+            <a class="primary-link" href="/pay/login">
+              Open wallet demo
               <span aria-hidden="true">→</span>
             </a>
-            <a class="secondary-link" href="#security">See how the demo stays safe</a>
+            <a class="secondary-link" href="#security">Review safety model</a>
           </div>
           <div class="landing-trust" aria-label="Demo safeguards">
             <span class="trust-item">
@@ -108,61 +110,63 @@
         </div>
       </section>
 
-      <section id="experience" class="landing-band" aria-label="ECloe Pay experience">
+      <section
+        id="experience"
+        class="landing-band"
+        aria-label="Security and data boundaries"
+      >
         <article class="landing-feature">
-          <span class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M4 7.5A2.5 2.5 0 0 1 6.5 5h11A2.5 2.5 0 0 1 20 7.5v9a2.5 2.5 0 0 1-2.5 2.5h-11A2.5 2.5 0 0 1 4 16.5v-9Z" />
-              <path d="M4 9h16M15 14h2" />
-            </svg>
-          </span>
-          <p class="eyebrow">Playful clarity</p>
-          <h2>A wallet that explains itself</h2>
-          <p>
-            Clear balance, cashback, goals, and payment states—wrapped in a warm visual
-            system that keeps every action easy to understand.
-          </p>
-        </article>
-
-        <article class="landing-feature">
-          <span class="feature-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24">
-              <path d="M4 10h16v10H4zM3 7h18v3H3zM12 7v13M12 7C9 2 5 4 6 6c1 1.5 3.5 1 6 1Zm0 0c3-5 7-3 6-1-1 1.5-3.5 1-6 1Z" />
-            </svg>
-          </span>
-          <p class="eyebrow">Benefits that feel personal</p>
-          <h2>See the right perk at the right time</h2>
-          <p>
-            Eligible benefits stay central to the experience, with visible decision
-            evidence for both customer and technical views.
-          </p>
-        </article>
-
-        <article id="security" class="landing-feature">
           <span class="feature-icon" aria-hidden="true">
             <svg viewBox="0 0 24 24">
               <path d="M12 3 5 6v5c0 4.5 2.8 8 7 10 4.2-2 7-5.5 7-10V6l-7-3Z" />
               <path d="m9 12 2 2 4-5" />
             </svg>
           </span>
-          <p class="eyebrow">Secure simulation only</p>
-          <h2>Designed to be explored safely</h2>
+          <p class="eyebrow">Safety</p>
+          <h2>Secure simulation only</h2>
           <p>
-            Deterministic confirmation, idempotency, and synthetic evidence keep the
-            experience demonstrable without collecting financial credentials.
+            ECloe Pay validates a deterministic confirmation step, locks duplicate
+            payment attempts with idempotency, and records only synthetic evidence.
+          </p>
+        </article>
+
+        <article class="landing-feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 7h16v12H4zM8 7V5h8v2M8 11h8M8 15h5" />
+            </svg>
+          </span>
+          <p class="eyebrow">Storage</p>
+          <h2>Private Pay artifacts</h2>
+          <p>
+            Demo receipts and Pay evidence use a dedicated private Azure Blob container:
+            <strong>ecloe-pay-demo-artifacts</strong>.
+          </p>
+        </article>
+
+        <article id="security" class="landing-feature">
+          <span class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <ellipse cx="12" cy="6" rx="7" ry="3" />
+              <path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" />
+            </svg>
+          </span>
+          <p class="eyebrow">Azure SQL</p>
+          <h2>Pay-owned schema</h2>
+          <p>
+            Simulated sessions, payment orders, benefit interactions, and outbox rows
+            belong to the dedicated <strong>ecloe_pay</strong> schema.
           </p>
         </article>
       </section>
 
       <section class="landing-terms" aria-label="Demo disclaimer">
         <div>
-          <h2>No real financial service is provided.</h2>
+          <h2>No real financial service is provided</h2>
           <p>
-            ECloe Pay does not create real users, process real money, move funds,
-            authorize payments, approve credit, perform fraud checks, open accounts, or
-            provide regulated payment services. Demo evidence is stored in
-            <strong>ecloe-pay-demo-artifacts</strong> under the dedicated
-            <strong>ecloe_pay</strong> schema.
+            ECloe Pay does not create real users, process real money, move funds, authorize
+            payments, approve credit, perform fraud checks, open accounts, or provide
+            regulated payment services.
           </p>
         </div>
         <strong>100% synthetic</strong>
