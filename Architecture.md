@@ -14,12 +14,12 @@ The system starts with the public Kaggle Hillstrom email-campaign dataset, proce
 
 ![Demo interface flow](docs/demo-interface-flow.svg)
 
-The planned interface layer is documentation-only at this stage. It should demonstrate the ECloe journey as one simulated web application composed of ECloe Market, ECloe Pay, and ECloe Control Room, while ECloe Engine remains an independent implemented API.
+The planned interface layer is documentation-only at this stage. It should demonstrate the ECloe journey as one simulated web application composed of ECloe Market, ECloe Pay, and ECloe Control Room, with traffic crossing an API Gateway/Auth boundary before the Demo BFF orchestrates the web journey. ECloe Engine remains an independent implemented API, and the BFF is not the only possible channel integration pattern.
 
 | Layer | Status | Responsibility |
 |:---|:---|:---|
 | Demo frontend | Planned for demo | Presents the launcher, marketplace, checkout recommendation, wallet, summary, and technical Control Room screens. |
-| Demo Backend-for-Frontend | Planned for demo | Holds demo session state, aggregates raw UI events into minimized context, simulates upstream eligibility, and calls ECloe Engine. |
+| Demo Backend-for-Frontend | Planned for demo | Holds demo session state, aggregates raw UI events into minimized context, simulates upstream eligibility, and orchestrates the web demo through domain APIs. |
 | Context aggregation | Planned for demo | Converts raw marketplace actions into coarse fields such as `channel`, `history_segment`, and `newbie`. |
 | Eligibility simulation | Planned for demo | Produces eligible offers before the decision request. ECloe Engine must not invent eligibility. |
 | ECloe Engine | Implemented | Serves health, policy metadata, likelihood estimates, decisions, and reward ingestion through `src/api/`. |
@@ -34,15 +34,15 @@ The planned interface is detailed in [`docs/demo-interface.md`](docs/demo-interf
 
 ![ECloe Market overview](docs/ecloe-market-overview.svg)
 
-ECloe Market is the planned marketplace surface inside the demo application. It should own catalog browsing, cart state, checkout, order creation, marketplace events, and the aggregation of commerce signals before the BFF calls ECloe Pay and ECloe Engine.
+ECloe Market is the planned marketplace surface inside the demo application. It should own catalog browsing, cart state, checkout, order creation, marketplace events, and the aggregation of commerce signals before the Demo BFF or another authorized channel calls ECloe Pay and ECloe Engine.
 
 | Concern | Status | Architecture boundary |
 |:---|:---|:---|
 | Catalog and cart presentation | Planned for demo | Simulated products, categories, product details, cart state, and checkout entry. |
 | Transactional source of truth | Planned for demo | Azure SQL stores catalog, inventory, carts, checkout sessions, orders, order items, and outbox rows. |
 | Checkout consistency | Planned for demo | Market revalidates price, stock, idempotency, and order state before committing. |
-| Event publication | Planned for demo | Outbox Worker publishes committed Market events to Azure Service Bus. |
-| Recommendation handoff | Planned for demo | BFF sends minimized context and eligible offers to ECloe Engine after upstream eligibility. |
+| Event publication | Planned for demo | Market writes domain state and an outbox row in the same Azure SQL transaction; the Outbox Publisher polls committed rows and publishes to Azure Service Bus. |
+| Recommendation handoff | Planned for demo | Authorized orchestration sends minimized context and eligible offers to ECloe Engine after upstream eligibility. |
 | Real payment, fraud, risk, credit, pricing automation, and eligibility decisions | Out of scope | These must not be presented as ECloe Market or ECloe Engine responsibilities. |
 
 Detailed data model, checkout transaction, events, file flow, and Azure direction are documented in [`docs/ecloe-market.md`](docs/ecloe-market.md).
@@ -57,7 +57,7 @@ Supporting ECloe Market diagrams:
 
 ![ECloe Pay overview](docs/ecloe-pay-overview.svg)
 
-ECloe Pay is the planned wallet surface inside the demo application. It should reuse the checkout decision returned by ECloe Engine, present the selected eligible offer as a wallet benefit, and register the user interaction through the implemented reward endpoint.
+ECloe Pay is the planned wallet surface inside the demo application. It should reuse the checkout decision returned by ECloe Engine, present the selected eligible offer as a wallet benefit, register the user interaction through the implemented reward endpoint, and persist Pay-owned state through the Pay Transaction API boundary.
 
 | Concern | Status | Architecture boundary |
 |:---|:---|:---|

@@ -23,19 +23,19 @@ The current repository already implements ECloe Engine. ECloe Market, ECloe Pay,
 
 ![ECloe Market overview](ecloe-market-overview.svg)
 
-The overview shows how ECloe Web and the BFF route marketplace interactions to ECloe Market API, ECloe Pay API, and ECloe Engine API. Azure SQL owns transactional Market state, while outbox events feed Service Bus, Cosmos DB projections, and downstream evidence.
+The overview shows how Demo Web traffic crosses the API Gateway/Auth boundary into the Demo BFF and then into Market Transaction API, Pay Transaction API, and Engine Decision API. Azure SQL owns transactional Market state and the committed outbox row; the Outbox Publisher polls that table and publishes confirmed events to Service Bus.
 
 ### Checkout Flow
 
 ![ECloe Market checkout flow](ecloe-market-checkout-flow.svg)
 
-The checkout flow shows the planned order path: validate the cart, revalidate price and stock, create the order and outbox record in one Azure SQL transaction, confirm simulated payment through ECloe Pay, ask ECloe Engine to rank eligible offers, and publish confirmed domain events asynchronously.
+The checkout flow shows the planned order path: validate the cart, revalidate price and stock, confirm payment state through ECloe Pay, ask ECloe Engine to rank already eligible offers, and create the order plus outbox row in one Azure SQL transaction. Asynchronous event publication starts only when the Outbox Publisher reads committed rows and publishes to Service Bus.
 
 ### File and Data Flow
 
 ![ECloe Market file and data flow](ecloe-market-file-flow.svg)
 
-The file and data flow separates future source folders, migrations, tests, Azure SQL records, outbox events, Service Bus messages, Cosmos DB projections, Blob exports, and Control Room reports.
+The file and data flow separates source files, migrations, Azure SQL transaction state, committed outbox rows, Outbox Publisher polling, Service Bus events, projection workers, Cosmos read models, and explicit Blob exports. Service Bus is a broker only; it does not write Blob Storage.
 
 ## Product Role
 
@@ -364,7 +364,7 @@ For the MVP, the low-consumption direction is:
 | Layer | Suggested service | Notes |
 |:---|:---|:---|
 | Frontend | Azure Static Web Apps | Hosts ECloe Web when a demo UI exists. |
-| Runtime | Azure Container Apps | Runs ECloe BFF, Market API, Pay API, Engine API, and Outbox Worker. |
+| Runtime | Azure Container Apps | Runs Demo BFF, Market Transaction API, Pay Transaction API, Engine Decision API, and Outbox Publisher. |
 | Transactions | Azure SQL Database | Market and Pay may share one low-consumption database with separate schemas for cost control. |
 | Events | Azure Service Bus | Distributes confirmed domain events. |
 | Event records and projections | Cosmos DB Serverless | Stores Engine decisions/rewards and future denormalized read models. |

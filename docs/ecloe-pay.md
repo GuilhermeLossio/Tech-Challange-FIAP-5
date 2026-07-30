@@ -31,19 +31,19 @@ The Flask root route now serves the ECloe Pay landing page, while the runnable w
 
 ![ECloe Pay overview](ecloe-pay-overview.svg)
 
-The overview shows the planned ECloe Pay path from the customer-facing demo web app through the BFF, Pay API, Engine API, outbox worker, and low-consumption Azure services.
+The overview shows the planned ECloe Pay path from Demo Web through the API Gateway/Auth boundary, Demo BFF, Pay Transaction API, Engine Decision API, Pay-owned Azure SQL state, transactional outbox, Outbox Publisher, Service Bus, and managed observability. Pay writes its transaction state and outbox row in the same SQL transaction; the publisher polls that table after commit.
 
 ### Transfer Flow
 
 ![ECloe Pay transfer flow](ecloe-pay-transfer-flow.svg)
 
-The transfer flow represents a planned wallet benefit interaction. It uses transactional Pay API persistence and asynchronous event publication before reward evidence reaches the Engine and event stores. It is not real payment processing.
+The transfer flow represents a planned wallet benefit interaction. It shows the synchronous decision/reward call to the Engine Decision API, the Pay Transaction API writing wallet state and an outbox row atomically in Azure SQL, and asynchronous publication through the Outbox Publisher and Service Bus after commit. It is not real payment processing.
 
 ### Simplified Relationship
 
 ![ECloe Pay simplified relationship](ecloe-pay-simplified-relationship.svg)
 
-The simplified relationship diagram separates the customer experience layer, service layer, and state/event layer while preserving the boundary that eligibility remains upstream.
+The simplified relationship diagram separates the customer experience layer, gateway/auth boundary, domain APIs, owned stores, and asynchronous event publication while preserving the boundary that eligibility remains upstream.
 
 ## Product Role
 

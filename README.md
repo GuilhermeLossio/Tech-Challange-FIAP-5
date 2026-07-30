@@ -104,7 +104,7 @@ Eligibility, risk, compliance, and business rules remain upstream. ECloe Engine 
 
 Status: **Planned for demo**.
 
-ECloe Market is documented as the simulated marketplace surface for catalog browsing, cart management, checkout, order creation, and behavior-signal aggregation. It uses Azure SQL as the planned transactional source of truth, outbox events for reliable async publication, and ECloe Engine only after eligible offers have already been determined upstream.
+ECloe Market is documented as the simulated marketplace surface for catalog browsing, cart management, checkout, order creation, and behavior-signal aggregation. It uses Azure SQL as the planned transactional source of truth, writes outbox rows in the same transaction as Market state, and relies on an Outbox Publisher to publish committed events asynchronously. ECloe Engine is called only after eligible offers have already been determined upstream.
 
 Detailed ECloe Market scope, data model, checkout transaction, event flow, Azure direction, implementation sequence, and SVG diagrams are documented separately in [`docs/ecloe-market.md`](./docs/ecloe-market.md).
 
