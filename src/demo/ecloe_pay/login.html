@@ -1,39 +1,61 @@
 <!doctype html>
-<html lang="en">
+<html lang="pt-BR">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ECloe Pay Demo Login</title>
-    <link rel="stylesheet" href="../styles.css" />
+    <title>ECloe Pay - Login demonstrativo</title>
+    <link rel="stylesheet" href="../login.css" />
   </head>
-  <body>
+  <body class="login-page">
     <main class="login-shell" aria-label="ECloe Pay demo login">
-      <section class="login-panel">
-        <p class="eyebrow">Simulated banking persona</p>
-        <h1>ECloe Pay</h1>
-        <p class="login-badge">Identidade demonstrativa — nenhuma conta bancária real</p>
-        <p>
-          Sign in with a demo persona to validate Azure SQL-backed sessions. This does
-          not create a real bank account, move funds, process payments, or collect CPF,
-          card, agency, account, or banking-password data.
+      <section class="card login-panel" aria-labelledby="loginTitle">
+        <div class="login-brand">
+          <span class="login-brand-sprite sprite-art sprite-brand-mark" aria-hidden="true"></span>
+          <span>ECloe<span>Pay</span></span>
+        </div>
+
+        <p class="login-eyebrow">Carteira 100% simulada</p>
+        <h1 id="loginTitle">Entre com a persona demonstrativa</h1>
+        <p class="login-badge">Identidade demonstrativa - nenhuma conta bancaria real</p>
+        <p class="login-copy">
+          A validacao da conta demo acontece no Azure SQL. A entrada nao mostra
+          credenciais prontas e nao cria conta real, movimenta dinheiro ou coleta
+          dados pessoais ou bancarios reais.
         </p>
+
         <form id="loginForm" class="login-form">
-          <label for="email">Demo email</label>
-          <input id="email" name="email" type="email" value="demo.pay@ecloe.local" autocomplete="username" />
-          <label for="password">Demo password</label>
+          <label for="email">E-mail da persona</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="Informe o e-mail configurado"
+            autocomplete="username"
+          />
+
+          <label for="password">Senha da persona</label>
           <input
             id="password"
             name="password"
             type="password"
-            placeholder="Configured demo password"
+            placeholder="Informe a senha configurada"
             autocomplete="current-password"
           />
-          <button type="submit">Sign in</button>
+
+          <button type="submit">Entrar na carteira</button>
           <p id="loginStatus" role="status"></p>
         </form>
-        <a href="/">Back to landing</a>
+
+        <ul class="login-safety-list" aria-label="Limites da demonstracao">
+          <li>Sem conta bancaria real</li>
+          <li>Sem dinheiro real</li>
+          <li>Sessao validada no Azure SQL</li>
+        </ul>
+
+        <a class="login-back-link" href="/">Voltar para a apresentacao</a>
       </section>
     </main>
+
     <script type="module">
       const form = document.querySelector("#loginForm");
       const status = document.querySelector("#loginStatus");

@@ -30,8 +30,8 @@ class InitSummary:
     seed_validation_ok: bool
 
 
-def _require_explicit_demo_password() -> str:
-    password = os.getenv("ECLOE_PAY_DEMO_USER_PASSWORD", "").strip()
+def _require_explicit_demo_password(password: str | None = None) -> str:
+    password = (password if password is not None else os.getenv("ECLOE_PAY_DEMO_USER_PASSWORD", "")).strip()
     if not password:
         raise RuntimeError("ECLOE_PAY_DEMO_USER_PASSWORD must be set explicitly.")
     if password == PLACEHOLDER_PASSWORD:
@@ -274,8 +274,8 @@ def _validate_seed(connection: Any, email: str) -> bool:
 
 
 def initialize() -> InitSummary:
-    password = _require_explicit_demo_password()
-    settings = load_settings(use_env_file=False)
+    settings = load_settings()
+    password = _require_explicit_demo_password(settings.ecloe_pay_demo_user_password)
     _validate_odbc_driver(settings.ecloe_pay_sql_driver)
     access_token = _entra_access_token(settings.ecloe_pay_sql_auth_mode)
     engine = _engine_with_entra_token(settings, access_token)

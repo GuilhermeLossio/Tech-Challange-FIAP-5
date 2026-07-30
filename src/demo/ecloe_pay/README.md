@@ -5,7 +5,7 @@ This folder contains the first static ECloe Pay implementation slice.
 Run it with Flask:
 
 ```powershell
-.venv\Scripts\python.exe -m flask --app src.demo.ecloe_pay.app run --host 127.0.0.1 --port 5000
+.venv\Scripts\python.exe -m flask --app "src.demo.ecloe_pay.app:create_server_app" run --host 127.0.0.1 --port 5000
 ```
 
 Then open:
@@ -15,8 +15,9 @@ http://127.0.0.1:5000/
 http://127.0.0.1:5000/pay
 ```
 
-The root route shows the landing page. The `/pay` route opens the runnable wallet
-demo. The HTML can still be opened directly in a browser as a fallback
+The root route shows the landing page. The `/pay` route redirects to
+`/pay/login` until the demo persona is authenticated. The HTML can still be
+opened directly in a browser as a fallback
 presentation mode. In that mode the UI explicitly says
 `Presentation mode — data is not being persisted.` and does not claim that login,
 terms, or payment state was saved in Azure SQL. It does not require account
@@ -32,20 +33,23 @@ Implemented in this slice:
 - technical mode with decision and bucket metadata;
 - Flask API routes for session state, terms, simulated payment orders, reset,
   and benefit interactions;
-- optional demo-persona login;
+- required demo-persona login before wallet access;
 - secure simulated authentication with HttpOnly session-token cookies, CSRF
   checks, logout revocation, and login attempt limits;
 - Azure SQL-compatible schema for Pay-owned state under the `ecloe_pay` schema;
 - repository-based persistence with memory and Azure SQL implementations behind
   the same PayRepository contract.
 
-The default repository mode is memory and does not require SQL dependencies:
+The default repository mode is memory and does not require SQL dependencies.
+Use it for CI and local automated tests, not as the intended authenticated
+browser demo:
 
 ```text
 ECLOE_PAY_DATABASE_MODE=memory
 ```
 
-Azure SQL persistence is opt-in for local validation or cloud runtime:
+Azure SQL persistence is the intended mode for validating the browser login
+flow against the configured demo persona:
 
 ```text
 ECLOE_PAY_DATABASE_MODE=azure_sql
@@ -64,8 +68,9 @@ Apply pending Azure SQL migrations and seed the deterministic demo state with:
 python -m scripts.init_ecloe_pay_sql
 ```
 
-When Azure SQL mode is enabled, `/pay` and the Pay APIs require the demo persona
-login. The raw session token is only sent to the browser as the
+`/pay` and the Pay APIs require the demo persona login. In Azure SQL mode,
+credentials are validated against `ecloe_pay.demo_users`. The raw session token
+is only sent to the browser as the
 `ecloe_pay_session` HttpOnly cookie; repositories store only its SHA-256 hash.
 Mutable Pay routes require the `X-CSRF-Token` header paired with the
 `ecloe_pay_csrf` cookie.
@@ -104,9 +109,9 @@ Manual Azure SQL smoke test:
 1. Run `az login`.
 2. Run `.\scripts\allow_current_sql_client_ip.ps1` to allow only the current public IP.
 3. Confirm `ODBC Driver 18 for SQL Server` is installed.
-4. Configure local `ECLOE_PAY_DATABASE_MODE=azure_sql`, `ECLOE_PAY_SQL_SERVER`, `ECLOE_PAY_SQL_DATABASE`, `ECLOE_PAY_SQL_AUTH_MODE=azure_cli`, `ECLOE_PAY_SQL_DRIVER`, and an explicit `ECLOE_PAY_DEMO_USER_PASSWORD`.
+4. Configure local `ECLOE_PAY_DATABASE_MODE=azure_sql`, `ECLOE_PAY_SQL_SERVER`, `ECLOE_PAY_SQL_DATABASE`, `ECLOE_PAY_SQL_AUTH_MODE=azure_cli`, `ECLOE_PAY_SQL_DRIVER`, `ECLOE_PAY_DEMO_USER_EMAIL`, and an explicit `ECLOE_PAY_DEMO_USER_PASSWORD`.
 5. Run `python -m scripts.init_ecloe_pay_sql`.
-6. Start Flask with `.venv\Scripts\python.exe -m flask --app src.demo.ecloe_pay.app run --host 127.0.0.1 --port 5000`.
+6. Start Flask with `.venv\Scripts\python.exe -m flask --app "src.demo.ecloe_pay.app:create_server_app" run --host 127.0.0.1 --port 5000`.
 7. Open `http://127.0.0.1:5000/pay/login` and authenticate the demo persona.
 8. Open `http://127.0.0.1:5000/pay`, accept the terms, and register a benefit interaction.
 9. Simulate payment with confirmation code `0426`.

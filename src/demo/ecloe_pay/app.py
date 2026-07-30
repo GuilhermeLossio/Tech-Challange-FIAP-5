@@ -2,12 +2,13 @@ from __future__ import annotations
 
 import hmac
 import logging
+import os
 import secrets
 import time
 from dataclasses import asdict
 from pathlib import Path
 
-from flask import Flask, jsonify, redirect, request, send_from_directory
+from flask import Flask, jsonify, make_response, redirect, request, send_from_directory
 
 from src.core.config import Settings, load_settings
 from src.demo.ecloe_pay.repositories import (
@@ -115,11 +116,6 @@ def _current_user(app: Flask) -> tuple[dict[str, object] | None, str | None]:
             user = repository.get_user(auth_session.user_id)
             if user is not None:
                 return asdict(user), auth_session.user_id
-    if not repository.requires_authentication:
-        settings = app.pay_settings  # type: ignore[attr-defined]
-        seeded = repository.get_user_by_email(settings.ecloe_pay_demo_user_email)
-        if seeded is not None:
-            return asdict(seeded), seeded.user_id
     return None, None
 
 
@@ -158,16 +154,20 @@ def create_app(
 
     @app.get("/pay")
     def pay():
-        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
-        if repository.requires_authentication:
-            user, _ = _current_user(app)
-            if user is None:
-                return redirect("/pay/login")
+        user, _ = _current_user(app)
+        if user is None:
+            return redirect("/pay/login")
         return send_from_directory(DEMO_DIR, "index.html")
 
     @app.get("/pay/login")
     def login_page():
-        return send_from_directory(DEMO_DIR, "login.html")
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        auth_session_id = request.cookies.get(AUTH_COOKIE_NAME)
+        if isinstance(auth_session_id, str):
+            repository.revoke_auth_session(auth_session_id)
+        response = make_response(send_from_directory(DEMO_DIR, "login.html"))
+        _clear_auth_cookie(response, settings)
+        return response
 
     @app.post("/api/auth/login")
     def login():
@@ -346,8 +346,13 @@ def create_app(
     return app
 
 
-app = create_app()
+def create_server_app() -> Flask:
+    return create_app(settings=load_settings())
+
+
+app = create_server_app() if os.getenv("FLASK_RUN_FROM_CLI") == "true" else create_app()
 
 
 if __name__ == "__main__":
+    app = create_server_app()
     app.run(host="127.0.0.1", port=5000, debug=False)

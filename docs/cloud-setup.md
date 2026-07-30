@@ -158,6 +158,8 @@ The script does not read or write `.env`. It requires an active Azure CLI login 
 
 ECloe Pay can persist its simulated banking state in Azure SQL. The default local mode remains `memory`; Azure SQL is opt-in and stores only personas and synthetic wallet/session/payment evidence.
 
+For the browser demo, use Azure SQL mode so `/pay/login` validates the synthetic demo persona against `ecloe_pay.demo_users`. Memory mode remains useful for CI and local automated tests, but the wallet route and Pay APIs still start unauthenticated and require an explicit login session.
+
 Confirmed database:
 
 | Setting | Value |

@@ -8,10 +8,32 @@ PAY_DEMO = ROOT / "src" / "demo" / "ecloe_pay"
 def test_pay_demo_declares_simulation_boundaries() -> None:
     html = (PAY_DEMO / "index.html").read_text(encoding="utf-8")
 
-    assert "does not create real users" in html
-    assert "process real money" in html
-    assert "Do not enter real card, bank, CPF, password, or account information" in html
-    assert "No real funds are stored or moved" in html
+    assert "não cria usuários reais" in html
+    assert "nenhum dinheiro real é processado" in html
+    assert "Não informe cartão, banco, CPF, senha ou dados de conta reais" in html
+    assert "Nenhum valor real é armazenado ou movimentado" in html
+
+
+def test_pay_wallet_markup_uses_accessible_semantics() -> None:
+    html = (PAY_DEMO / "index.html").read_text(encoding="utf-8")
+    core_styles = (PAY_DEMO / "core.css").read_text(encoding="utf-8")
+    wallet_styles = (PAY_DEMO / "wallet.css").read_text(encoding="utf-8")
+
+    assert 'lang="pt-BR"' in html
+    assert 'href="./wallet.css"' in html
+    assert 'aria-label="Navegação principal da carteira"' in html
+    assert '<nav class="quick-actions" aria-label="Ações rápidas">' in html
+    assert 'class="nav-link active"' in html
+    assert 'role="progressbar"' in html
+    assert 'aria-valuenow="64"' in html
+    assert 'role="status"' in html
+    assert 'aria-live="polite"' in html
+    assert "formmethod=\"dialog\">Cancelar" in html
+    assert '<article class="companion-card"' not in html
+    assert '<footer class="status-panel' not in html
+    assert ".companion-heading" in wallet_styles
+    assert ".nav-link.active" in wallet_styles
+    assert ".sr-only" in core_styles
 
 
 def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
@@ -109,7 +131,7 @@ def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
     assert "LOGIN_RATE_LIMIT_ATTEMPTS" in app_source
     assert "Cache-Control" in app_source
     assert "redirect(\"/pay/login\")" in app_source
-    assert "from flask import Flask, jsonify, redirect, request, send_from_directory" in app_source
+    assert "make_response" in app_source
     assert "session[" not in app_source
     assert "X-CSRF-Token" in script
     assert "X-CSRF-Token" in login
@@ -140,9 +162,9 @@ def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     index = (PAY_DEMO / "index.html").read_text(encoding="utf-8")
 
     assert "transactionLocked" in script
-    assert "Duplicate preview ignored" in script
+    assert "Previa duplicada ignorada" in script
     assert "confirmationCode" in script
-    assert "previewed only" in script
+    assert "pre-visualizado" in script
     assert "localStorage" not in script
     assert "/api/auth/me" in script
     assert "/api/auth/logout" in script
@@ -150,25 +172,62 @@ def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     assert "sql_schema" not in script
     assert "database_provider" in script
     assert "database_schema" in script
-    assert "Presentation mode — data is not being persisted." in script
-    assert "Presentation mode — data is not being persisted." in index
+    assert "Modo apresentacao" in script
+    assert "Modo apresentação" in index
     assert "postgres_schema" not in index
     assert "PostgreSQL" not in index
 
 
 def test_pay_login_page_matches_demo_identity_and_csrf_flow() -> None:
     login = (PAY_DEMO / "login.html").read_text(encoding="utf-8")
+    core_styles = (PAY_DEMO / "core.css").read_text(encoding="utf-8")
+    login_styles = (PAY_DEMO / "login.css").read_text(encoding="utf-8")
 
-    assert "Identidade demonstrativa — nenhuma conta bancária real" in login
+    assert "Identidade demonstrativa - nenhuma conta bancaria real" in login
+    assert "Carteira 100% simulada" in login
+    assert "Azure SQL" in login
+    assert 'href="../login.css"' in login
     assert "X-CSRF-Token" in login
+    assert 'id="loginForm"' in login
+    assert 'id="email"' in login
+    assert 'id="password"' in login
+    assert 'value="demo.pay@ecloe.local"' not in login
+    assert "demo.pay@ecloe.local" not in login
+    assert "change-this-demo-password" not in login
+    assert "Configured demo password" not in login
     assert "localStorage" not in login
     assert "PostgreSQL" not in login
+    assert "Baloo+2" in core_styles
+    assert "Nunito" in core_styles
+    assert "Space+Mono" in core_styles
+    assert "--color-rose-soft: #ffe1ec" in core_styles
+    assert "--color-mint-soft: #e3fbf3" in core_styles
+    assert ".login-eyebrow" in login_styles
+    assert ".login-safety-list" in login_styles
+
+
+def test_pay_demo_css_is_split_by_page_and_uses_shared_utilities() -> None:
+    index = (PAY_DEMO / "index.html").read_text(encoding="utf-8")
+    landing = (PAY_DEMO / "landing.html").read_text(encoding="utf-8")
+    login = (PAY_DEMO / "login.html").read_text(encoding="utf-8")
+    aggregate = (PAY_DEMO / "styles.css").read_text(encoding="utf-8")
+    core_styles = (PAY_DEMO / "core.css").read_text(encoding="utf-8")
+    wallet_styles = (PAY_DEMO / "wallet.css").read_text(encoding="utf-8")
+
+    assert 'href="./wallet.css"' in index
+    assert 'href="./landing.css"' in landing
+    assert 'href="../login.css"' in login
+    assert '@import url("./core.css");' in aggregate
+    assert ".card" in core_styles
+    assert "--font-display" in core_styles
+    assert "--font-mono" in core_styles
+    assert "[aria-current" not in wallet_styles
 
 
 def test_pay_demo_documents_flask_run_command() -> None:
     readme = (PAY_DEMO / "README.md").read_text(encoding="utf-8")
 
-    assert "python.exe -m flask --app src.demo.ecloe_pay.app run" in readme
+    assert 'python.exe -m flask --app "src.demo.ecloe_pay.app:create_server_app" run' in readme
     assert "http://127.0.0.1:5000/" in readme
     assert ".\\scripts\\allow_current_sql_client_ip.ps1" in readme
     assert ".\\scripts\\remove_current_sql_client_ip.ps1" in readme
@@ -178,6 +237,7 @@ def test_pay_landing_declares_demo_storage_and_financial_boundaries() -> None:
     landing = (PAY_DEMO / "landing.html").read_text(encoding="utf-8").lower()
 
     assert "simulated payments demo" in landing
+    assert 'href="/pay/login"' in landing
     assert "without creating users or processing real money" in landing
     assert "ecloe-pay-demo-artifacts" in landing
     assert "ecloe_pay" in landing

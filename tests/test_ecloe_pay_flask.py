@@ -2,6 +2,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from src.core.config import load_settings
 from src.demo.ecloe_pay.app import AUTH_COOKIE_NAME, CSRF_COOKIE_NAME, create_app
 from src.demo.ecloe_pay.repositories import DEMO_BUCKET_NAME, MemoryPayRepository
 
@@ -10,6 +11,19 @@ def csrf_headers(client) -> dict[str, str]:
     cookie = client.get_cookie(CSRF_COOKIE_NAME)
     assert cookie is not None
     return {"X-CSRF-Token": cookie.value}
+
+
+def authenticated_client(app=None):
+    app = app or create_app()
+    client = app.test_client()
+    client.get("/pay/login")
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "demo.pay@ecloe.local", "password": "change-this-demo-password"},
+        headers=csrf_headers(client),
+    )
+    assert response.status_code == 200
+    return client
 
 
 def test_pay_flask_landing_page_exposes_demo_boundaries() -> None:
@@ -24,26 +38,45 @@ def test_pay_flask_landing_page_exposes_demo_boundaries() -> None:
     assert "simulated payments demo" in body
     assert "does not create real users" in body
     assert "process real money" in body
-    assert "/pay" in body
+    assert "/pay/login" in body
 
 
-def test_pay_flask_wallet_runs_on_pay_route() -> None:
+def test_pay_flask_wallet_requires_login_on_entry() -> None:
     app = create_app()
     client = app.test_client()
 
     response = client.get("/pay")
 
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/pay/login"
+
+
+def test_pay_flask_wallet_runs_on_pay_route_after_login() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+
+    response = client.get("/pay")
+
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "Demo balance" in body
-    assert "Security confirmation" in body
-    assert "ECloe Pay demo terms" in body
-    assert "Presentation mode — data is not being persisted." in body
+    assert "Saldo demo" in body
+    assert "Confirmação de segurança" in body
+    assert "Termos da demo ECloe Pay" in body
+    assert "Modo apresentação" in body
 
 
-def test_pay_flask_session_exposes_demo_boundaries() -> None:
+def test_pay_flask_session_requires_login_by_default() -> None:
     app = create_app()
     client = app.test_client()
+
+    response = client.get("/api/session")
+
+    assert response.status_code == 401
+
+
+def test_pay_flask_session_exposes_demo_boundaries_after_login() -> None:
+    app = create_app()
+    client = authenticated_client(app)
 
     response = client.get("/api/session")
 
@@ -58,7 +91,7 @@ def test_pay_flask_session_exposes_demo_boundaries() -> None:
 
 def test_pay_flask_requires_terms_before_interaction() -> None:
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     client.get("/pay")
 
     response = client.post(
@@ -73,7 +106,7 @@ def test_pay_flask_requires_terms_before_interaction() -> None:
 
 def test_pay_flask_accepts_terms_and_simulates_payment_once() -> None:
     app = create_app()
-    client = app.test_client()
+    client = authenticated_client(app)
     client.get("/pay")
 
     terms_response = client.post("/api/terms", json={"accepted": True}, headers=csrf_headers(client))
@@ -142,7 +175,31 @@ def test_pay_flask_login_logout_flow() -> None:
     assert client.get_cookie(AUTH_COOKIE_NAME) is None
 
 
-def test_pay_login_page_has_demo_identity_copy() -> None:
+def test_pay_flask_login_uses_configured_demo_credentials(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_DEMO_USER_EMAIL", "custom.demo@ecloe.local")
+    monkeypatch.setenv("ECLOE_PAY_DEMO_USER_PASSWORD", "configured-demo-secret")
+    settings = load_settings(use_env_file=False)
+    app = create_app(settings=settings)
+    client = app.test_client()
+    client.get("/pay/login")
+
+    default_login = client.post(
+        "/api/auth/login",
+        json={"email": "demo.pay@ecloe.local", "password": "change-this-demo-password"},
+        headers=csrf_headers(client),
+    )
+    configured_login = client.post(
+        "/api/auth/login",
+        json={"email": "custom.demo@ecloe.local", "password": "configured-demo-secret"},
+        headers=csrf_headers(client),
+    )
+
+    assert default_login.status_code == 401
+    assert configured_login.status_code == 200
+    assert configured_login.get_json()["user"]["email"] == "custom.demo@ecloe.local"
+
+
+def test_pay_login_page_has_demo_identity_copy_without_credentials() -> None:
     app = create_app()
     client = app.test_client()
 
@@ -150,15 +207,33 @@ def test_pay_login_page_has_demo_identity_copy() -> None:
 
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "Identidade demonstrativa — nenhuma conta bancária real" in body
-    assert "Azure SQL-backed sessions" in body
+    assert "Identidade demonstrativa - nenhuma conta bancaria real" in body
+    assert "Azure SQL" in body
+    assert "demo.pay@ecloe.local" not in body
+    assert "change-this-demo-password" not in body
+
+
+def test_pay_login_page_clears_existing_auth_session() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+    auth_cookie = client.get_cookie(AUTH_COOKIE_NAME)
+    assert auth_cookie is not None
+
+    response = client.get("/pay/login")
+
+    assert response.status_code == 200
+    assert client.get_cookie(AUTH_COOKIE_NAME) is None
+    assert client.get("/api/auth/me").status_code == 401
 
 
 def test_pay_flask_mutating_routes_require_csrf_token() -> None:
     app = create_app()
     client = app.test_client()
 
-    response = client.post("/api/auth/login", json={"email": "demo.pay@ecloe.local", "password": "wrong"})
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "demo.pay@ecloe.local", "password": "wrong"},
+    )
 
     assert response.status_code == 403
 
@@ -181,23 +256,8 @@ def test_pay_flask_limits_login_attempts_by_ip_and_email() -> None:
     assert responses[5].status_code == 429
 
 
-def test_pay_flask_azure_sql_mode_requires_login(monkeypatch) -> None:
-    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "memory")
+def test_pay_flask_pay_route_redirects_to_login_by_default() -> None:
     app = create_app()
-    repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
-    repository.requires_authentication = True
-    client = app.test_client()
-
-    response = client.get("/api/session")
-
-    assert response.status_code == 401
-
-
-def test_pay_flask_azure_sql_mode_redirects_pay_to_login(monkeypatch) -> None:
-    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "memory")
-    app = create_app()
-    repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
-    repository.requires_authentication = True
     client = app.test_client()
 
     response = client.get("/pay")
@@ -209,7 +269,6 @@ def test_pay_flask_azure_sql_mode_redirects_pay_to_login(monkeypatch) -> None:
 def test_pay_flask_rejects_expired_session() -> None:
     app = create_app()
     repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
-    repository.requires_authentication = True
     user = repository.authenticate("demo.pay@ecloe.local", "change-this-demo-password")
     assert user is not None
     auth_session = repository.create_auth_session(user.user_id)
@@ -225,7 +284,6 @@ def test_pay_flask_rejects_expired_session() -> None:
 def test_pay_flask_rejects_revoked_session_token() -> None:
     app = create_app()
     repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
-    repository.requires_authentication = True
     user = repository.authenticate("demo.pay@ecloe.local", "change-this-demo-password")
     assert user is not None
     auth_session = repository.create_auth_session(user.user_id)
@@ -240,8 +298,6 @@ def test_pay_flask_rejects_revoked_session_token() -> None:
 
 def test_pay_flask_reset_requires_authentication() -> None:
     app = create_app()
-    repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
-    repository.requires_authentication = True
     client = app.test_client()
     client.get("/pay/login")
 
