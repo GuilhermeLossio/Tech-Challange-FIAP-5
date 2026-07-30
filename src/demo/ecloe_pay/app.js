@@ -25,6 +25,7 @@ const databaseProvider = document.querySelector("#databaseProvider");
 const databaseSchema = document.querySelector("#databaseSchema");
 const viewDetailsButton = document.querySelector("#viewDetailsButton");
 const quickActionButtons = document.querySelectorAll(".quick-action[data-target]");
+const pageLocale = document.documentElement.lang || "en-US";
 
 let eventCounter = 1;
 let termsAccepted = false;
@@ -95,7 +96,7 @@ function requireTerms() {
 
 function redirectToLoginWhenNeeded(error) {
   if (error.status === 401) {
-    window.location.assign("/pay/login");
+    window.location.assign(`/pay/login?lang=${encodeURIComponent(pageLocale)}`);
     return true;
   }
   return false;
@@ -309,8 +310,8 @@ document.querySelector("#resetButton").addEventListener("click", () => {
 
 logoutButton.addEventListener("click", () => {
   postJson("/api/auth/logout", {})
-    .then(() => window.location.assign("/pay/login"))
-    .catch(() => window.location.assign("/pay/login"));
+    .then(() => window.location.assign(`/pay/login?lang=${encodeURIComponent(pageLocale)}`))
+    .catch(() => window.location.assign(`/pay/login?lang=${encodeURIComponent(pageLocale)}`));
 });
 
 async function bootstrap() {

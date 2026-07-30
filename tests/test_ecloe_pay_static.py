@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import get_type_hints
 
@@ -5,13 +6,36 @@ ROOT = Path(__file__).resolve().parents[1]
 PAY_DEMO = ROOT / "src" / "demo" / "ecloe_pay"
 
 
+def i18n_messages(locale: str) -> dict:
+    return json.loads((PAY_DEMO / "i18n" / f"{locale}.json").read_text(encoding="utf-8"))
+
+
+def flatten_keys(data: dict, prefix: str = "") -> set[str]:
+    keys: set[str] = set()
+    for key, value in data.items():
+        full_key = f"{prefix}.{key}" if prefix else key
+        if isinstance(value, dict):
+            keys.update(flatten_keys(value, full_key))
+        else:
+            keys.add(full_key)
+    return keys
+
+
+def test_pay_i18n_catalogs_have_matching_required_keys() -> None:
+    assert flatten_keys(i18n_messages("pt-BR")) == flatten_keys(i18n_messages("en-US"))
+
+
 def test_pay_demo_declares_simulation_boundaries() -> None:
     html = (PAY_DEMO / "index.html").read_text(encoding="utf-8")
+    pt = i18n_messages("pt-BR")
+    en = i18n_messages("en-US")
 
-    assert "não cria usuários reais" in html
-    assert "nenhum dinheiro real é processado" in html
-    assert "Não informe cartão, banco, CPF, senha ou dados de conta reais" in html
-    assert "Nenhum valor real é armazenado ou movimentado" in html
+    assert 't("wallet.termsCopy1")' in html
+    assert 't("wallet.termsCopy2")' in html
+    assert 't("wallet.noRealValue")' in html
+    assert "nao cria usuarios reais" in pt["wallet"]["termsCopy1"]
+    assert "no real money is processed" in en["wallet"]["termsCheck"]
+    assert "No real value is stored or moved" in en["wallet"]["noRealValue"]
 
 
 def test_pay_wallet_markup_uses_accessible_semantics() -> None:
@@ -19,16 +43,16 @@ def test_pay_wallet_markup_uses_accessible_semantics() -> None:
     core_styles = (PAY_DEMO / "core.css").read_text(encoding="utf-8")
     wallet_styles = (PAY_DEMO / "wallet.css").read_text(encoding="utf-8")
 
-    assert 'lang="pt-BR"' in html
+    assert 'lang="{{ lang }}"' in html
     assert 'href="./wallet.css"' in html
-    assert 'aria-label="Navegação principal da carteira"' in html
-    assert '<nav class="quick-actions" aria-label="Ações rápidas">' in html
+    assert 'aria-label="{{ t("wallet.navAria") }}"' in html
+    assert '<nav class="quick-actions" aria-label="{{ t("wallet.quickActionsAria") }}">' in html
     assert 'class="nav-link active"' in html
     assert 'role="progressbar"' in html
     assert 'aria-valuenow="64"' in html
     assert 'role="status"' in html
     assert 'aria-live="polite"' in html
-    assert "formmethod=\"dialog\">Cancelar" in html
+    assert 'formmethod="dialog">{{ t("wallet.cancel") }}' in html
     assert '<article class="companion-card"' not in html
     assert '<footer class="status-panel' not in html
     assert ".companion-heading" in wallet_styles
@@ -130,7 +154,7 @@ def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
     assert "hmac.compare_digest" in app_source
     assert "LOGIN_RATE_LIMIT_ATTEMPTS" in app_source
     assert "Cache-Control" in app_source
-    assert "redirect(\"/pay/login\")" in app_source
+    assert "redirect(_localized_login_url(locale))" in app_source
     assert "make_response" in app_source
     assert "session[" not in app_source
     assert "X-CSRF-Token" in script
@@ -173,7 +197,7 @@ def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     assert "database_provider" in script
     assert "database_schema" in script
     assert "Modo apresentacao" in script
-    assert "Modo apresentação" in index
+    assert 't("wallet.presentationMode")' in index
     assert "postgres_schema" not in index
     assert "PostgreSQL" not in index
 
@@ -182,10 +206,13 @@ def test_pay_login_page_matches_demo_identity_and_csrf_flow() -> None:
     login = (PAY_DEMO / "login.html").read_text(encoding="utf-8")
     core_styles = (PAY_DEMO / "core.css").read_text(encoding="utf-8")
     login_styles = (PAY_DEMO / "login.css").read_text(encoding="utf-8")
+    pt = i18n_messages("pt-BR")
 
-    assert "Identidade demonstrativa - nenhuma conta bancaria real" in login
-    assert "Carteira 100% simulada" in login
-    assert "Azure SQL" in login
+    assert 't("login.badge")' in login
+    assert 't("login.eyebrow")' in login
+    assert pt["login"]["badge"] == "Identidade demonstrativa - nenhuma conta bancaria real"
+    assert pt["login"]["eyebrow"] == "Carteira 100% simulada"
+    assert "Azure SQL" in pt["login"]["copy"]
     assert 'href="../login.css"' in login
     assert "X-CSRF-Token" in login
     assert 'id="loginForm"' in login
@@ -235,13 +262,14 @@ def test_pay_demo_documents_flask_run_command() -> None:
 
 def test_pay_landing_declares_demo_storage_and_financial_boundaries() -> None:
     landing = (PAY_DEMO / "landing.html").read_text(encoding="utf-8").lower()
+    en = i18n_messages("en-US")
 
-    assert "simulated payments demo" in landing
-    assert 'href="/pay/login"' in landing
-    assert "without creating users or processing real money" in landing
+    assert 't("landing.eyebrow")' in landing
+    assert 'href="/pay/login?lang={{ locale }}"' in landing
+    assert "without creating users or processing real money" in en["landing"]["lede"]
     assert "ecloe-pay-demo-artifacts" in landing
     assert "ecloe_pay" in landing
-    assert "does not create real users" in landing
+    assert "does not create real users" in en["landing"]["disclaimerCopy"]
     assert "azure sql" in landing
 
 

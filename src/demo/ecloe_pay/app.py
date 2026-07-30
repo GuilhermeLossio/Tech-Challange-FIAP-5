@@ -8,9 +8,15 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
-from flask import Flask, jsonify, make_response, redirect, request, send_from_directory
+from flask import Flask, jsonify, make_response, redirect, render_template, request
 
 from src.core.config import Settings, load_settings
+from src.demo.ecloe_pay.i18n import (
+    LOCALE_COOKIE_NAME,
+    load_messages,
+    resolve_locale,
+    translate,
+)
 from src.demo.ecloe_pay.repositories import (
     PayRepository,
     create_pay_repository,
@@ -83,6 +89,33 @@ def _auth_json(payload: dict[str, object], status: int = 200):
     return response
 
 
+def _localized_login_url(locale: str) -> str:
+    return f"/pay/login?lang={locale}"
+
+
+def _render_demo_template(template_name: str, settings: Settings):
+    locale = resolve_locale(request)
+    messages = load_messages(locale)
+    response = make_response(
+        render_template(
+            template_name,
+            locale=locale,
+            lang=locale,
+            t=lambda key: translate(messages, key),
+        ),
+    )
+    response.set_cookie(
+        LOCALE_COOKIE_NAME,
+        locale,
+        httponly=False,
+        secure=_cookie_secure(settings),
+        samesite="Lax",
+        path="/",
+        max_age=60 * 60 * 24 * 365,
+    )
+    return response
+
+
 def _rate_limit_key(email: str) -> str:
     forwarded = request.headers.get("X-Forwarded-For", "")
     ip_address = forwarded.split(",", 1)[0].strip() or request.remote_addr or "unknown"
@@ -133,7 +166,12 @@ def create_app(
     repository: PayRepository | None = None,
 ) -> Flask:
     settings = settings or load_settings(use_env_file=False)
-    app = Flask(__name__, static_folder=str(DEMO_DIR), static_url_path="")
+    app = Flask(
+        __name__,
+        static_folder=str(DEMO_DIR),
+        static_url_path="",
+        template_folder=str(DEMO_DIR),
+    )
     app.config["JSON_SORT_KEYS"] = False
     app.secret_key = settings.subject_key_salt
     app.pay_settings = settings  # type: ignore[attr-defined]
@@ -150,14 +188,15 @@ def create_app(
 
     @app.get("/")
     def landing():
-        return send_from_directory(DEMO_DIR, "landing.html")
+        return _render_demo_template("landing.html", settings)
 
     @app.get("/pay")
     def pay():
+        locale = resolve_locale(request)
         user, _ = _current_user(app)
         if user is None:
-            return redirect("/pay/login")
-        return send_from_directory(DEMO_DIR, "index.html")
+            return redirect(_localized_login_url(locale))
+        return _render_demo_template("index.html", settings)
 
     @app.get("/pay/login")
     def login_page():
@@ -165,7 +204,7 @@ def create_app(
         auth_session_id = request.cookies.get(AUTH_COOKIE_NAME)
         if isinstance(auth_session_id, str):
             repository.revoke_auth_session(auth_session_id)
-        response = make_response(send_from_directory(DEMO_DIR, "login.html"))
+        response = _render_demo_template("login.html", settings)
         _clear_auth_cookie(response, settings)
         return response
 

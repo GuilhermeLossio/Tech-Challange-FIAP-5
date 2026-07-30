@@ -4,6 +4,7 @@ import pytest
 
 from src.core.config import load_settings
 from src.demo.ecloe_pay.app import AUTH_COOKIE_NAME, CSRF_COOKIE_NAME, create_app
+from src.demo.ecloe_pay.i18n import LOCALE_COOKIE_NAME
 from src.demo.ecloe_pay.repositories import DEMO_BUCKET_NAME, MemoryPayRepository
 
 
@@ -41,6 +42,46 @@ def test_pay_flask_landing_page_exposes_demo_boundaries() -> None:
     assert "/pay/login" in body
 
 
+def test_pay_flask_landing_adapts_to_accept_language() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/", headers={"Accept-Language": "pt-BR,pt;q=0.9"})
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert 'lang="pt-BR"' in body
+    assert "Demo de pagamentos simulados" in body
+    assert "nao cria usuarios reais" in body
+    locale_cookie = client.get_cookie(LOCALE_COOKIE_NAME)
+    assert locale_cookie is not None
+    assert locale_cookie.value == "pt-BR"
+
+
+def test_pay_flask_landing_query_locale_overrides_header() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/?lang=pt-BR", headers={"Accept-Language": "en-US,en;q=0.9"})
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert 'lang="pt-BR"' in body
+    assert "Abrir demo da carteira" in body
+
+
+def test_pay_flask_landing_unknown_locale_falls_back_to_english() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/", headers={"Accept-Language": "fr-FR,fr;q=0.9"})
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert 'lang="en-US"' in body
+    assert "Simulated payments demo" in body
+
+
 def test_pay_flask_wallet_requires_login_on_entry() -> None:
     app = create_app()
     client = app.test_client()
@@ -48,7 +89,7 @@ def test_pay_flask_wallet_requires_login_on_entry() -> None:
     response = client.get("/pay")
 
     assert response.status_code == 302
-    assert response.headers["Location"] == "/pay/login"
+    assert response.headers["Location"] == "/pay/login?lang=en-US"
 
 
 def test_pay_flask_wallet_runs_on_pay_route_after_login() -> None:
@@ -59,10 +100,10 @@ def test_pay_flask_wallet_runs_on_pay_route_after_login() -> None:
 
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "Saldo demo" in body
-    assert "Confirmação de segurança" in body
-    assert "Termos da demo ECloe Pay" in body
-    assert "Modo apresentação" in body
+    assert "Demo balance" in body
+    assert "Security confirmation" in body
+    assert "ECloe Pay demo terms" in body
+    assert "Presentation mode" in body
 
 
 def test_pay_flask_session_requires_login_by_default() -> None:
@@ -203,7 +244,7 @@ def test_pay_login_page_has_demo_identity_copy_without_credentials() -> None:
     app = create_app()
     client = app.test_client()
 
-    response = client.get("/pay/login")
+    response = client.get("/pay/login?lang=pt-BR")
 
     assert response.status_code == 200
     body = response.get_data(as_text=True)
@@ -263,7 +304,7 @@ def test_pay_flask_pay_route_redirects_to_login_by_default() -> None:
     response = client.get("/pay")
 
     assert response.status_code == 302
-    assert response.headers["Location"] == "/pay/login"
+    assert response.headers["Location"] == "/pay/login?lang=en-US"
 
 
 def test_pay_flask_rejects_expired_session() -> None:
