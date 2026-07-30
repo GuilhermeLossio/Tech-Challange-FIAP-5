@@ -79,6 +79,23 @@ The planned dedicated artifact bucket is `ecloe-pay-demo-artifacts`. The SQL
 schema also records this bucket name so Pay exports and demo evidence do not
 share Market or Engine storage ownership.
 
+## Real-ready Azure SQL direction
+
+The next implementation step keeps `ecloe_validation` as the application
+database and leaves `master` for Azure SQL administration only. Application
+tables should be separated into identity, wallet, payments, rewards, audit, and
+integration schemas. The current `ecloe_pay` schema remains the implemented demo
+compatibility schema until those migrations are introduced behind repository
+interfaces.
+
+Balances should be controlled through ledger entries and temporary holds, not by
+mutating a single balance field as the source of truth. Payment orders must use
+idempotency keys, and linked account records must store only tokenized provider
+references plus safe display metadata such as bank name and account last four
+digits. Do not store raw bank-account numbers, card numbers, CVV, banking
+passwords, credit scores, income, wealth, fraud state, or compliance decision
+state in this demo surface.
+
 Create the private Azure Blob container with:
 
 ```powershell

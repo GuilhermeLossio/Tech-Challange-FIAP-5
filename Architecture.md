@@ -63,12 +63,13 @@ ECloe Pay is the planned wallet surface inside the demo application. It should r
 |:---|:---|:---|
 | Wallet presentation | Planned for demo | Simulated UI state for balance, cashback, savings goals, benefits, and accepted-offer status. |
 | Decision reuse | Planned for demo | Pay screens reuse the `decision_id` created at checkout instead of creating duplicate decisions. |
+| Real-ready Azure SQL account model | Planned for demo | The next Pay implementation step uses `ecloe_validation` schemas for identity, wallet ledger, payments, rewards, audit, and integration while keeping `master` free of application tables. |
 | Reward registration | Implemented | `POST /v1/rewards` records click, dismissal, or conversion events linked to the original decision. |
 | Technical evidence | Planned for demo | Technical mode may show request ID, decision ID, event ID, policy, artifact, latency, and excluded fields. |
 | Real payment account integration | Future | Requires governed wallet, identity, consent, security, and operations systems. |
 | Credit, fraud, risk, compliance, and eligibility decisions | Out of scope | These remain upstream and must not be presented as ECloe Pay or ECloe Engine responsibilities. |
 
-Detailed screen inventory, data contract, reward mapping, and Azure direction are documented in [`docs/ecloe-pay.md`](docs/ecloe-pay.md).
+Detailed screen inventory, data contract, reward mapping, Azure direction, and the real-ready Azure SQL implementation plan are documented in [`docs/ecloe-pay.md`](docs/ecloe-pay.md).
 
 Supporting ECloe Pay diagrams:
 

@@ -114,9 +114,9 @@ Detailed ECloe Market scope, data model, checkout transaction, event flow, Azure
 
 Status: **Planned for demo**.
 
-ECloe Pay is documented as the simulated wallet surface for the demo. It displays wallet benefits, reuses the checkout decision returned by ECloe Engine, lets the user open, dismiss, or accept the selected eligible offer, and registers the interaction through the implemented reward endpoint. The Pay surface does not approve credit, calculate eligibility, process real payments, or trigger immediate model learning.
+ECloe Pay is documented as the simulated wallet surface for the demo. It displays wallet benefits, reuses the checkout decision returned by ECloe Engine, lets the user open, dismiss, or accept the selected eligible offer, and registers the interaction through the implemented reward endpoint. The next Azure SQL implementation step prepares login validation, wallet ledger control, payment-order state, audit evidence, and tokenized account references inside `ecloe_validation`; the Pay surface still does not approve credit, calculate eligibility, process real payments, store raw banking credentials, or trigger immediate model learning.
 
-Detailed ECloe Pay scope, screens, data boundaries, reward flow, Azure direction, and SVG diagrams are documented separately in [`docs/ecloe-pay.md`](./docs/ecloe-pay.md).
+Detailed ECloe Pay scope, screens, data boundaries, reward flow, Azure direction, real-ready SQL plan, and SVG diagrams are documented separately in [`docs/ecloe-pay.md`](./docs/ecloe-pay.md).
 
 ---
 
