@@ -14,7 +14,7 @@ def test_seed_xlsx_generator_writes_unmasked_local_seed_file(tmp_path) -> None:
     assert generated == path
     assert len(rows) >= 4
     assert rows[0].email == "demo.market@ecloe.local"
-    assert rows[0].password.startswith("ECL-")
+    assert rows[0].password == seed_xlsx._deterministic_password(rows[0].email)
     assert rows[0].address_line1 == "Rua das Palmeiras, 426"
     assert set(seed_xlsx.REQUIRED_COLUMNS) <= set(seed_xlsx.read_xlsx(path)[0])
 

@@ -285,6 +285,19 @@ def test_pay_flask_mutating_routes_require_csrf_token() -> None:
     assert response.status_code == 403
 
 
+def test_pay_flask_replaces_client_supplied_csrf_cookie() -> None:
+    app = create_app()
+    client = app.test_client()
+    client.set_cookie(CSRF_COOKIE_NAME, "client-controlled-token")
+
+    response = client.get("/pay/login")
+
+    assert response.status_code == 200
+    csrf_cookie = client.get_cookie(CSRF_COOKIE_NAME)
+    assert csrf_cookie is not None
+    assert csrf_cookie.value != "client-controlled-token"
+
+
 def test_pay_flask_limits_login_attempts_by_ip_and_email() -> None:
     app = create_app()
     client = app.test_client()

@@ -159,6 +159,7 @@ def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
     assert "max_age=settings.ecloe_pay_session_ttl_seconds" in app_source
     assert "settings.app_environment != \"local\"" in app_source
     assert "hmac.compare_digest" in app_source
+    assert "request.cookies.get(CSRF_COOKIE_NAME) or secrets.token_urlsafe" not in app_source
     assert "LOGIN_RATE_LIMIT_ATTEMPTS" in app_source
     assert "Cache-Control" in app_source
     assert "redirect(_localized_login_url(locale))" in app_source

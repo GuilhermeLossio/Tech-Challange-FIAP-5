@@ -57,7 +57,7 @@ def _clear_auth_cookie(response, settings: Settings) -> None:
 
 
 def _set_csrf_cookie(response, settings: Settings) -> str:
-    token = request.cookies.get(CSRF_COOKIE_NAME) or secrets.token_urlsafe(32)
+    token = secrets.token_urlsafe(32)
     response.set_cookie(
         CSRF_COOKIE_NAME,
         token,
