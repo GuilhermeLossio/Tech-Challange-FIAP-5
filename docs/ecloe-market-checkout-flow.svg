@@ -8,33 +8,98 @@
     <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
       <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
     </marker>
+
+    <g id="icon-web" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="7" y="9" width="26" height="19" rx="3"/>
+      <path d="M7 15h26M15 33h10M20 28v5"/>
+    </g>
+    <g id="icon-shield" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 5l12 5v9c0 8-5 13-12 16C13 32 8 27 8 19v-9l12-5z"/>
+      <path d="M15 20l4 4 7-8"/>
+    </g>
+    <g id="icon-api" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13 12l-7 8 7 8M27 12l7 8-7 8M23 9l-6 22"/>
+    </g>
+    <g id="icon-wallet" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 13h24a4 4 0 0 1 4 4v13H9a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4h20v5"/>
+      <path d="M27 22h8M29 22h1"/>
+    </g>
+    <g id="icon-cart" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8h4l4 17h16l4-12H13"/>
+      <circle cx="17" cy="32" r="2.4"/>
+      <circle cx="29" cy="32" r="2.4"/>
+    </g>
+    <g id="icon-decision" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 13h8M8 27h8M24 20h8"/>
+      <circle cx="20" cy="13" r="4"/>
+      <circle cx="20" cy="27" r="4"/>
+      <circle cx="20" cy="20" r="4"/>
+    </g>
+    <g id="icon-database" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="20" cy="10" rx="12" ry="5"/>
+      <path d="M8 10v18c0 3 5 5 12 5s12-2 12-5V10"/>
+      <path d="M8 19c0 3 5 5 12 5s12-2 12-5"/>
+    </g>
+    <g id="icon-bus" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="7" y="10" width="26" height="20" rx="4"/>
+      <path d="M11 16h18M11 22h12"/>
+      <path d="M14 34v-4M26 34v-4"/>
+    </g>
+    <g id="icon-worker" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="20" cy="20" r="5"/>
+      <path d="M20 6v5M20 29v5M6 20h5M29 20h5M10 10l4 4M26 26l4 4M30 10l-4 4M14 26l-4 4"/>
+    </g>
+    <g id="icon-artifact" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 12h10l3 4h13v15H7z"/>
+      <path d="M15 25h10M20 20v10"/>
+    </g>
+    <g id="icon-chart" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 31h24"/>
+      <rect x="10" y="20" width="5" height="11" rx="1"/>
+      <rect x="18" y="14" width="5" height="17" rx="1"/>
+      <rect x="26" y="9" width="5" height="22" rx="1"/>
+    </g>
+    <g id="icon-doc" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 6h12l6 6v22H12z"/>
+      <path d="M24 6v8h6M16 20h12M16 26h12"/>
+    </g>
+    <g id="icon-eye" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 20s6-9 15-9 15 9 15 9-6 9-15 9-15-9-15-9z"/>
+      <circle cx="20" cy="20" r="4"/>
+    </g>
   </defs>
   <rect width="1280" height="560" fill="#ffffff"/>
   <text x="640" y="42" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#1f2328">ECloe Market Checkout Flow</text>
   <text x="640" y="68" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#57606a">Engine ranks eligible offers only after Market validates cart/order and Pay confirms payment state</text>
 
-  <rect x="40" y="122" width="140" height="96" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
-  <text x="110" y="154" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Cart</text>
+  <rect x="40" y="122" width="140" height="96" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" data-card="true"/>
+  <use href="#icon-shield" transform="translate(48 132) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <text x="88" y="154" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Cart</text>
   <text x="110" y="176" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">customer starts</text>
   <text x="110" y="194" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">checkout</text>
-  <rect x="220" y="122" width="145" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="292" y="154" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Gateway/Auth</text>
+  <rect x="220" y="122" width="145" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
+  <use href="#icon-shield" transform="translate(228 132) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="268" y="154" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Gateway</text>
   <text x="292" y="176" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">auth, rate limit,</text>
   <text x="292" y="194" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">correlation ID</text>
-  <rect x="405" y="122" width="145" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="477" y="154" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Demo BFF</text>
+  <rect x="405" y="122" width="145" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
+  <use href="#icon-api" transform="translate(413 132) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="453" y="154" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Demo BFF</text>
   <text x="477" y="176" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">orchestrates</text>
   <text x="477" y="194" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">demo session</text>
-  <rect x="590" y="122" width="170" height="96" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
-  <text x="675" y="154" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Market API</text>
+  <rect x="590" y="122" width="170" height="96" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" data-card="true"/>
+  <use href="#icon-api" transform="translate(598 132) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <text x="638" y="154" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Market API</text>
   <text x="675" y="176" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">validates cart,</text>
   <text x="675" y="194" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">price, stock</text>
-  <rect x="805" y="122" width="160" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="885" y="154" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Pay Transaction API</text>
+  <rect x="805" y="122" width="160" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
+  <use href="#icon-api" transform="translate(813 132) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="853" y="154" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Pay API</text>
   <text x="885" y="176" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">confirms payment</text>
   <text x="885" y="194" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">state</text>
-  <rect x="1010" y="122" width="170" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="1095" y="154" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Engine Decision API</text>
+  <rect x="1010" y="122" width="170" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
+  <use href="#icon-api" transform="translate(1018 132) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="1058" y="154" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Engine API</text>
   <text x="1095" y="176" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">ranks already</text>
   <text x="1095" y="194" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">eligible offers</text>
 
@@ -51,20 +116,24 @@
   <line x1="760" y1="170" x2="1010" y2="170" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
   <text x="885" y="248" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">minimized context + eligible offers</text>
 
-  <rect x="125" y="315" width="220" height="82" rx="12" fill="#eff6ff" stroke="#2563eb"/>
-  <text x="235" y="343" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Market Store</text>
-  <text x="235" y="365" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Azure SQL transaction</text>
-  <text x="235" y="383" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">order + outbox row</text>
-  <rect x="455" y="315" width="190" height="82" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="550" y="343" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Outbox Publisher</text>
-  <text x="550" y="365" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">polls committed</text>
-  <text x="550" y="383" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">outbox rows</text>
-  <rect x="755" y="315" width="170" height="82" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="840" y="347" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Service Bus</text>
+  <rect x="125" y="315" width="220" height="82" rx="12" fill="#eff6ff" stroke="#2563eb" data-card="true"/>
+  <use href="#icon-cart" transform="translate(133 325) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <text x="173" y="347" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Market Store</text>
+  <text x="235" y="369" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Azure SQL transaction</text>
+  <text x="235" y="387" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">order + outbox row</text>
+  <rect x="455" y="315" width="190" height="82" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
+  <use href="#icon-bus" transform="translate(463 325) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="503" y="347" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Publisher</text>
+  <text x="550" y="369" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">polls committed</text>
+  <text x="550" y="387" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">outbox rows</text>
+  <rect x="755" y="315" width="170" height="82" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
+  <use href="#icon-decision" transform="translate(763 325) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="803" y="347" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Bus</text>
   <text x="840" y="369" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">confirmed domain</text>
   <text x="840" y="387" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">events</text>
-  <rect x="1035" y="315" width="170" height="82" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="1120" y="347" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Decision Store</text>
+  <rect x="1035" y="315" width="170" height="82" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
+  <use href="#icon-decision" transform="translate(1043 325) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="1083" y="347" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Store</text>
   <text x="1120" y="369" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Engine decision</text>
   <text x="1120" y="387" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">evidence</text>
 
