@@ -14,9 +14,34 @@ def test_seed_xlsx_generator_writes_unmasked_local_seed_file(tmp_path) -> None:
     assert generated == path
     assert len(rows) >= 4
     assert rows[0].email == "demo.market@ecloe.local"
-    assert rows[0].password == seed_xlsx._deterministic_password(rows[0].email)
+    assert len(rows[0].password) == 24
     assert rows[0].address_line1 == "Rua das Palmeiras, 426"
     assert set(seed_xlsx.REQUIRED_COLUMNS) <= set(seed_xlsx.read_xlsx(path)[0])
+
+
+def test_seed_xlsx_generator_uses_fresh_random_passwords(tmp_path) -> None:
+    first_path = tmp_path / "first.local.xlsx"
+    second_path = tmp_path / "second.local.xlsx"
+
+    seed_xlsx.generate_seed_xlsx(first_path)
+    seed_xlsx.generate_seed_xlsx(second_path)
+
+    first_passwords = [row.password for row in seed_xlsx.load_seed_rows(first_path)]
+    second_passwords = [row.password for row in seed_xlsx.load_seed_rows(second_path)]
+
+    assert first_passwords != second_passwords
+    assert all(len(password) == 24 for password in first_passwords + second_passwords)
+
+
+def test_seed_xlsx_requires_gitignored_local_suffix(tmp_path) -> None:
+    unsafe_path = tmp_path / "seed.xlsx"
+
+    try:
+        seed_xlsx.generate_seed_xlsx(unsafe_path)
+    except ValueError as error:
+        assert ".local.xlsx" in str(error)
+    else:
+        raise AssertionError("non-local XLSX seed path should fail")
 
 
 def test_seed_xlsx_validation_rejects_duplicate_email_and_blank_password(tmp_path) -> None:

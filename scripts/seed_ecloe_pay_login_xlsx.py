@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import html
+import secrets
 import string
 import sys
 import zipfile
@@ -42,6 +42,8 @@ REQUIRED_COLUMNS = (
     "is_active",
 )
 SAFE_SUMMARY_LABEL = "ECloe Pay XLSX seed"
+LOCAL_XLSX_SUFFIX = ".local.xlsx"
+PASSWORD_ALPHABET = string.ascii_letters + string.digits
 
 
 @dataclass(frozen=True)
@@ -138,11 +140,12 @@ def default_seed_rows() -> list[dict[str, object]]:
         },
     ]
     for row in rows:
-        row["password"] = _deterministic_password(str(row["email"]))
+        row["password"] = _random_demo_password()
     return rows
 
 
 def generate_seed_xlsx(path: Path = DEFAULT_XLSX_PATH) -> Path:
+    _require_local_xlsx_path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     write_xlsx(path, default_seed_rows())
     return path
@@ -162,6 +165,7 @@ def write_xlsx(path: Path, rows: list[dict[str, object]]) -> None:
 
 
 def load_seed_rows(path: Path) -> list[LoginSeedRow]:
+    _require_local_xlsx_path(path)
     raw_rows = read_xlsx(path)
     if not raw_rows:
         raise ValueError("XLSX seed file is empty.")
@@ -210,6 +214,7 @@ def read_xlsx(path: Path) -> list[list[str]]:
 
 
 def import_seed_xlsx(path: Path = DEFAULT_XLSX_PATH) -> tuple[int, str]:
+    _require_local_xlsx_path(path)
     rows = load_seed_rows(path)
     settings = load_settings()
     _validate_odbc_driver(settings.ecloe_pay_sql_driver)
@@ -458,9 +463,13 @@ def _parse_bool(value: str, line_number: int) -> bool:
     raise ValueError(f"Row {line_number} has an invalid is_active value.")
 
 
-def _deterministic_password(email: str) -> str:
-    digest = hashlib.sha256(f"ecloe-pay-local-xlsx:{normalize_email(email)}".encode()).hexdigest()
-    return f"ECL-{digest[:6]}-{digest[6:12]}!"
+def _random_demo_password(length: int = 24) -> str:
+    return "".join(secrets.choice(PASSWORD_ALPHABET) for _ in range(length))
+
+
+def _require_local_xlsx_path(path: Path) -> None:
+    if not path.name.endswith(LOCAL_XLSX_SUFFIX):
+        raise ValueError(f"XLSX seed path must end with {LOCAL_XLSX_SUFFIX}.")
 
 
 if __name__ == "__main__":
