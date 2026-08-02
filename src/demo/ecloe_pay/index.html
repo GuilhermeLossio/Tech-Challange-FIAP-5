@@ -1,203 +1,278 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ECloe Pay Demo</title>
-    <link rel="stylesheet" href="./styles.css" />
-  </head>
-  <body>
-    <div class="app-shell">
-      <aside class="sidebar" aria-label="ECloe Pay navigation">
-        <div class="brand">
-          <span class="brand-mark" aria-hidden="true">EP</span>
-          <div>
-            <p class="eyebrow">Simulated wallet</p>
-            <h1>ECloe Pay</h1>
-          </div>
-        </div>
-        <nav class="nav-list" aria-label="Primary">
-          <a href="/">Landing</a>
-          <a href="#wallet" aria-current="page">Wallet</a>
-          <a href="#benefit">Benefit</a>
-          <a href="#activity">Activity</a>
-          <a href="#security">Security</a>
-          <a href="#terms">Terms</a>
-        </nav>
-        <div class="status-panel">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span>Demo mode only</span>
-        </div>
-      </aside>
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ t("wallet.title") }}</title>
+  <link rel="stylesheet" href="./wallet.css" />
+</head>
+<body class="wallet-body">
+  <div class="app-shell wallet-shell">
+    <aside class="sidebar wallet-sidebar" aria-label="{{ t("wallet.sidebarAria") }}">
+      <header class="brand wallet-brand">
+        <span class="brand-sprite sprite-art sprite-brand-mark" aria-hidden="true"></span>
+        <h1>ECloe Pay</h1>
+      </header>
 
-      <main class="content">
-        <section class="topbar" aria-label="Session controls">
+      <nav class="nav-list wallet-nav" aria-label="{{ t("wallet.navAria") }}">
+        <a class="nav-link active" href="#wallet" aria-current="page">
+          <span class="nav-icon sprite-icon sprite-wallet" aria-hidden="true"><span class="sr-only">{{ t("wallet.wallet") }}</span></span>
+          <span>{{ t("wallet.wallet") }}</span>
+        </a>
+        <a class="nav-link" href="#benefit">
+          <span class="nav-icon sprite-icon sprite-rewards" aria-hidden="true"><span class="sr-only">{{ t("wallet.benefits") }}</span></span>
+          <span>{{ t("wallet.benefits") }}</span>
+        </a>
+        <a class="nav-link" href="#activity">
+          <span class="nav-icon sprite-icon sprite-activity" aria-hidden="true"><span class="sr-only">{{ t("wallet.activity") }}</span></span>
+          <span>{{ t("wallet.activity") }}</span>
+        </a>
+        <a class="nav-link" href="#security">
+          <span class="nav-icon sprite-icon sprite-security-icon" aria-hidden="true"><span class="sr-only">{{ t("wallet.security") }}</span></span>
+          <span>{{ t("wallet.security") }}</span>
+        </a>
+      </nav>
+
+      <section class="card companion-card" aria-label="{{ t("wallet.assistantAria") }}">
+        <span class="cloe-image small sprite-art sprite-cloe-waving" aria-hidden="true"></span>
+        <p class="companion-heading">{{ t("wallet.assistantTitle") }}</p>
+        <p>{{ t("wallet.assistantCopy") }}</p>
+        <span class="online-pill" role="status" aria-live="polite"><span aria-hidden="true"></span>{{ t("wallet.online") }}</span>
+      </section>
+
+      <div class="status-panel wallet-status" role="status" aria-live="polite">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span id="runtimeMode">{{ t("wallet.presentationMode") }}</span>
+      </div>
+    </aside>
+
+    <main class="content wallet-content">
+      <header class="topbar wallet-topbar" aria-label="{{ t("wallet.topbarAria") }}">
+        <span class="topbar-brand-sprite sprite-art sprite-brand-mark" aria-hidden="true"></span>
+        <div class="welcome-copy">
+          <p class="eyebrow">{{ t("wallet.session") }}</p>
+          <h2>{{ t("wallet.greeting") }}</h2>
+          <strong id="sessionId">sess_pay_demo_001</strong>
+          <span id="authIdentity">{{ t("wallet.demoWallet") }}</span>
+        </div>
+        <div class="topbar-actions">
+          <div class="segmented-control" aria-label="{{ t("wallet.displayModeAria") }}">
+            <button id="customerModeButton" class="active" type="button">{{ t("wallet.customer") }}</button>
+            <button id="technicalModeButton" type="button">{{ t("wallet.technical") }}</button>
+          </div>
+          <button id="logoutButton" class="avatar-button" type="button" aria-label="{{ t("wallet.logoutAria") }}">
+            <span class="avatar-face" aria-hidden="true"></span>
+          </button>
+        </div>
+      </header>
+
+      <section id="wallet" class="wallet-grid playful-wallet-grid" aria-label="{{ t("wallet.walletSummaryAria") }}">
+        <section class="card balance-panel hero-balance-card" aria-label="{{ t("wallet.balanceAria") }}">
           <div>
-            <p class="eyebrow">Session</p>
-            <strong id="sessionId">sess_pay_demo_001</strong>
+            <p class="balance-label">{{ t("wallet.demoBalance") }} <span aria-hidden="true">{{ t("wallet.view") }}</span></p>
+            <strong>R$ 428,70</strong>
+            <span class="funds-copy">{{ t("wallet.noRealValue") }}</span>
+            <button id="viewDetailsButton" class="details-button" type="button">{{ t("wallet.details") }}</button>
           </div>
-          <div class="segmented-control" aria-label="Display mode">
-            <button type="button" id="customerModeButton" class="active">Customer</button>
-            <button type="button" id="technicalModeButton">Technical</button>
-          </div>
+          <button id="openTermsButton" class="round-menu-button" type="button" aria-label="{{ t("wallet.openTermsAria") }}">
+            ...
+          </button>
         </section>
 
-        <section id="wallet" class="wallet-grid" aria-label="Wallet summary">
-          <article class="balance-panel">
-            <div>
-              <p class="eyebrow">Demo balance</p>
-              <strong>R$ 428,70</strong>
-              <span>No real funds are stored or moved.</span>
+        <div class="card metric-panel metric-card cashback-card" aria-label="{{ t("wallet.cashbackAria") }}">
+          <div class="metric-card-heading">
+            <span class="metric-icon sprite-icon sprite-cashback" aria-hidden="true"><span class="sr-only">{{ t("wallet.cashback") }}</span></span>
+            <p>{{ t("wallet.cashback") }}</p>
+          </div>
+          <strong>R$ 18,40</strong>
+          <span>{{ t("wallet.available") }}</span>
+        </div>
+
+        <div class="card metric-panel metric-card goal-card" aria-label="{{ t("wallet.monthlyGoal") }}">
+          <div>
+            <div class="metric-card-heading">
+              <span class="metric-icon rose sprite-icon sprite-monthly-goal" aria-hidden="true"><span class="sr-only">{{ t("wallet.monthlyGoal") }}</span></span>
+              <p>{{ t("wallet.monthlyGoal") }}</p>
             </div>
-            <button type="button" id="openTermsButton" class="icon-button" aria-label="Open terms">
-              i
-            </button>
-          </article>
-
-          <article class="metric-panel">
-            <p class="eyebrow">Cashback</p>
-            <strong>R$ 18,40</strong>
-            <span>Simulated wallet benefit</span>
-          </article>
-
-          <article class="metric-panel">
-            <p class="eyebrow">Goal</p>
             <strong>64%</strong>
-            <span>Next recurring purchase</span>
-          </article>
-        </section>
+            <span>R$ 640,00 de R$ 1.000,00</span>
+          </div>
+          <span
+            class="progress-ring"
+            role="progressbar"
+            aria-label="{{ t("wallet.goalProgressAria") }}"
+            aria-valuenow="64"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          ></span>
+        </div>
+      </section>
 
-        <section id="benefit" class="main-grid">
-          <article class="benefit-panel">
-            <div class="benefit-header">
-              <div>
-                <p class="eyebrow">Selected eligible benefit</p>
-                <h2 id="benefitTitle">Cashback for recurring purchases</h2>
-              </div>
-              <span id="benefitState" class="pill">Ready</span>
+      <nav class="quick-actions" aria-label="{{ t("wallet.quickActionsAria") }}">
+        <button type="button" class="quick-action" data-target="benefit">
+          <span class="quick-icon mint sprite-icon sprite-pix" aria-hidden="true"><span class="sr-only">{{ t("wallet.pix") }}</span></span>
+          <span class="quick-action-copy"><strong>{{ t("wallet.pix") }}</strong><small>{{ t("wallet.pixDescription") }}</small></span>
+          <svg class="quick-action-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
+          </svg>
+        </button>
+        <button type="button" class="quick-action" data-target="benefit">
+          <span class="quick-icon rose sprite-icon sprite-payment-card" aria-hidden="true"><span class="sr-only">{{ t("wallet.pay") }}</span></span>
+          <span class="quick-action-copy"><strong>{{ t("wallet.pay") }}</strong><small>{{ t("wallet.payDescription") }}</small></span>
+          <svg class="quick-action-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
+          </svg>
+        </button>
+        <button type="button" class="quick-action" data-target="benefit">
+          <span class="quick-icon lemon sprite-icon sprite-rewards-tile" aria-hidden="true"><span class="sr-only">{{ t("wallet.rewards") }}</span></span>
+          <span class="quick-action-copy"><strong>{{ t("wallet.rewards") }}</strong><small>{{ t("wallet.rewardsDescription") }}</small></span>
+          <svg class="quick-action-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
+          </svg>
+        </button>
+        <button type="button" class="quick-action" data-target="security">
+          <span class="quick-icon mint sprite-icon sprite-security-tile" aria-hidden="true"><span class="sr-only">{{ t("wallet.security") }}</span></span>
+          <span class="quick-action-copy"><strong>{{ t("wallet.security") }}</strong><small>{{ t("wallet.securityDescription") }}</small></span>
+          <svg class="quick-action-arrow" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 12h14M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" />
+          </svg>
+        </button>
+      </nav>
+
+      <section id="benefit" class="main-grid wallet-main-grid">
+        <section class="card benefit-panel playful-benefit-card" aria-label="{{ t("wallet.selectedBenefitAria") }}">
+          <header class="benefit-header">
+            <div class="benefit-art" aria-hidden="true">
+              <span class="cloe-image large sprite-art sprite-cloe-heart"></span>
             </div>
-            <p id="benefitMessage">
-              Earn cashback on your recurring purchases. This is a simulated wallet benefit
-              selected from offers that were already eligible for the demo session.
-            </p>
+            <div>
+              <p class="eyebrow">{{ t("wallet.selectedBenefit") }}</p>
+              <h2 id="benefitTitle">{{ t("wallet.benefitTitle") }}</h2>
+              <p id="benefitMessage">{{ t("wallet.benefitMessage") }}</p>
+            </div>
+            <span id="benefitState" class="pill" role="status" aria-live="polite">{{ t("wallet.ready") }}</span>
+          </header>
 
-            <div class="payment-card" aria-label="Simulated payment order">
-              <div>
-                <p class="eyebrow">Payment order</p>
-                <strong>R$ 127,90</strong>
-              </div>
-              <span>order_demo_7841</span>
+          <div class="payment-strip" aria-label="{{ t("wallet.paymentOrderAria") }}">
+            <div class="payment-card">
+              <p class="eyebrow">{{ t("wallet.recurringPayment") }}</p>
+              <strong>R$ 127,90</strong>
+              <span>{{ t("wallet.dueDate") }}</span>
             </div>
 
-            <form id="transactionForm" class="transaction-form">
-              <label for="confirmationCode">Security confirmation</label>
+            <form id="transactionForm" class="transaction-form inline-transaction-form">
+              <label for="confirmationCode">{{ t("wallet.securityConfirmation") }}</label>
               <div class="input-row">
                 <input
                   id="confirmationCode"
                   name="confirmationCode"
-                  autocomplete="off"
+                  type="text"
                   inputmode="numeric"
                   maxlength="6"
-                  placeholder="Enter 0426"
+                  placeholder="{{ t("wallet.codePlaceholder") }}"
+                  autocomplete="off"
                   aria-describedby="securityHint"
                 />
-                <button type="submit">Simulate payment</button>
+                <button type="submit">{{ t("wallet.simulatePayment") }}</button>
               </div>
-              <p id="securityHint">
-                The transaction is accepted only with the deterministic demo code, an
-                idempotency key, and a locked session.
-              </p>
+              <p id="securityHint">{{ t("wallet.securityHint") }}</p>
             </form>
-
-            <div class="action-row" aria-label="Benefit actions">
-              <button type="button" id="viewBenefitButton">Open benefit</button>
-              <button type="button" id="dismissBenefitButton" class="secondary-button">
-                Dismiss
-              </button>
-              <button type="button" id="acceptBenefitButton" class="secondary-button">
-                Accept benefit
-              </button>
-            </div>
-          </article>
-
-          <aside class="summary-panel" aria-label="Technical evidence">
-            <div class="summary-header">
-              <p class="eyebrow">Security controls</p>
-              <span id="securityState" class="pill success">Locked</span>
-            </div>
-            <ul class="check-list">
-              <li>Generated demo session, no user creation</li>
-              <li>Idempotency key for the payment order</li>
-              <li>No card, bank, CPF, or account data fields</li>
-              <li>Append-only reward event after verified action</li>
-            </ul>
-
-            <div id="technicalPanel" class="technical-panel" hidden>
-              <p class="eyebrow">Technical mode</p>
-              <dl>
-                <div>
-                  <dt>decision_id</dt>
-                  <dd>dec_demo_001</dd>
-                </div>
-                <div>
-                  <dt>offer_id</dt>
-                  <dd>cashback_recurring_purchase</dd>
-                </div>
-                <div>
-                  <dt>policy</dt>
-                  <dd>likelihood_ranker</dd>
-                </div>
-                <div>
-                  <dt>bucket</dt>
-                  <dd>ecloe-pay-demo-artifacts</dd>
-                </div>
-              </dl>
-            </div>
-          </aside>
-        </section>
-
-        <section id="activity" class="activity-panel" aria-label="Simulated activity">
-          <div class="section-heading">
-            <div>
-              <p class="eyebrow">Timeline</p>
-              <h2>Simulated transaction evidence</h2>
-            </div>
-            <button type="button" id="resetButton" class="secondary-button">Reset</button>
           </div>
-          <ol id="timeline" class="timeline"></ol>
+
+          <div class="action-row benefit-actions" aria-label="{{ t("wallet.benefitActionsAria") }}">
+            <button id="viewBenefitButton" type="button">{{ t("wallet.openBenefit") }}</button>
+            <button id="dismissBenefitButton" class="secondary-button" type="button">{{ t("wallet.dismiss") }}</button>
+            <button id="acceptBenefitButton" class="secondary-button" type="button">{{ t("wallet.acceptBenefit") }}</button>
+          </div>
         </section>
 
-        <section id="security" class="terms-inline" aria-label="Security statement">
-          <h2>Security baseline</h2>
-          <p>
-            ECloe Pay validates the simulated confirmation step, locks the session, uses
-            idempotency, separates Pay-owned state in PostgreSQL, and never asks for real
-            payment credentials.
-          </p>
-        </section>
-      </main>
-    </div>
+        <aside id="security" class="card summary-panel safe-design-card" aria-label="{{ t("wallet.technicalEvidenceAria") }}">
+          <header class="summary-header">
+            <div>
+              <p class="eyebrow">{{ t("wallet.securityControls") }}</p>
+              <h2>{{ t("wallet.safeByDesign") }}</h2>
+            </div>
+            <span id="securityState" class="pill success" role="status" aria-live="polite">{{ t("wallet.locked") }}</span>
+          </header>
 
-    <dialog id="termsDialog" aria-labelledby="termsTitle">
-      <form method="dialog" class="terms-dialog">
-        <h2 id="termsTitle">ECloe Pay demo terms</h2>
-        <p>
-          ECloe Pay is a demonstration application. It does not create real users,
-          process real money, move funds, authorize payments, approve credit, perform
-          fraud checks, or provide regulated financial services.
-        </p>
-        <p>
-          All balances, transactions, wallet benefits, rewards, and confirmations are
-          synthetic and session-scoped. Do not enter real card, bank, CPF, password, or account information.
-        </p>
-        <label class="terms-check">
-          <input id="termsCheckbox" type="checkbox" />
-          I understand this is a demo and no real money is processed.
-        </label>
-        <button id="acceptTermsButton" type="button" disabled>Continue</button>
-      </form>
-    </dialog>
+          <div class="security-hero">
+            <strong>100%</strong>
+            <p>{{ t("wallet.securityHero") }}</p>
+          </div>
 
-    <script src="./app.js" type="module"></script>
-  </body>
+          <ul class="check-list">
+            <li>{{ t("wallet.checkCookie") }}</li>
+            <li>{{ t("wallet.checkCode") }}</li>
+            <li>{{ t("wallet.checkIdempotency") }}</li>
+            <li>{{ t("wallet.checkFields") }}</li>
+          </ul>
+
+          <div id="technicalPanel" class="technical-panel" hidden>
+            <p class="eyebrow">{{ t("wallet.technicalMode") }}</p>
+            <dl>
+              <div>
+                <dt>decision_id</dt>
+                <dd>dec_demo_001</dd>
+              </div>
+              <div>
+                <dt>offer_id</dt>
+                <dd>cashback_recurring_purchase</dd>
+              </div>
+              <div>
+                <dt>policy</dt>
+                <dd>likelihood_ranker</dd>
+              </div>
+              <div>
+                <dt>database_provider</dt>
+                <dd id="databaseProvider">presentation</dd>
+              </div>
+              <div>
+                <dt>database_schema</dt>
+                <dd id="databaseSchema">not persisted</dd>
+              </div>
+              <div>
+                <dt>bucket</dt>
+                <dd>ecloe-pay-demo-artifacts</dd>
+              </div>
+            </dl>
+          </div>
+        </aside>
+      </section>
+
+      <section id="activity" class="card activity-panel" aria-label="{{ t("wallet.activityAria") }}">
+        <header class="section-heading">
+          <div>
+            <p class="eyebrow">{{ t("wallet.timeline") }}</p>
+            <h2>{{ t("wallet.transactionEvidence") }}</h2>
+          </div>
+          <button id="resetButton" class="secondary-button" type="button">{{ t("wallet.reset") }}</button>
+        </header>
+        <ol id="timeline" class="timeline"></ol>
+      </section>
+
+      <section class="card terms-inline" aria-label="{{ t("wallet.securityStatementAria") }}">
+        <h2>{{ t("wallet.securityBaseline") }}</h2>
+        <p>{{ t("wallet.securityBaselineCopy") }}</p>
+      </section>
+    </main>
+  </div>
+
+  <dialog id="termsDialog" aria-labelledby="termsTitle">
+    <form method="dialog" class="terms-dialog">
+      <h2 id="termsTitle">{{ t("wallet.termsTitle") }}</h2>
+      <p>{{ t("wallet.termsCopy1") }}</p>
+      <p>{{ t("wallet.termsCopy2") }}</p>
+      <label class="terms-check">
+        <input id="termsCheckbox" type="checkbox" />
+        {{ t("wallet.termsCheck") }}
+      </label>
+      <div class="action-row">
+        <button class="secondary-button" type="submit" formmethod="dialog">{{ t("wallet.cancel") }}</button>
+        <button id="acceptTermsButton" type="button" disabled>{{ t("wallet.continue") }}</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="./app.js" type="module"></script>
+</body>
 </html>

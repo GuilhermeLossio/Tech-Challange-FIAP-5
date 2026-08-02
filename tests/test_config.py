@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from src.core.config import DEFAULT_AZURE_COSMOS_ENDPOINT, ROOT_DIR, load_settings
 
 
@@ -29,6 +31,15 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "AZURE_ARTIFACT_PROMOTION_BLOB",
         "ARTIFACT_SOURCE",
         "ARTIFACT_CACHE_DIR",
+        "ECLOE_PAY_DATABASE_MODE",
+        "ECLOE_PAY_SQL_SERVER",
+        "ECLOE_PAY_SQL_DATABASE",
+        "ECLOE_PAY_SQL_AUTH_MODE",
+        "ECLOE_PAY_SQL_DRIVER",
+        "ECLOE_PAY_SESSION_TTL_SECONDS",
+        "ECLOE_PAY_COOKIE_SECURE",
+        "ECLOE_PAY_DEMO_USER_EMAIL",
+        "ECLOE_PAY_DEMO_USER_PASSWORD",
     ]:
         monkeypatch.delenv(name, raising=False)
 
@@ -54,3 +65,68 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.azure_blob_container_artifacts == "ecloe-artifacts"
     assert settings.azure_artifact_promotion_blob == "promoted/current.json"
     assert settings.artifact_cache_dir == ROOT_DIR / ".artifact_cache"
+    assert settings.ecloe_pay_database_mode == "memory"
+    assert settings.ecloe_pay_sql_server == "ecloe-sql-1266.database.windows.net"
+    assert settings.ecloe_pay_sql_database == "ecloe_validation"
+    assert settings.ecloe_pay_sql_auth_mode == "entra_interactive"
+    assert settings.ecloe_pay_cookie_secure is False
+    assert settings.ecloe_pay_demo_user_email == "demo.market@ecloe.local"
+    assert settings.ecloe_pay_demo_user_password == "change-this-demo-password"
+
+
+def test_config_rejects_unknown_ecloe_pay_database_mode(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "postgres")
+
+    with pytest.raises(ValueError, match="Unsupported ECLOE_PAY_DATABASE_MODE"):
+        load_settings(use_env_file=False)
+
+
+def test_config_rejects_unknown_ecloe_pay_sql_auth_mode(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "password")
+
+    with pytest.raises(ValueError, match="Unsupported ECLOE_PAY_SQL_AUTH_MODE"):
+        load_settings(use_env_file=False)
+
+
+def test_config_rejects_non_positive_ecloe_pay_session_ttl(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_SESSION_TTL_SECONDS", "0")
+
+    with pytest.raises(ValueError, match="ECLOE_PAY_SESSION_TTL_SECONDS"):
+        load_settings(use_env_file=False)
+
+
+def test_config_rejects_missing_azure_sql_settings_when_sql_mode_is_enabled(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
+    monkeypatch.setenv("ECLOE_PAY_SQL_SERVER", "")
+    monkeypatch.setenv("ECLOE_PAY_SQL_DATABASE", "")
+    monkeypatch.setenv("ECLOE_PAY_SQL_DRIVER", "")
+
+    with pytest.raises(ValueError) as error:
+        load_settings(use_env_file=False)
+
+    message = str(error.value)
+    assert "Missing ECloe Pay Azure SQL settings" in message
+    assert "ECLOE_PAY_SQL_SERVER" in message
+    assert "ECLOE_PAY_SQL_DATABASE" in message
+    assert "ECLOE_PAY_SQL_DRIVER" in message
+
+
+def test_config_rejects_entra_interactive_in_cloud(monkeypatch) -> None:
+    monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "memory")
+    monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "entra_interactive")
+
+    with pytest.raises(ValueError, match="entra_interactive is local-only"):
+        load_settings(use_env_file=False)
+
+
+def test_config_requires_managed_identity_for_pay_sql_in_cloud(monkeypatch) -> None:
+    monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
+    monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "azure_cli")
+
+    with pytest.raises(ValueError) as error:
+        load_settings(use_env_file=False)
+
+    assert "managed_identity" in str(error.value)
+    assert "change-this-demo-password" not in str(error.value)

@@ -1,80 +1,111 @@
 <!doctype html>
-<html lang="en">
+<html lang="{{ lang }}">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>ECloe Pay</title>
-    <link rel="stylesheet" href="./styles.css" />
+    <title>{{ t("landing.title") }}</title>
+    <link rel="stylesheet" href="./landing.css" />
   </head>
   <body class="landing-body">
     <main class="landing-shell">
-      <section class="landing-hero" aria-label="ECloe Pay demo landing page">
+      <header class="landing-topbar" aria-label="{{ t("landing.topbarAria") }}">
+        <a class="landing-brand" href="/?lang={{ locale }}" aria-label="{{ t("landing.homeAria") }}">
+          <span class="landing-brand-sprite sprite-art sprite-brand-mark" aria-hidden="true"></span>
+          <span>ECloe Pay</span>
+        </a>
+        <nav class="landing-nav" aria-label="{{ t("landing.navAria") }}">
+          <a href="#security">{{ t("landing.navSafety") }}</a>
+          <a href="#evidence">{{ t("landing.navEvidence") }}</a>
+          <a href="/pay/login?lang={{ locale }}">{{ t("landing.navWallet") }}</a>
+        </nav>
+      </header>
+
+      <section class="landing-hero" aria-label="{{ t("landing.heroAria") }}">
         <div class="landing-copy">
-          <p class="eyebrow">Simulated payments demo</p>
+          <p class="eyebrow">{{ t("landing.eyebrow") }}</p>
           <h1>ECloe Pay</h1>
-          <p class="landing-lede">
-            A runnable wallet demo for secure simulated payments, eligible benefits,
-            and reward-event evidence without creating users or processing real money.
-          </p>
+          <p class="landing-lede">{{ t("landing.lede") }}</p>
           <div class="landing-actions">
-            <a class="primary-link" href="/pay">Open wallet demo</a>
-            <a class="secondary-link" href="#security">Review safety model</a>
+            <a class="primary-link" href="/pay/login?lang={{ locale }}">{{ t("landing.openWallet") }}</a>
+            <a class="secondary-link" href="#security">{{ t("landing.reviewSafety") }}</a>
           </div>
         </div>
-        <div class="landing-device" aria-label="ECloe Pay preview">
+        <div class="card landing-device" aria-label="{{ t("landing.previewAria") }}">
           <div class="device-top">
             <span>ECloe Pay</span>
-            <strong>Demo</strong>
+            <strong>{{ t("landing.demo") }}</strong>
           </div>
-          <div class="device-balance">
-            <span>Demo balance</span>
-            <strong>R$ 428,70</strong>
+          <div class="device-card-stack" aria-hidden="true">
+            <img
+              class="landing-companion-image"
+              src="./assets/cloe-companion.png"
+              alt="{{ t("landing.companionAlt") }}"
+            />
+            <span></span>
+            <span></span>
           </div>
           <div class="device-benefit">
-            <span>Selected eligible benefit</span>
-            <strong>Cashback for recurring purchases</strong>
+            <span>{{ t("landing.selectedBenefit") }}</span>
+            <strong>{{ t("landing.benefitName") }}</strong>
           </div>
           <div class="device-row">
-            <span>Private bucket</span>
+            <span>{{ t("landing.privateBucket") }}</span>
             <strong>ecloe-pay-demo-artifacts</strong>
           </div>
         </div>
       </section>
 
-      <section id="security" class="landing-band" aria-label="Security and data boundaries">
-        <article>
-          <p class="eyebrow">Safety</p>
-          <h2>Secure simulation only</h2>
-          <p>
-            ECloe Pay validates a deterministic confirmation step, locks duplicate
-            payment attempts with idempotency, and records only synthetic evidence.
-          </p>
+      <section id="security" class="landing-band" aria-label="{{ t("landing.securityAria") }}">
+        <article class="card">
+          <p class="eyebrow">{{ t("landing.safety") }}</p>
+          <h2>{{ t("landing.safeSimulation") }}</h2>
+          <p>{{ t("landing.safeCopy") }}</p>
         </article>
-        <article>
-          <p class="eyebrow">Storage</p>
-          <h2>Private Pay artifacts</h2>
+        <article class="card">
+          <p class="eyebrow">{{ t("landing.storage") }}</p>
+          <h2>{{ t("landing.privateArtifacts") }}</h2>
           <p>
-            Demo receipts and Pay evidence use a dedicated private Azure Blob container:
+            {{ t("landing.storageCopy") }}
             <strong>ecloe-pay-demo-artifacts</strong>.
           </p>
         </article>
-        <article>
-          <p class="eyebrow">PostgreSQL</p>
-          <h2>Pay-owned schema</h2>
+        <article class="card">
+          <p class="eyebrow">Azure SQL</p>
+          <h2>{{ t("landing.paySchema") }}</h2>
           <p>
-            Simulated sessions, payment orders, benefit interactions, and outbox rows
-            belong to the dedicated <strong>ecloe_pay</strong> schema.
+            {{ t("landing.schemaCopy") }} <strong>ecloe_pay</strong> schema.
           </p>
         </article>
       </section>
 
-      <section class="landing-terms" aria-label="Demo disclaimer">
-        <h2>No real financial service is provided</h2>
-        <p>
-          ECloe Pay does not create real users, process real money, move funds, authorize
-          payments, approve credit, perform fraud checks, open accounts, or provide
-          regulated payment services.
-        </p>
+      <section id="evidence" class="card landing-evidence" aria-label="{{ t("landing.pathTitle") }}">
+        <div>
+          <p class="eyebrow">{{ t("landing.path") }}</p>
+          <h2>{{ t("landing.pathTitle") }}</h2>
+        </div>
+        <ol>
+          <li>
+            <strong>1</strong>
+            <span>{{ t("landing.step1") }}</span>
+          </li>
+          <li>
+            <strong>2</strong>
+            <span>{{ t("landing.step2") }}</span>
+          </li>
+          <li>
+            <strong>3</strong>
+            <span>{{ t("landing.step3") }}</span>
+          </li>
+          <li>
+            <strong>4</strong>
+            <span>{{ t("landing.step4") }}</span>
+          </li>
+        </ol>
+      </section>
+
+      <section class="card landing-terms" aria-label="{{ t("landing.disclaimerAria") }}">
+        <h2>{{ t("landing.noFinancialService") }}</h2>
+        <p>{{ t("landing.disclaimerCopy") }}</p>
       </section>
     </main>
   </body>

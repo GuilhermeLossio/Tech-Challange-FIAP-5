@@ -17,28 +17,61 @@ const securityState = document.querySelector("#securityState");
 const benefitState = document.querySelector("#benefitState");
 const transactionForm = document.querySelector("#transactionForm");
 const confirmationCode = document.querySelector("#confirmationCode");
+const sessionId = document.querySelector("#sessionId");
+const authIdentity = document.querySelector("#authIdentity");
+const logoutButton = document.querySelector("#logoutButton");
+const runtimeMode = document.querySelector("#runtimeMode");
+const databaseProvider = document.querySelector("#databaseProvider");
+const databaseSchema = document.querySelector("#databaseSchema");
+const viewDetailsButton = document.querySelector("#viewDetailsButton");
+const quickActionButtons = document.querySelectorAll(".quick-action[data-target]");
+const pageLocale = document.documentElement.lang || "en-US";
 
 let eventCounter = 1;
-let termsAccepted = localStorage.getItem("ecloePayTermsAccepted") === "true";
+let termsAccepted = false;
 let transactionLocked = false;
 let flaskAvailable = false;
+let backendRequiresAuth = false;
+
+async function getJson(url) {
+  const response = await fetch(url);
+  const body = await response.json();
+  if (!response.ok) {
+    const error = new Error(body.error || "Request failed");
+    error.status = response.status;
+    throw error;
+  }
+  return body;
+}
+
+function cookieValue(name) {
+  return document.cookie
+    .split("; ")
+    .find((entry) => entry.startsWith(`${name}=`))
+    ?.split("=")[1] || "";
+}
 
 async function postJson(url, payload) {
   const response = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": decodeURIComponent(cookieValue("ecloe_pay_csrf")),
+    },
     body: JSON.stringify(payload),
   });
   const body = await response.json();
   if (!response.ok) {
-    throw new Error(body.error || body.reason || "Request failed");
+    const error = new Error(body.error || body.reason || "Request failed");
+    error.status = response.status;
+    throw error;
   }
   return body;
 }
 
 function appendTimeline(message, evidence = "") {
   const item = document.createElement("li");
-  const suffix = evidence ? ` Evidence: ${evidence}` : "";
+  const suffix = evidence ? ` Evidencia: ${evidence}` : "";
   item.textContent = `${new Date().toLocaleTimeString()} - ${message}${suffix}`;
   timeline.prepend(item);
 }
@@ -61,6 +94,31 @@ function requireTerms() {
   return termsAccepted;
 }
 
+function redirectToLoginWhenNeeded(error) {
+  if (error.status === 401) {
+    window.location.assign(`/pay/login?lang=${encodeURIComponent(pageLocale)}`);
+    return true;
+  }
+  return false;
+}
+
+function setPresentationMode() {
+  backendRequiresAuth = false;
+  authIdentity.textContent = "Carteira demonstrativa";
+  runtimeMode.textContent = "Modo apresentacao - os dados nao sao persistidos.";
+  databaseProvider.textContent = "apresentacao";
+  databaseSchema.textContent = "nao persistido";
+}
+
+function setAuthenticatedMode(auth, security) {
+  authIdentity.textContent = auth.user?.email || "Persona demo";
+  runtimeMode.textContent = security.database_provider === "azure_sql"
+    ? "Demo autenticada com Azure SQL"
+    : "Demo local em memoria";
+  databaseProvider.textContent = security.database_provider;
+  databaseSchema.textContent = security.database_schema;
+}
+
 function recordReward(action, eventType, reward) {
   if (!requireTerms()) {
     return;
@@ -77,24 +135,39 @@ function recordReward(action, eventType, reward) {
         setBenefitState(action, reward === 1 ? "success" : "default");
         const event = body.reward_event;
         appendTimeline(
-          `${action}. Reward event prepared for ${body.engine_endpoint}.`,
+          `${action}. Evento de recompensa preparado para ${body.engine_endpoint}.`,
           `${event.event_id}, ${event.event_type}, reward=${event.reward}, decision=${event.decision_id}`,
         );
       })
-      .catch((error) => appendTimeline(`Interaction rejected by Flask API: ${error.message}`));
+      .catch((error) => {
+        if (!redirectToLoginWhenNeeded(error)) {
+          appendTimeline(`Interacao rejeitada pela API Flask: ${error.message}`);
+        }
+      });
     return;
   }
 
   const eventId = nextEventId();
-  setBenefitState(action, reward === 1 ? "success" : "default");
+  setBenefitState("Previa da apresentacao");
   appendTimeline(
-    `${action}. Reward event prepared for POST /v1/rewards.`,
+    `Modo apresentacao - os dados nao sao persistidos. ${action} foi apenas pre-visualizado.`,
     `${eventId}, ${eventType}, reward=${reward}, decision=${DEMO_STATE.decisionId}`,
   );
 }
 
 document.querySelector("#openTermsButton").addEventListener("click", () => {
   termsDialog.showModal();
+});
+
+viewDetailsButton.addEventListener("click", () => {
+  termsDialog.showModal();
+});
+
+quickActionButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const target = document.querySelector(`#${button.dataset.target}`);
+    target?.scrollIntoView({ behavior: "smooth" });
+  });
 });
 
 termsCheckbox.addEventListener("change", () => {
@@ -104,19 +177,24 @@ termsCheckbox.addEventListener("change", () => {
 acceptTermsButton.addEventListener("click", () => {
   const finish = () => {
     termsAccepted = true;
-    localStorage.setItem("ecloePayTermsAccepted", "true");
     termsDialog.close();
-    appendTimeline("Demo terms accepted for this browser session.");
+    appendTimeline("Termos da demo aceitos para esta sessao.");
   };
 
   if (!flaskAvailable) {
-    finish();
+    termsAccepted = true;
+    termsDialog.close();
+    appendTimeline("Modo apresentacao - os dados nao sao persistidos. Termos aceitos apenas para pre-visualizacao.");
     return;
   }
 
   postJson("/api/terms", { accepted: true })
     .then(finish)
-    .catch((error) => appendTimeline(`Terms rejected by Flask API: ${error.message}`));
+    .catch((error) => {
+      if (!redirectToLoginWhenNeeded(error)) {
+        appendTimeline(`Termos rejeitados pela API Flask: ${error.message}`);
+      }
+    });
 });
 
 document.querySelector("#customerModeButton").addEventListener("click", (event) => {
@@ -132,15 +210,15 @@ document.querySelector("#technicalModeButton").addEventListener("click", (event)
 });
 
 document.querySelector("#viewBenefitButton").addEventListener("click", () => {
-  recordReward("Benefit viewed", "click", 0.2);
+  recordReward("Beneficio visualizado", "click", 0.2);
 });
 
 document.querySelector("#dismissBenefitButton").addEventListener("click", () => {
-  recordReward("Benefit dismissed", "dismissal", 0);
+  recordReward("Beneficio dispensado", "dismissal", 0);
 });
 
 document.querySelector("#acceptBenefitButton").addEventListener("click", () => {
-  recordReward("Benefit accepted", "conversion", 1);
+  recordReward("Beneficio aceito", "conversion", 1);
 });
 
 transactionForm.addEventListener("submit", (event) => {
@@ -151,14 +229,14 @@ transactionForm.addEventListener("submit", (event) => {
 
   const normalizedCode = confirmationCode.value.trim();
   if (transactionLocked && !flaskAvailable) {
-    appendTimeline("Duplicate simulated payment blocked by idempotency.");
+    appendTimeline("Modo apresentacao - os dados nao sao persistidos. Previa duplicada ignorada.");
     return;
   }
 
   if (normalizedCode !== DEMO_STATE.confirmationCode) {
-    securityState.textContent = "Rejected";
+    securityState.textContent = "Somente previa";
     securityState.classList.remove("success");
-    appendTimeline("Simulated payment rejected by confirmation validation.");
+    appendTimeline("Modo apresentacao - os dados nao sao persistidos. Previa de confirmacao rejeitada.");
     return;
   }
 
@@ -168,42 +246,52 @@ transactionForm.addEventListener("submit", (event) => {
     })
       .then((body) => {
         transactionLocked = true;
-        securityState.textContent = "Verified";
+        securityState.textContent = "Verificado";
         securityState.classList.add("success");
-        setBenefitState("Simulated payment accepted", "success");
+        setBenefitState("Pagamento simulado aceito", "success");
         appendTimeline(
-          "Flask API verified simulated payment and prepared reward event.",
-          `${body.reward_event.event_id}, schema=${body.postgres_schema}, bucket=${body.bucket_name}`,
+          "A API Flask verificou o pagamento simulado e preparou o evento de recompensa.",
+          `${body.reward_event.event_id}, provider=${body.database_provider}, schema=${body.database_schema}, bucket=${body.bucket_name}`,
         );
       })
       .catch((error) => {
-        securityState.textContent = "Rejected";
+        if (redirectToLoginWhenNeeded(error)) {
+          return;
+        }
+        securityState.textContent = "Rejeitado";
         securityState.classList.remove("success");
-        appendTimeline(`Simulated payment rejected by Flask API: ${error.message}`);
+        appendTimeline(`Pagamento simulado rejeitado pela API Flask: ${error.message}`);
       });
     return;
   }
 
   transactionLocked = true;
-  securityState.textContent = "Verified";
-  securityState.classList.add("success");
-  recordReward("Simulated payment accepted", "conversion", 1);
+  securityState.textContent = "Somente previa";
+  securityState.classList.remove("success");
+  recordReward("Pagamento simulado aceito", "conversion", 1);
   appendTimeline(
-    "Pay-owned PostgreSQL transaction would commit payment order and outbox event.",
+    "Modo apresentacao - os dados nao sao persistidos. Nenhuma ordem de pagamento do Azure SQL foi atualizada.",
     `idempotency=${DEMO_STATE.idempotencyKey}, bucket=${DEMO_STATE.bucketName}`,
   );
 });
 
 document.querySelector("#resetButton").addEventListener("click", () => {
-  const finish = () => {
+  const finish = (body = {}) => {
     eventCounter = 1;
     transactionLocked = false;
+    termsAccepted = false;
     confirmationCode.value = "";
-    securityState.textContent = "Locked";
-    securityState.classList.add("success");
-    setBenefitState("Ready");
+    securityState.textContent = flaskAvailable ? "Bloqueado" : "Somente previa";
+    securityState.classList.toggle("success", flaskAvailable);
+    setBenefitState(flaskAvailable ? "Pronto" : "Previa da apresentacao");
     timeline.replaceChildren();
-    appendTimeline("Session reset with deterministic demo data.");
+    sessionId.textContent = body.session_id || DEMO_STATE.sessionId;
+    appendTimeline(
+      flaskAvailable
+        ? "Sessao reiniciada com dados deterministicos da demo."
+        : "Modo apresentacao - os dados nao sao persistidos. Estado estatico reiniciado.",
+    );
+    termsDialog.showModal();
   };
 
   if (!flaskAvailable) {
@@ -213,23 +301,46 @@ document.querySelector("#resetButton").addEventListener("click", () => {
 
   postJson("/api/reset", {})
     .then(finish)
-    .catch((error) => appendTimeline(`Reset rejected by Flask API: ${error.message}`));
+    .catch((error) => {
+      if (!redirectToLoginWhenNeeded(error)) {
+        appendTimeline(`Reinicio rejeitado pela API Flask: ${error.message}`);
+      }
+    });
 });
 
-fetch("/api/session")
-  .then((response) => response.json())
-  .then((body) => {
+logoutButton.addEventListener("click", () => {
+  postJson("/api/auth/logout", {})
+    .then(() => window.location.assign(`/pay/login?lang=${encodeURIComponent(pageLocale)}`))
+    .catch(() => window.location.assign(`/pay/login?lang=${encodeURIComponent(pageLocale)}`));
+});
+
+async function bootstrap() {
+  try {
+    const auth = await getJson("/api/auth/me");
     flaskAvailable = true;
+    backendRequiresAuth = Boolean(auth.requires_authentication);
+    const body = await getJson("/api/session");
+    setAuthenticatedMode(auth, body.security);
+    sessionId.textContent = body.session.session_id;
+    termsAccepted = Boolean(body.session.terms_accepted);
     appendTimeline(
-      "ECloe Pay Flask API connected with synthetic wallet data.",
-      `schema=${body.security.postgres_schema}, bucket=${body.security.bucket_name}`,
+      "API Flask da ECloe Pay conectada com dados sinteticos de carteira.",
+      `provider=${body.security.database_provider}, schema=${body.security.database_schema}, bucket=${body.security.bucket_name}`,
     );
-  })
-  .catch(() => {
-    appendTimeline("ECloe Pay loaded in static fallback mode with synthetic wallet data.");
-  })
-  .finally(() => {
+  } catch (error) {
+    if (redirectToLoginWhenNeeded(error)) {
+      return;
+    }
+    setPresentationMode();
+    securityState.textContent = "Somente previa";
+    securityState.classList.remove("success");
+    setBenefitState("Previa da apresentacao");
+    appendTimeline("Modo apresentacao - os dados nao sao persistidos.");
+  } finally {
     if (!termsAccepted) {
       termsDialog.showModal();
     }
-  });
+  }
+}
+
+bootstrap();

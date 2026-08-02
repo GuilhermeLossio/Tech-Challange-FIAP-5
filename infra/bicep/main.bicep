@@ -15,6 +15,15 @@ param cosmosAccountName string = 'ecloe5cosmos1266cl'
 @description('Existing Cosmos DB database name.')
 param cosmosDatabaseName string = 'ecloe'
 
+@description('Existing Azure SQL logical server name for ECloe Pay demo persistence.')
+param ecloePaySqlServerName string = 'ecloe-sql-1266'
+
+@description('Existing Azure SQL database name for ECloe Pay demo persistence.')
+param ecloePaySqlDatabaseName string = 'ecloe_validation'
+
+@description('ODBC driver expected in the ECloe Pay runtime image.')
+param ecloePaySqlDriver string = 'ODBC Driver 18 for SQL Server'
+
 @description('Microsoft Entra tenant ID.')
 param entraTenantId string
 
@@ -87,6 +96,15 @@ resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
     Application_Type: 'web'
     WorkspaceResourceId: logs.id
   }
+}
+
+resource ecloePaySqlServer 'Microsoft.Sql/servers@2023-08-01-preview' existing = {
+  name: ecloePaySqlServerName
+}
+
+resource ecloePaySqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview' existing = {
+  parent: ecloePaySqlServer
+  name: ecloePaySqlDatabaseName
 }
 
 resource managedEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
@@ -208,6 +226,30 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
               name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'
               value: appInsights.properties.ConnectionString
             }
+            {
+              name: 'ECLOE_PAY_DATABASE_MODE'
+              value: 'azure_sql'
+            }
+            {
+              name: 'ECLOE_PAY_SQL_SERVER'
+              value: '${ecloePaySqlServer.name}${environment().suffixes.sqlServerHostname}'
+            }
+            {
+              name: 'ECLOE_PAY_SQL_DATABASE'
+              value: ecloePaySqlDatabase.name
+            }
+            {
+              name: 'ECLOE_PAY_SQL_AUTH_MODE'
+              value: 'managed_identity'
+            }
+            {
+              name: 'ECLOE_PAY_SQL_DRIVER'
+              value: ecloePaySqlDriver
+            }
+            {
+              name: 'ECLOE_PAY_COOKIE_SECURE'
+              value: 'true'
+            }
           ]
           resources: {
             cpu: json('0.25')
@@ -246,3 +288,5 @@ output storageAccountName string = storage.name
 output artifactContainer string = artifactContainerName
 output managedIdentityPrincipalId string = app.identity.principalId
 output cosmosDataContributorCommand string = 'scripts/grant_cosmos_data_contributor.ps1 -AccountName ${cosmosAccountName} -DatabaseName ${cosmosDatabaseName} -PrincipalId ${app.identity.principalId}'
+output ecloePaySqlServer string = ecloePaySqlServer.properties.fullyQualifiedDomainName
+output ecloePaySqlDatabase string = ecloePaySqlDatabase.name

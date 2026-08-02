@@ -604,6 +604,7 @@ def test_http_business_route_requires_token_in_cloud(monkeypatch, tmp_path) -> N
     monkeypatch.setenv("SUBJECT_KEY_SALT", "cloud-secret")
     monkeypatch.setenv("AZURE_COSMOS_AUTH_MODE", "managed_identity")
     monkeypatch.setenv("DECISION_REPOSITORY_MODE", "cosmos")
+    monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "managed_identity")
     monkeypatch.setattr("src.api.dependencies.validate_security_settings", lambda settings: None)
     _, _, app, _ = decision_test_components(tmp_path)
 
@@ -632,6 +633,7 @@ def test_http_business_route_rejects_missing_scope(monkeypatch, tmp_path) -> Non
     monkeypatch.setenv("SUBJECT_KEY_SALT", "cloud-secret")
     monkeypatch.setenv("AZURE_COSMOS_AUTH_MODE", "managed_identity")
     monkeypatch.setenv("DECISION_REPOSITORY_MODE", "cosmos")
+    monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "managed_identity")
     monkeypatch.setattr("src.api.dependencies.validate_security_settings", lambda settings: None)
     monkeypatch.setattr(
         "src.api.security.validate_entra_token",

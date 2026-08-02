@@ -1,6 +1,6 @@
 <svg viewBox="0 0 1240 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">ECloe lightweight MLOps lifecycle</title>
-  <desc id="desc">Six-step ECloe lightweight MLOps lifecycle. The pipeline prepares data, evaluates policies, logs MLflow runs, validates the Golden Set, selects a demo policy, and performs a light deployment. A dashed feedback loop returns validation learnings to data preparation.</desc>
+  <desc id="desc">Six-step ECloe lightweight MLOps lifecycle. The pipeline prepares data, evaluates policies, logs MLflow runs, validates the Golden Set, selects a demo policy, and promotes the policy artifact for light deployment. This offline lifecycle does not include Pay, Market, Service Bus, or Outbox flows.</desc>
   <defs>
     <linearGradient id="neutralCard" x1="0" x2="1" y1="0" y2="1">
       <stop offset="0%" stop-color="#ffffff"/>
@@ -35,17 +35,17 @@
   </defs>
 
   <rect width="1240" height="520" fill="#ffffff"/>
-  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Ciclo de Vida MLOps Leve</text>
-  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Pipeline local-first para rastrear, validar e promover uma politica demonstravel com baixo custo operacional.</text>
+  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Lightweight MLOps Lifecycle</text>
+  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Local-first pipeline to track, validate, and promote a demonstrable policy artifact with low operational cost.</text>
 
   <rect x="40" y="112" width="1160" height="288" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="70" y="140" class="sectionText">Pipeline de avaliacao e promocao</text>
+  <text x="70" y="140" class="sectionText">Evaluation and promotion pipeline</text>
 
-  <path d="M 240 254 C 258 238, 274 238, 292 254" fill="none" stroke="#57606a" stroke-width="2.3" marker-end="url(#arrowGray)"/>
-  <path d="M 422 254 C 440 236, 456 236, 474 254" fill="none" stroke="#4f79c9" stroke-width="2.7" marker-end="url(#arrowBlue)" opacity="0.78"/>
-  <path d="M 604 254 C 622 234, 638 234, 656 254" fill="none" stroke="#3c6fd3" stroke-width="2.9" marker-end="url(#arrowBlue)" opacity="0.84"/>
-  <path d="M 786 254 C 804 232, 820 232, 838 254" fill="none" stroke="#3268d0" stroke-width="3.1" marker-end="url(#arrowBlue)" opacity="0.92"/>
-  <path d="M 968 254 C 986 230, 1002 230, 1020 254" fill="none" stroke="#2563eb" stroke-width="3.3" marker-end="url(#arrowBlue)"/>
+  <line x1="240" y1="254" x2="292" y2="254" stroke="#57606a" stroke-width="2.3" marker-end="url(#arrowGray)"/>
+  <line x1="422" y1="254" x2="474" y2="254" stroke="#4f79c9" stroke-width="2.7" marker-end="url(#arrowBlue)" opacity="0.78"/>
+  <line x1="604" y1="254" x2="656" y2="254" stroke="#3c6fd3" stroke-width="2.9" marker-end="url(#arrowBlue)" opacity="0.84"/>
+  <line x1="786" y1="254" x2="838" y2="254" stroke="#3268d0" stroke-width="3.1" marker-end="url(#arrowBlue)" opacity="0.92"/>
+  <line x1="968" y1="254" x2="1020" y2="254" stroke="#2563eb" stroke-width="3.3" marker-end="url(#arrowBlue)"/>
 
   <g transform="translate(76 168)" filter="url(#softShadow)">
     <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#d0d7de"/>
@@ -141,22 +141,22 @@
       <path d="M 31 48 v19"/>
       <path d="M 23 58 l8 9 l8 -9"/>
     </g>
-    <text x="89" y="88" text-anchor="middle" class="cardTitle">Light Deploy</text>
-    <text x="89" y="113" text-anchor="middle" class="cardSub">Expose selected policy</text>
-    <text x="89" y="132" text-anchor="middle" class="cardSub">through script, API,</text>
-    <text x="89" y="151" text-anchor="middle" class="cardSub">or notebook demo.</text>
+    <text x="89" y="88" text-anchor="middle" class="cardTitle">Promote Artifact</text>
+    <text x="89" y="113" text-anchor="middle" class="cardSub">Publish selected policy</text>
+    <text x="89" y="132" text-anchor="middle" class="cardSub">manifest and artifact</text>
+    <text x="89" y="151" text-anchor="middle" class="cardSub">for serving.</text>
   </g>
 
-  <path d="M 706 342 C 650 382, 260 382, 158 342" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="7 7" marker-end="url(#arrowBlue)" opacity="0.72"/>
+  <polyline points="706,342 706,382 158,382 158,342" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="7 7" marker-end="url(#arrowBlue)" opacity="0.72"/>
   <rect x="438" y="350" width="262" height="28" rx="14" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="569" y="369" text-anchor="middle" class="bodyText" font-size="12">feedback loop: refine data and assumptions</text>
+  <text x="569" y="369" text-anchor="middle" class="bodyText" font-size="12">feedback loop</text>
 
   <g transform="translate(160 432)">
     <rect width="920" height="48" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
     <circle cx="28" cy="24" r="6" fill="#2563eb"/>
-    <text x="46" y="21" class="bodyText">MLflow: rastreamento de experimentos, metricas e artefatos.</text>
+    <text x="46" y="21" class="bodyText">MLflow: experiment tracking, metrics, and artifacts.</text>
     <circle cx="486" cy="24" r="6" fill="#57606a"/>
-    <text x="504" y="21" class="bodyText">Golden Set: casos deterministas para validacao explicavel.</text>
-    <text x="46" y="38" class="bodyText">Fluxo principal em azul; seta tracejada indica aprendizado offline.</text>
+    <text x="504" y="21" class="bodyText">Golden Set: deterministic cases for explainable validation.</text>
+    <text x="46" y="38" class="bodyText">Main flow is blue; dashed arrow indicates offline learning.</text>
   </g>
 </svg>

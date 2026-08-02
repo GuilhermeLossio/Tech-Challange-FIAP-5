@@ -1,26 +1,12 @@
 <svg viewBox="0 0 1240 620" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">ECloe decision and learning flow</title>
-  <desc id="desc">ECloe decision flow with a synchronous serving path and an offline learning path. The channel calls the Decision API, the bandit service selects an offer, the offer is shown, events are stored, rewards are attributed, and a reviewed policy version feeds back into the API.</desc>
+  <desc id="desc">ECloe decision flow with orthogonal connectors. The online path moves left to right from Channel to Engine Decision API, Bandit Service, Offer, and Decision Reward Store. The offline path places Policy Update on the left and uses a non-crossing U-shaped reward attribution route plus a short feedback route to Engine Decision API.</desc>
   <defs>
-    <linearGradient id="neutralCard" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#f6f8fa"/>
-    </linearGradient>
-    <linearGradient id="blueCard" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#eff6ff"/>
-      <stop offset="100%" stop-color="#dbeafe"/>
-    </linearGradient>
-    <filter id="softShadow" x="-20%" y="-25%" width="140%" height="160%">
-      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#1f2328" flood-opacity="0.12"/>
-    </filter>
-    <filter id="primaryShadow" x="-24%" y="-30%" width="148%" height="170%">
-      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#2563eb" flood-opacity="0.18"/>
-    </filter>
-    <marker id="arrowGray" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M 1 1 L 11 6 L 1 11 z" fill="#57606a"/>
+    <marker id="arrowGray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
     </marker>
-    <marker id="arrowBlue" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
-      <path d="M 1 1 L 11 6 L 1 11 z" fill="#2563eb"/>
+    <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
     </marker>
     <style>
       .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-weight: 700; }
@@ -30,122 +16,76 @@
       .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; }
       .badgeText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #ffffff; font-size: 12px; font-weight: 700; }
       .labelText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; font-weight: 700; }
-      .icon { fill: none; stroke: #57606a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-      .iconBlue { fill: none; stroke: #2563eb; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
     </style>
   </defs>
-
   <rect width="1240" height="620" fill="#ffffff"/>
-  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Fluxo de Decisao e Aprendizado</text>
-  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">O caminho online responde a decisao; o caminho offline usa recompensa atrasada para revisar a politica.</text>
+  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Decision and Learning Flow</text>
+  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">The online path returns an eligible-offer decision; the offline path uses delayed rewards to review the policy.</text>
 
   <rect x="40" y="112" width="1160" height="226" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.4"/>
-  <text x="70" y="140" class="sectionText">Caminho online de decisao</text>
+  <text x="70" y="140" class="sectionText">Online decision path</text>
 
-  <path d="M 256 238 C 276 220, 294 220, 314 238" fill="none" stroke="#57606a" stroke-width="2.3" marker-end="url(#arrowGray)"/>
-  <path d="M 484 238 C 504 218, 522 218, 542 238" fill="none" stroke="#3d6fd0" stroke-width="2.9" marker-end="url(#arrowBlue)" opacity="0.85"/>
-  <path d="M 712 238 C 732 216, 750 216, 770 238" fill="none" stroke="#2563eb" stroke-width="3.2" marker-end="url(#arrowBlue)"/>
-  <path d="M 940 238 C 960 218, 978 218, 998 238" fill="none" stroke="#2563eb" stroke-width="3.2" marker-end="url(#arrowBlue)"/>
-
-  <text x="285" y="210" text-anchor="middle" class="labelText">context</text>
-  <text x="514" y="208" text-anchor="middle" class="labelText">validated request</text>
-  <text x="741" y="207" text-anchor="middle" class="labelText">decision</text>
-  <text x="969" y="209" text-anchor="middle" class="labelText">events</text>
-
-  <g transform="translate(76 172)" filter="url(#softShadow)">
-    <rect width="180" height="132" rx="11" fill="url(#neutralCard)" stroke="#57606a" stroke-width="3"/>
+  <g transform="translate(76 172)">
+    <rect width="180" height="132" rx="11" fill="#ffffff" stroke="#57606a" stroke-width="3"/>
     <circle cx="25" cy="24" r="15" fill="#57606a"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">1</text>
-    <g class="icon" transform="translate(70 17)">
-      <rect x="4" y="11" width="46" height="34" rx="5"/>
-      <path d="M 15 53 h24"/>
-      <path d="M 27 45 v8"/>
-      <path d="M 56 17 h7"/>
-      <path d="M 56 29 h7"/>
-    </g>
     <text x="90" y="76" text-anchor="middle" class="cardTitle">Channel</text>
     <text x="90" y="100" text-anchor="middle" class="cardSub">Web, app, CRM, or notebook</text>
     <text x="90" y="118" text-anchor="middle" class="cardSub">sends minimized context.</text>
   </g>
-
-  <g transform="translate(304 172)" filter="url(#softShadow)">
-    <rect width="180" height="132" rx="11" fill="url(#neutralCard)" stroke="#57606a" stroke-width="3"/>
-    <circle cx="25" cy="24" r="15" fill="#4f6f9d"/>
+  <g transform="translate(304 172)">
+    <rect width="180" height="132" rx="11" fill="#ffffff" stroke="#57606a" stroke-width="3"/>
+    <circle cx="25" cy="24" r="15" fill="#57606a"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">2</text>
-    <g class="icon" transform="translate(70 15)">
-      <rect x="6" y="6" width="42" height="44" rx="6"/>
-      <path d="M 15 18 h24"/>
-      <path d="M 15 30 h16"/>
-      <path d="M 36 38 l5 5 l12 -14" stroke="#2563eb"/>
-    </g>
-    <text x="90" y="76" text-anchor="middle" class="cardTitle">Decision API</text>
-    <text x="90" y="100" text-anchor="middle" class="cardSub">Checks schema, offers,</text>
-    <text x="90" y="118" text-anchor="middle" class="cardSub">request_id, and policy.</text>
+    <text x="90" y="76" text-anchor="middle" class="cardTitle">Engine Decision API</text>
+    <text x="90" y="100" text-anchor="middle" class="cardSub">Checks schema,</text>
+    <text x="90" y="118" text-anchor="middle" class="cardSub">eligible offers, and policy.</text>
   </g>
-
-  <g transform="translate(532 172)" filter="url(#primaryShadow)">
-    <rect width="180" height="132" rx="11" fill="url(#blueCard)" stroke="#2563eb" stroke-width="3"/>
+  <g transform="translate(532 172)">
+    <rect width="180" height="132" rx="11" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
     <circle cx="25" cy="24" r="15" fill="#2563eb"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">3</text>
-    <g class="iconBlue" transform="translate(68 16)">
-      <circle cx="28" cy="26" r="20"/>
-      <path d="M 28 6 v40"/>
-      <path d="M 8 26 h40"/>
-      <path d="M 15 13 c8 6 18 6 26 0"/>
-      <path d="M 15 39 c8 -6 18 -6 26 0"/>
-    </g>
     <text x="90" y="76" text-anchor="middle" class="cardTitle">Bandit Service</text>
     <text x="90" y="100" text-anchor="middle" class="cardSub">Loads active policy and</text>
     <text x="90" y="118" text-anchor="middle" class="cardSub">chooses one eligible offer.</text>
   </g>
-
-  <g transform="translate(760 172)" filter="url(#softShadow)">
-    <rect width="180" height="132" rx="11" fill="url(#blueCard)" stroke="#57606a" stroke-width="3"/>
-    <circle cx="25" cy="24" r="15" fill="#326ad7"/>
+  <g transform="translate(760 172)">
+    <rect width="180" height="132" rx="11" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
+    <circle cx="25" cy="24" r="15" fill="#2563eb"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">4</text>
-    <g class="iconBlue" transform="translate(68 17)">
-      <path d="M 6 18 h48 v27 H6 z"/>
-      <path d="M 6 18 l24 16 l24 -16"/>
-      <path d="M 15 10 h30"/>
-      <path d="M 21 5 h18"/>
-    </g>
     <text x="90" y="76" text-anchor="middle" class="cardTitle">Offer</text>
     <text x="90" y="100" text-anchor="middle" class="cardSub">Action is shown with</text>
     <text x="90" y="118" text-anchor="middle" class="cardSub">auditable reason codes.</text>
   </g>
-
-  <g transform="translate(988 172)" filter="url(#primaryShadow)">
-    <rect width="176" height="132" rx="11" fill="url(#blueCard)" stroke="#2563eb" stroke-width="3"/>
+  <g transform="translate(988 172)">
+    <rect width="176" height="132" rx="11" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
     <circle cx="25" cy="24" r="15" fill="#2563eb"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">5</text>
-    <g class="iconBlue" transform="translate(65 16)">
-      <ellipse cx="28" cy="10" rx="25" ry="8"/>
-      <path d="M 3 10 v31 c0 4.4 11.2 8 25 8 s25 -3.6 25 -8 V10"/>
-      <path d="M 3 25 c0 4.4 11.2 8 25 8 s25 -3.6 25 -8"/>
-      <path d="M 46 42 l6 6 l11 -15"/>
-    </g>
-    <text x="88" y="76" text-anchor="middle" class="cardTitle">Event Store</text>
+    <text x="88" y="76" text-anchor="middle" class="cardTitle">Decision/Reward Store</text>
     <text x="88" y="100" text-anchor="middle" class="cardSub">Persists decision_id,</text>
     <text x="88" y="118" text-anchor="middle" class="cardSub">version, and rewards.</text>
   </g>
 
-  <rect x="40" y="368" width="1160" height="126" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.4"/>
-  <text x="70" y="396" class="sectionText">Caminho offline de aprendizado</text>
+  <line x1="256" y1="238" x2="304" y2="238" stroke="#57606a" stroke-width="2.3" marker-end="url(#arrowGray)"/>
+  <text x="280" y="222" text-anchor="middle" class="labelText">context</text>
+  <line x1="484" y1="238" x2="532" y2="238" stroke="#2563eb" stroke-width="2.8" marker-end="url(#arrowBlue)"/>
+  <text x="508" y="222" text-anchor="middle" class="labelText">validated request</text>
+  <line x1="712" y1="238" x2="760" y2="238" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <text x="736" y="222" text-anchor="middle" class="labelText">decision</text>
+  <line x1="940" y1="238" x2="988" y2="238" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <text x="964" y="222" text-anchor="middle" class="labelText">events</text>
 
-  <g transform="translate(500 426)" filter="url(#softShadow)">
+  <rect x="40" y="368" width="1160" height="126" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.4"/>
+  <text x="70" y="396" class="sectionText">Offline learning path</text>
+  <g transform="translate(260 426)">
     <rect width="240" height="42" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2.2"/>
-    <g class="icon" transform="translate(20 8)">
-      <path d="M 4 16 c10 -17 28 -17 38 0"/>
-      <path d="M 13 16 h-9 v-9"/>
-      <path d="M 42 16 v9 h-9"/>
-    </g>
-    <text x="144" y="26" text-anchor="middle" class="cardTitle">Policy Update</text>
+    <text x="120" y="26" text-anchor="middle" class="cardTitle">Policy Update</text>
   </g>
 
-  <path d="M 1076 306 C 1076 382, 780 382, 716 424" fill="none" stroke="#2563eb" stroke-width="2.3" stroke-dasharray="7 7" marker-end="url(#arrowBlue)" opacity="0.76"/>
-  <path d="M 500 448 C 344 442, 394 346, 394 306" fill="none" stroke="#57606a" stroke-width="2.1" stroke-dasharray="7 7" marker-end="url(#arrowGray)" opacity="0.78"/>
-  <text x="866" y="374" text-anchor="middle" class="labelText">reward attribution</text>
-  <text x="386" y="370" text-anchor="middle" class="labelText">new reviewed version</text>
+  <polyline points="1076,304 1076,408 380,408 380,426" fill="none" stroke="#2563eb" stroke-width="2.3" stroke-dasharray="7 7" marker-end="url(#arrowBlue)"/>
+  <text x="728" y="394" text-anchor="middle" class="labelText">reward attribution</text>
+  <polyline points="380,426 380,346 394,346 394,304" fill="none" stroke="#57606a" stroke-width="2.1" stroke-dasharray="7 7" marker-end="url(#arrowGray)"/>
+  <text x="314" y="358" text-anchor="middle" class="labelText">new version</text>
 
   <g transform="translate(184 530)">
     <rect width="872" height="36" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.2"/>

@@ -8,6 +8,7 @@ ECloe Engine deploys as a low-cost Azure Container Apps runtime backed by promot
 - GitHub Actions OIDC configured for the target subscription.
 - Existing resource group `FIAPTechChallange5`.
 - Existing Cosmos DB account `ecloe5cosmos1266cl`, database `ecloe`, and containers `decisions`, `rewards`, `policy_versions`.
+- Existing Azure SQL server `ecloe-sql-1266`, database `ecloe_validation`, for optional ECloe Pay demo persistence.
 - A validated and promoted artifact run in the `ecloe-artifacts` Blob container.
 
 ## Infrastructure
@@ -40,9 +41,17 @@ AUTH_MODE=entra_id
 DECISION_REPOSITORY_MODE=cosmos
 AZURE_COSMOS_AUTH_MODE=managed_identity
 ARTIFACT_SOURCE=azure_blob
+ECLOE_PAY_DATABASE_MODE=azure_sql
+ECLOE_PAY_SQL_SERVER=ecloe-sql-1266.database.windows.net
+ECLOE_PAY_SQL_DATABASE=ecloe_validation
+ECLOE_PAY_SQL_AUTH_MODE=managed_identity
+ECLOE_PAY_SQL_DRIVER=ODBC Driver 18 for SQL Server
+ECLOE_PAY_COOKIE_SECURE=true
 ```
 
 Do not configure `AUTH_MODE=disabled`, `AZURE_COSMOS_KEY`, or `AZURE_STORAGE_CONNECTION_STRING` in cloud.
+Do not configure `ECLOE_PAY_SQL_AUTH_MODE=entra_interactive` in cloud.
+For ECloe Pay Azure SQL, grant the Container App managed identity only the minimum database rights needed for the `ecloe_pay` demo schema.
 
 ## Smoke Tests
 

@@ -153,3 +153,88 @@ Defaults:
 | Minimum TLS | `TLS1_2` |
 
 The script does not read or write `.env`. It requires an active Azure CLI login and creates the container with `--auth-mode login`.
+
+## ECloe Pay Azure SQL Database
+
+ECloe Pay can persist its simulated banking state in Azure SQL. The default local mode remains `memory`; Azure SQL is opt-in and stores only personas and synthetic wallet/session/payment evidence.
+
+For the browser demo, use Azure SQL mode so `/pay/login` validates the synthetic demo persona against `ecloe_pay.demo_users`. Memory mode remains useful for CI and local automated tests, but the wallet route and Pay APIs still start unauthenticated and require an explicit login session.
+
+Confirmed database:
+
+| Setting | Value |
+|:---|:---|
+| Resource group | `FIAPTechChallange5` |
+| Server | `ecloe-sql-1266.database.windows.net` |
+| Database | `ecloe_validation` |
+| Schema | `ecloe_pay` |
+| Region | `chilecentral` |
+| Authentication | Microsoft Entra ID only |
+
+Local development settings:
+
+```text
+ECLOE_PAY_DATABASE_MODE=azure_sql
+ECLOE_PAY_SQL_SERVER=ecloe-sql-1266.database.windows.net
+ECLOE_PAY_SQL_DATABASE=ecloe_validation
+ECLOE_PAY_SQL_AUTH_MODE=azure_cli
+ECLOE_PAY_SQL_DRIVER=ODBC Driver 18 for SQL Server
+```
+
+`entra_interactive` is allowed only for local development. Cloud runtime must use:
+
+```text
+ECLOE_PAY_DATABASE_MODE=azure_sql
+ECLOE_PAY_SQL_AUTH_MODE=managed_identity
+ECLOE_PAY_COOKIE_SECURE=true
+```
+
+Open local firewall access only for the current client IP:
+
+```powershell
+.\scripts\allow_current_sql_client_ip.ps1
+```
+
+If `publicNetworkAccess` is currently `Disabled`, the script stops unless `-EnablePublicNetworkAccess` is provided, and still asks for explicit confirmation before changing it to `Enabled`:
+
+```powershell
+.\scripts\allow_current_sql_client_ip.ps1 -EnablePublicNetworkAccess
+```
+
+This script validates that the detected public IP is a single IPv4 or IPv6 value, creates or updates only the `AllowCurrentClientIp` rule with the same start and end IP, does not create a `0.0.0.0` rule, and does not enable broad "Allow Azure Services" access.
+
+Remove the local development firewall rule after use:
+
+```powershell
+.\scripts\remove_current_sql_client_ip.ps1
+```
+
+Apply the schema and seed the synthetic demo persona after installing the optional SQL dependencies:
+
+```powershell
+python -m scripts.init_ecloe_pay_sql
+```
+
+The schema must not store CPF, card, bank account, agency, real banking password, or real payment credentials.
+
+Manual Azure SQL smoke test:
+
+1. Run `az login`.
+2. Run `.\scripts\allow_current_sql_client_ip.ps1` to allow only the current public IP.
+3. Confirm `ODBC Driver 18 for SQL Server` is installed.
+4. Configure local `ECLOE_PAY_DATABASE_MODE=azure_sql`, `ECLOE_PAY_SQL_SERVER`, `ECLOE_PAY_SQL_DATABASE`, `ECLOE_PAY_SQL_AUTH_MODE=azure_cli`, `ECLOE_PAY_SQL_DRIVER`, and an explicit `ECLOE_PAY_DEMO_USER_PASSWORD`.
+5. Run `python -m scripts.init_ecloe_pay_sql`.
+6. Start Flask with `.venv\Scripts\python.exe -m flask --app src.demo.ecloe_pay.app run --host 127.0.0.1 --port 5000`.
+7. Open `http://127.0.0.1:5000/pay/login` and authenticate the demo persona.
+8. Open `http://127.0.0.1:5000/pay`, accept the terms, and register a benefit interaction.
+9. Simulate payment with confirmation code `0426`.
+10. Repeat the same payment request and confirm idempotency blocks the duplicate.
+11. Confirm `ecloe_pay.payment_orders`, `ecloe_pay.benefit_interactions`, and `ecloe_pay.outbox_events` in Azure SQL.
+12. Log out and confirm authenticated routes return `401`.
+13. Run `.\scripts\remove_current_sql_client_ip.ps1`.
+
+Azure SQL repository contract tests are opt-in. Common CI runs do not depend on the real Azure SQL database. To run the same Pay API rules against a configured SQL test database, set `ECLOE_PAY_SQL_CONTRACT_TESTS=1` with the local SQL environment variables above, then run:
+
+```powershell
+python -m pytest tests/test_ecloe_pay_contract.py
+```

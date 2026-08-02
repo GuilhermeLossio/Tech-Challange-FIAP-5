@@ -1,161 +1,90 @@
-<svg viewBox="0 0 1240 640" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+<svg viewBox="0 0 1280 720" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
   <title id="title">ECloe low-consumption Azure target architecture</title>
-  <desc id="desc">Low-consumption target Azure architecture for ECloe. A demo client calls a light runtime in Azure App Service or Container Apps. The runtime reads artifacts from Blob Storage, writes decision and reward events to Cosmos DB Serverless or Azure SQL, uses Key Vault for secrets, and emits telemetry to Application Insights.</desc>
+  <desc id="desc">Low-consumption Azure architecture with orthogonal connectors. Demo Web reaches API Gateway/Auth and Demo BFF, Container Apps host the domain APIs, Pay and Market write their Azure SQL stores, Engine writes Cosmos decisions and rewards, Engine reads promoted Blob artifacts through a routed connector, all services use Key Vault, and all major sections emit telemetry to Observability.</desc>
   <defs>
-    <linearGradient id="neutralCard" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#f6f8fa"/>
-    </linearGradient>
-    <linearGradient id="blueCard" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#eff6ff"/>
-      <stop offset="100%" stop-color="#dbeafe"/>
-    </linearGradient>
-    <filter id="softShadow" x="-20%" y="-25%" width="140%" height="160%">
-      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#1f2328" flood-opacity="0.12"/>
-    </filter>
-    <filter id="primaryShadow" x="-24%" y="-30%" width="148%" height="170%">
-      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#2563eb" flood-opacity="0.18"/>
-    </filter>
-    <marker id="arrowGray" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M 1 1 L 11 6 L 1 11 z" fill="#57606a"/>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
     </marker>
-    <marker id="arrowBlue" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
-      <path d="M 1 1 L 11 6 L 1 11 z" fill="#2563eb"/>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
     </marker>
-    <style>
-      .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-weight: 700; }
-      .sectionText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 13px; font-weight: 700; }
-      .bodyText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; }
-      .cardTitle { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-size: 15px; font-weight: 700; }
-      .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; }
-      .pillText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; font-weight: 700; }
-      .labelText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; font-weight: 700; }
-      .icon { fill: none; stroke: #57606a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-      .iconBlue { fill: none; stroke: #2563eb; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-    </style>
   </defs>
+  <rect width="1280" height="720" fill="#ffffff"/>
+  <text x="640" y="42" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#1f2328">ECloe Low-Consumption Azure Architecture</text>
+  <text x="640" y="68" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#57606a">Small runtime, explicit domain stores, managed secrets, telemetry, and orthogonal data flows</text>
 
-  <rect width="1240" height="640" fill="#ffffff"/>
-  <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Arquitetura Azure de Baixo Consumo</text>
-  <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Arquitetura alvo para demo: runtime pequeno, estado gerenciado, segredos fora do codigo e telemetria essencial.</text>
+  <rect x="40" y="105" width="240" height="415" rx="18" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="65" y="132" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Access</text>
+  <rect x="75" y="165" width="170" height="58" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="160" y="199" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Demo Web</text>
+  <rect x="75" y="305" width="170" height="76" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="160" y="333" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">API Gateway/Auth</text>
+  <text x="160" y="353" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">JWT, rate limit,</text>
+  <text x="160" y="371" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">correlation IDs</text>
+  <line x1="160" y1="223" x2="160" y2="305" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <text x="193" y="268" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#2563eb">HTTPS</text>
 
-  <rect x="40" y="112" width="226" height="356" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="70" y="140" class="sectionText">Local / Demo</text>
+  <rect x="340" y="105" width="290" height="415" rx="18" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="365" y="132" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Container Apps or App Service</text>
+  <rect x="390" y="150" width="190" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="485" y="184" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Demo BFF</text>
+  <rect x="390" y="255" width="190" height="58" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>
+  <text x="485" y="279" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Pay Transaction API</text>
+  <text x="485" y="298" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">wallet and payments</text>
+  <rect x="390" y="360" width="190" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="485" y="384" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Market Transaction API</text>
+  <text x="485" y="403" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">catalog and orders</text>
+  <rect x="390" y="465" width="190" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="485" y="489" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Engine Decision API</text>
+  <text x="485" y="508" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">decision serving</text>
 
-  <rect x="326" y="112" width="250" height="356" rx="18" fill="#f8fbff" stroke="#c6d6f4"/>
-  <text x="356" y="140" class="sectionText">Serving Layer</text>
+  <polyline points="160,381 160,548 330,548 330,179 390,179" fill="none" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <text x="250" y="535" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#2563eb">secure route</text>
+  <line x1="485" y1="208" x2="485" y2="255" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="512" y="237" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">wallet</text>
+  <line x1="485" y1="313" x2="485" y2="360" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="512" y="342" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">checkout</text>
+  <line x1="485" y1="418" x2="485" y2="465" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="512" y="447" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">decision</text>
 
-  <rect x="636" y="112" width="304" height="356" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="666" y="140" class="sectionText">Managed State and Controls</text>
+  <rect x="700" y="105" width="500" height="415" rx="18" fill="#ffffff" stroke="#d0d7de"/>
+  <text x="725" y="132" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Managed state, integration, and controls</text>
+  <rect x="745" y="255" width="170" height="58" rx="10" fill="#eff6ff" stroke="#2563eb"/>
+  <text x="830" y="279" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Pay SQL Store</text>
+  <text x="830" y="298" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">state + outbox</text>
+  <rect x="965" y="360" width="170" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="1050" y="384" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Market SQL Store</text>
+  <text x="1050" y="403" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">orders + outbox</text>
+  <rect x="965" y="255" width="170" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="1050" y="279" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Cosmos DB</text>
+  <text x="1050" y="298" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">decisions/rewards</text>
+  <rect x="965" y="150" width="170" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="1050" y="174" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Blob Storage</text>
+  <text x="1050" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">promoted artifacts</text>
+  <rect x="745" y="465" width="170" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="830" y="489" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Service Bus</text>
+  <text x="830" y="508" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">domain events</text>
+  <rect x="965" y="465" width="170" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="1050" y="489" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Key Vault</text>
+  <text x="1050" y="508" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">managed secrets</text>
 
-  <rect x="1000" y="112" width="200" height="356" rx="18" fill="#f8fbff" stroke="#c6d6f4"/>
-  <text x="1030" y="140" class="sectionText">Observability</text>
+  <line x1="580" y1="284" x2="745" y2="284" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <text x="662" y="270" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#2563eb">Pay writes SQL</text>
+  <polyline points="580,389 675,389 675,389 965,389" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="775" y="375" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">Market writes SQL</text>
+  <line x1="580" y1="494" x2="745" y2="494" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="662" y="480" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">events to bus</text>
+  <polyline points="580,482 650,482 650,560 1165,560 1165,284 1135,284" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="858" y="546" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">Engine writes events</text>
+  <polyline points="580,506 620,506 620,540 1190,540 1190,179 1135,179" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="905" y="526" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">Engine reads artifact</text>
+  <line x1="1050" y1="465" x2="1050" y2="418" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="1080" y="446" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">secrets</text>
 
-  <path d="M 266 288 C 286 268, 306 268, 326 288" fill="none" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
-  <text x="296" y="260" text-anchor="middle" class="labelText">HTTPS request</text>
-
-  <path d="M 576 234 C 600 204, 612 194, 636 190" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrowGray)"/>
-  <path d="M 576 292 C 598 292, 614 292, 636 292" fill="none" stroke="#2563eb" stroke-width="2.8" marker-end="url(#arrowBlue)"/>
-  <path d="M 576 350 C 600 382, 612 392, 636 396" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrowGray)"/>
-  <path d="M 940 292 C 962 292, 978 292, 1000 292" fill="none" stroke="#2563eb" stroke-width="2.8" marker-end="url(#arrowBlue)"/>
-
-  <text x="606" y="182" text-anchor="middle" class="labelText">artifacts</text>
-  <text x="606" y="280" text-anchor="middle" class="labelText">events</text>
-  <text x="606" y="418" text-anchor="middle" class="labelText">secrets</text>
-  <text x="970" y="280" text-anchor="middle" class="labelText">telemetry</text>
-
-  <g transform="translate(72 186)" filter="url(#softShadow)">
-    <rect width="162" height="202" rx="12" fill="url(#blueCard)" stroke="#8fb5f1"/>
-    <g class="iconBlue" transform="translate(52 24)">
-      <rect x="4" y="11" width="46" height="34" rx="5"/>
-      <path d="M 15 53 h24"/>
-      <path d="M 27 45 v8"/>
-      <path d="M 13 24 h28"/>
-      <path d="M 18 34 h18"/>
-    </g>
-    <text x="81" y="96" text-anchor="middle" class="cardTitle">Demo Client</text>
-    <text x="81" y="122" text-anchor="middle" class="cardSub">script, notebook,</text>
-    <text x="81" y="140" text-anchor="middle" class="cardSub">or lightweight API</text>
-    <text x="81" y="158" text-anchor="middle" class="cardSub">used in Demo Day</text>
-    <rect x="35" y="172" width="92" height="22" rx="11" fill="#ffffff" stroke="#d0d7de"/>
-    <text x="81" y="187" text-anchor="middle" class="pillText">entry point</text>
-  </g>
-
-  <g transform="translate(358 176)" filter="url(#primaryShadow)">
-    <rect width="186" height="222" rx="12" fill="url(#blueCard)" stroke="#2563eb" stroke-width="2.4"/>
-    <g class="iconBlue" transform="translate(62 24)">
-      <path d="M 10 42 c-7 0 -12 -5 -12 -11 c0 -5 4 -10 10 -11 c3 -9 11 -15 21 -15 c11 0 20 8 22 19 c6 1 10 6 10 12 c0 8 -6 14 -15 14 H10"/>
-      <path d="M 29 50 v22"/>
-      <path d="M 18 63 h22"/>
-      <path d="M 42 17 c5 4 7 10 7 17"/>
-    </g>
-    <text x="93" y="104" text-anchor="middle" class="cardTitle">Light Runtime</text>
-    <text x="93" y="130" text-anchor="middle" class="cardSub">Azure App Service</text>
-    <text x="93" y="148" text-anchor="middle" class="cardSub">or Container Apps</text>
-    <text x="93" y="166" text-anchor="middle" class="cardSub">serves the active</text>
-    <text x="93" y="184" text-anchor="middle" class="cardSub">policy contract.</text>
-    <rect x="42" y="196" width="102" height="22" rx="11" fill="#ffffff" stroke="#d0d7de"/>
-    <text x="93" y="211" text-anchor="middle" class="pillText">low footprint</text>
-  </g>
-
-  <g transform="translate(676 174)" filter="url(#softShadow)">
-    <rect width="224" height="72" rx="11" fill="url(#neutralCard)" stroke="#d0d7de"/>
-    <g class="icon" transform="translate(20 12)">
-      <path d="M 7 14 h33 l6 9 v28 H7 z"/>
-      <path d="M 40 14 v9 h6"/>
-      <path d="M 14 33 h25"/>
-      <path d="M 14 43 h17"/>
-    </g>
-    <text x="134" y="28" text-anchor="middle" class="cardTitle">Blob Storage</text>
-    <text x="134" y="51" text-anchor="middle" class="cardSub">datasets, metrics, artifacts</text>
-  </g>
-
-  <g transform="translate(676 268)" filter="url(#softShadow)">
-    <rect width="224" height="72" rx="11" fill="url(#neutralCard)" stroke="#d0d7de"/>
-    <g class="iconBlue" transform="translate(20 12)">
-      <ellipse cx="25" cy="9" rx="24" ry="8"/>
-      <path d="M 1 9 v31 c0 4.4 10.7 8 24 8 s24 -3.6 24 -8 V9"/>
-      <path d="M 1 25 c0 4.4 10.7 8 24 8 s24 -3.6 24 -8"/>
-    </g>
-    <text x="134" y="28" text-anchor="middle" class="cardTitle">Event Store</text>
-    <text x="134" y="51" text-anchor="middle" class="cardSub">Cosmos DB or Azure SQL</text>
-  </g>
-
-  <g transform="translate(676 362)" filter="url(#softShadow)">
-    <rect width="224" height="72" rx="11" fill="url(#neutralCard)" stroke="#d0d7de"/>
-    <g class="icon" transform="translate(21 11)">
-      <circle cx="17" cy="20" r="12"/>
-      <path d="M 29 20 h25"/>
-      <path d="M 43 20 v9"/>
-      <path d="M 52 20 v7"/>
-      <path d="M 13 20 h8"/>
-    </g>
-    <text x="134" y="28" text-anchor="middle" class="cardTitle">Key Vault</text>
-    <text x="134" y="51" text-anchor="middle" class="cardSub">credentials and runtime secrets</text>
-  </g>
-
-  <g transform="translate(1028 202)" filter="url(#primaryShadow)">
-    <rect width="144" height="180" rx="12" fill="url(#blueCard)" stroke="#2563eb" stroke-width="2.2"/>
-    <g class="iconBlue" transform="translate(44 24)">
-      <path d="M 7 49 h47"/>
-      <rect x="12" y="29" width="7" height="20" rx="2"/>
-      <rect x="25" y="18" width="7" height="31" rx="2"/>
-      <rect x="38" y="8" width="7" height="41" rx="2"/>
-      <path d="M 7 15 c12 0 16 8 25 8 c7 0 11 -5 22 -5"/>
-    </g>
-    <text x="72" y="92" text-anchor="middle" class="cardTitle">Application</text>
-    <text x="72" y="110" text-anchor="middle" class="cardTitle">Insights</text>
-    <text x="72" y="137" text-anchor="middle" class="cardSub">latency, errors,</text>
-    <text x="72" y="155" text-anchor="middle" class="cardSub">decision counts,</text>
-    <text x="72" y="173" text-anchor="middle" class="cardSub">reward counts</text>
-  </g>
-
-  <g transform="translate(120 520)">
-    <rect width="1000" height="50" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
-    <circle cx="28" cy="25" r="6" fill="#2563eb"/>
-    <text x="46" y="22" class="bodyText">MVP path favors managed, serverless, and small-footprint services.</text>
-    <circle cx="502" cy="25" r="6" fill="#57606a"/>
-    <text x="520" y="22" class="bodyText">Azure ML, AKS, API Management, and AI Search remain future options.</text>
-    <text x="46" y="39" class="bodyText">Primary blue arrows represent runtime-critical request, event, and telemetry flows.</text>
-  </g>
+  <rect x="125" y="585" width="1100" height="50" rx="12" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="640" y="607" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Observability</text>
+  <text x="640" y="626" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">All runtime services emit structured logs, metrics, traces, and dead-letter alerts to Application Insights with correlation IDs.</text>
+  <line x1="160" y1="520" x2="160" y2="585" stroke="#57606a" stroke-width="1.8" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+  <line x1="485" y1="523" x2="485" y2="585" stroke="#57606a" stroke-width="1.8" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
+  <line x1="1198" y1="520" x2="1198" y2="585" stroke="#57606a" stroke-width="1.8" stroke-dasharray="6 6" marker-end="url(#arrow)"/>
 </svg>

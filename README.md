@@ -21,7 +21,7 @@ ECloe is a Machine Learning Engineering MVP that compares deterministic and adap
 - [Validation Evidence](#validation-evidence)
 - [Golden Set](#golden-set)
 - [Deployment Strategy](#deployment-strategy)
-- [Team Identification](#team-identification)
+- [Author and Project Identification](#author-and-project-identification)
 - [Related Docs](#related-docs)
 - [Limitations](#limitations)
 
@@ -104,7 +104,7 @@ Eligibility, risk, compliance, and business rules remain upstream. ECloe Engine 
 
 Status: **Planned for demo**.
 
-ECloe Market is documented as the simulated marketplace surface for catalog browsing, cart management, checkout, order creation, and behavior-signal aggregation. It uses Azure SQL as the planned transactional source of truth, outbox events for reliable async publication, and ECloe Engine only after eligible offers have already been determined upstream.
+ECloe Market is documented as the simulated marketplace surface for catalog browsing, cart management, checkout, order creation, and behavior-signal aggregation. It uses Azure SQL as the planned transactional source of truth, writes outbox rows in the same transaction as Market state, and relies on an Outbox Publisher to publish committed events asynchronously. ECloe Engine is called only after eligible offers have already been determined upstream.
 
 Detailed ECloe Market scope, data model, checkout transaction, event flow, Azure direction, implementation sequence, and SVG diagrams are documented separately in [`docs/ecloe-market.md`](./docs/ecloe-market.md).
 
@@ -114,9 +114,9 @@ Detailed ECloe Market scope, data model, checkout transaction, event flow, Azure
 
 Status: **Planned for demo**.
 
-ECloe Pay is documented as the simulated wallet surface for the demo. It displays wallet benefits, reuses the checkout decision returned by ECloe Engine, lets the user open, dismiss, or accept the selected eligible offer, and registers the interaction through the implemented reward endpoint. The Pay surface does not approve credit, calculate eligibility, process real payments, or trigger immediate model learning.
+ECloe Pay is documented as the simulated wallet surface for the demo. It displays wallet benefits, reuses the checkout decision returned by ECloe Engine, lets the user open, dismiss, or accept the selected eligible offer, and registers the interaction through the implemented reward endpoint. The next Azure SQL implementation step prepares login validation, wallet ledger control, payment-order state, audit evidence, and tokenized account references inside `ecloe_validation`; the Pay surface still does not approve credit, calculate eligibility, process real payments, store raw banking credentials, or trigger immediate model learning.
 
-Detailed ECloe Pay scope, screens, data boundaries, reward flow, Azure direction, and SVG diagrams are documented separately in [`docs/ecloe-pay.md`](./docs/ecloe-pay.md).
+Detailed ECloe Pay scope, screens, data boundaries, reward flow, Azure direction, real-ready SQL plan, and SVG diagrams are documented separately in [`docs/ecloe-pay.md`](./docs/ecloe-pay.md).
 
 ---
 
@@ -518,9 +518,13 @@ Cloud deployment assets are present in `Dockerfile`, `.github/workflows/deploy.y
 
 ---
 
-## Team Identification
+## Author and Project Identification
 
-FIAP submissions often require team members and RM identifiers in the central README. The repository currently identifies the project license holder as **Guilherme Ferreira Medeiros Lossio**, but no RM or full group roster was found in the tracked documentation. Add the final FIAP group/RM information here before the Demo Day submission if the challenge rubric requires it.
+| Field | Value |
+|:---|:---|
+| Author | Guilherme Lossio |
+| Role | Senior ML Engineer |
+| Academic context | Project for the fifth step of the FIAP MBA in Machine Learning |
 
 ---
 
