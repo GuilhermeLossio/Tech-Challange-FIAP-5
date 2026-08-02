@@ -17,6 +17,65 @@
       .pillText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; font-weight: 700; }
       .labelText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; font-weight: 700; }
     </style>
+
+    <g id="icon-web" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="7" y="9" width="26" height="19" rx="3"/>
+      <path d="M7 15h26M15 33h10M20 28v5"/>
+    </g>
+    <g id="icon-shield" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M20 5l12 5v9c0 8-5 13-12 16C13 32 8 27 8 19v-9l12-5z"/>
+      <path d="M15 20l4 4 7-8"/>
+    </g>
+    <g id="icon-api" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13 12l-7 8 7 8M27 12l7 8-7 8M23 9l-6 22"/>
+    </g>
+    <g id="icon-wallet" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 13h24a4 4 0 0 1 4 4v13H9a4 4 0 0 1-4-4V12a4 4 0 0 1 4-4h20v5"/>
+      <path d="M27 22h8M29 22h1"/>
+    </g>
+    <g id="icon-cart" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8h4l4 17h16l4-12H13"/>
+      <circle cx="17" cy="32" r="2.4"/>
+      <circle cx="29" cy="32" r="2.4"/>
+    </g>
+    <g id="icon-decision" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 13h8M8 27h8M24 20h8"/>
+      <circle cx="20" cy="13" r="4"/>
+      <circle cx="20" cy="27" r="4"/>
+      <circle cx="20" cy="20" r="4"/>
+    </g>
+    <g id="icon-database" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="20" cy="10" rx="12" ry="5"/>
+      <path d="M8 10v18c0 3 5 5 12 5s12-2 12-5V10"/>
+      <path d="M8 19c0 3 5 5 12 5s12-2 12-5"/>
+    </g>
+    <g id="icon-bus" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="7" y="10" width="26" height="20" rx="4"/>
+      <path d="M11 16h18M11 22h12"/>
+      <path d="M14 34v-4M26 34v-4"/>
+    </g>
+    <g id="icon-worker" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="20" cy="20" r="5"/>
+      <path d="M20 6v5M20 29v5M6 20h5M29 20h5M10 10l4 4M26 26l4 4M30 10l-4 4M14 26l-4 4"/>
+    </g>
+    <g id="icon-artifact" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 12h10l3 4h13v15H7z"/>
+      <path d="M15 25h10M20 20v10"/>
+    </g>
+    <g id="icon-chart" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 31h24"/>
+      <rect x="10" y="20" width="5" height="11" rx="1"/>
+      <rect x="18" y="14" width="5" height="17" rx="1"/>
+      <rect x="26" y="9" width="5" height="22" rx="1"/>
+    </g>
+    <g id="icon-doc" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 6h12l6 6v22H12z"/>
+      <path d="M24 6v8h6M16 20h12M16 26h12"/>
+    </g>
+    <g id="icon-eye" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M5 20s6-9 15-9 15 9 15 9-6 9-15 9-15-9-15-9z"/>
+      <circle cx="20" cy="20" r="4"/>
+    </g>
   </defs>
   <rect width="1240" height="700" fill="#ffffff"/>
   <text x="620" y="46" text-anchor="middle" class="titleText" font-size="24">ECloe - API Security and Observability Flow</text>
@@ -24,8 +83,9 @@
 
   <rect x="40" y="112" width="238" height="330" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2"/>
   <text x="70" y="140" class="sectionText">Client and Token</text>
-  <rect x="72" y="178" width="174" height="198" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
-  <text x="159" y="224" text-anchor="middle" class="cardTitle">API Client</text>
+  <rect x="72" y="178" width="174" height="198" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2" data-card="true"/>
+  <use href="#icon-web" transform="translate(80 188) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <text x="120" y="224" text-anchor="start" class="cardTitle">API Client</text>
   <text x="159" y="254" text-anchor="middle" class="cardSub">Bearer token,</text>
   <text x="159" y="272" text-anchor="middle" class="cardSub">request_id, trace_id,</text>
   <text x="159" y="290" text-anchor="middle" class="cardSub">and minimized context</text>
@@ -34,34 +94,40 @@
 
   <rect x="326" y="112" width="266" height="330" rx="18" fill="#f8fbff" stroke="#c6d6f4" stroke-width="2"/>
   <text x="356" y="140" class="sectionText">API Gateway / Auth Boundary</text>
-  <rect x="358" y="168" width="202" height="106" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
-  <text x="459" y="207" text-anchor="middle" class="cardTitle">Host and CORS</text>
+  <rect x="358" y="168" width="202" height="106" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-bus" transform="translate(366 178) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="406" y="207" text-anchor="start" class="cardTitle">Host and CORS</text>
   <text x="459" y="235" text-anchor="middle" class="cardSub">Trusted host and</text>
   <text x="459" y="253" text-anchor="middle" class="cardSub">explicit origins</text>
-  <rect x="358" y="304" width="202" height="106" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
-  <text x="459" y="343" text-anchor="middle" class="cardTitle">Abuse Controls</text>
+  <rect x="358" y="304" width="202" height="106" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2" data-card="true"/>
+  <use href="#icon-wallet" transform="translate(366 314) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <text x="406" y="343" text-anchor="start" class="cardTitle">Guard</text>
   <text x="459" y="371" text-anchor="middle" class="cardSub">Payload size, rate,</text>
   <text x="459" y="389" text-anchor="middle" class="cardSub">and concurrency limits</text>
 
   <rect x="640" y="112" width="250" height="330" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2"/>
   <text x="670" y="140" class="sectionText">Business Execution</text>
-  <rect x="672" y="168" width="186" height="106" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
-  <text x="765" y="207" text-anchor="middle" class="cardTitle">Entra ID Auth</text>
+  <rect x="672" y="168" width="186" height="106" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-web" transform="translate(680 178) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="720" y="207" text-anchor="start" class="cardTitle">Entra Auth</text>
   <text x="765" y="235" text-anchor="middle" class="cardSub">Validates JWT claims</text>
   <text x="765" y="253" text-anchor="middle" class="cardSub">and required scopes</text>
-  <rect x="672" y="304" width="186" height="106" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
-  <text x="765" y="343" text-anchor="middle" class="cardTitle">Engine Routers</text>
+  <rect x="672" y="304" width="186" height="106" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2" data-card="true"/>
+  <use href="#icon-api" transform="translate(680 314) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <text x="720" y="343" text-anchor="start" class="cardTitle">Routers</text>
   <text x="765" y="371" text-anchor="middle" class="cardSub">Decision, likelihood,</text>
   <text x="765" y="389" text-anchor="middle" class="cardSub">policy, and reward</text>
 
   <rect x="938" y="112" width="262" height="330" rx="18" fill="#f8fbff" stroke="#c6d6f4" stroke-width="2"/>
   <text x="968" y="140" class="sectionText">Telemetry Sink</text>
-  <rect x="970" y="168" width="198" height="106" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2"/>
-  <text x="1069" y="207" text-anchor="middle" class="cardTitle">Structured Logs</text>
+  <rect x="970" y="168" width="198" height="106" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2" data-card="true"/>
+  <use href="#icon-api" transform="translate(978 178) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <text x="1018" y="207" text-anchor="start" class="cardTitle">Logs</text>
   <text x="1069" y="235" text-anchor="middle" class="cardSub">Route, status, latency,</text>
   <text x="1069" y="253" text-anchor="middle" class="cardSub">decision and trace IDs</text>
-  <rect x="970" y="304" width="198" height="106" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
-  <text x="1069" y="343" text-anchor="middle" class="cardTitle">OpenTelemetry</text>
+  <rect x="970" y="304" width="198" height="106" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-worker" transform="translate(978 314) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="1018" y="343" text-anchor="start" class="cardTitle">Telemetry</text>
   <text x="1069" y="371" text-anchor="middle" class="cardSub">Exports redacted spans</text>
   <text x="1069" y="389" text-anchor="middle" class="cardSub">to Application Insights</text>
 
