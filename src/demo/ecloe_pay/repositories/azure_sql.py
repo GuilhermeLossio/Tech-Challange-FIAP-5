@@ -13,6 +13,8 @@ from werkzeug.security import check_password_hash
 from src.core.config import Settings
 from src.demo.ecloe_pay.repositories.base import (
     DEMO_CONFIRMATION_CODE,
+    DEMO_USER_DISPLAY_NAME,
+    DEMO_USER_PERSONA_LABEL,
     DUMMY_PASSWORD_HASH,
     AuthSession,
     DemoSession,
@@ -96,8 +98,8 @@ class AzureSqlPayRepository(PayRepository):
         user = DemoUser(
             user_id=user_id_for_email(email_normalized),
             email=email_normalized,
-            display_name="ECloe Pay Demo Persona",
-            persona_label="Synthetic wallet validation persona",
+            display_name=DEMO_USER_DISPLAY_NAME,
+            persona_label=DEMO_USER_PERSONA_LABEL,
         )
         with self.engine.connect() as connection:
             transaction = connection.begin()

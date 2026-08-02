@@ -7,7 +7,11 @@ import pytest
 
 from src.core.config import load_settings
 from src.demo.ecloe_pay.app import AUTH_COOKIE_NAME, CSRF_COOKIE_NAME, create_app
-from src.demo.ecloe_pay.repositories import PayRepository
+from src.demo.ecloe_pay.repositories import (
+    LEGACY_PAY_DEMO_USER_EMAIL,
+    SHARED_DEMO_USER_EMAIL,
+    PayRepository,
+)
 from src.demo.ecloe_pay.repositories.memory import MemoryPayRepository
 
 
@@ -23,7 +27,7 @@ def authenticated_client(repository: PayRepository, password: str = "change-this
     client.get("/pay/login")
     response = client.post(
         "/api/auth/login",
-        json={"email": "demo.pay@ecloe.local", "password": password},
+        json={"email": SHARED_DEMO_USER_EMAIL, "password": password},
         headers=csrf_headers(client),
     )
     assert response.status_code == 200
@@ -60,12 +64,12 @@ def test_pay_contract_login_session_logout_and_revoked_token(repository_contract
 
     invalid = client.post(
         "/api/auth/login",
-        json={"email": "demo.pay@ecloe.local", "password": "wrong"},
+        json={"email": SHARED_DEMO_USER_EMAIL, "password": "wrong"},
         headers=csrf_headers(client),
     )
     valid = client.post(
         "/api/auth/login",
-        json={"email": "demo.pay@ecloe.local", "password": password},
+        json={"email": SHARED_DEMO_USER_EMAIL, "password": password},
         headers=csrf_headers(client),
     )
 
@@ -74,7 +78,7 @@ def test_pay_contract_login_session_logout_and_revoked_token(repository_contract
     auth_cookie = client.get_cookie(AUTH_COOKIE_NAME)
     assert auth_cookie is not None
     assert auth_cookie.http_only is True
-    assert "demo.pay" not in auth_cookie.value
+    assert "demo.market" not in auth_cookie.value
     assert password not in auth_cookie.value
     assert client.get("/api/auth/me").status_code == 200
 
@@ -83,6 +87,22 @@ def test_pay_contract_login_session_logout_and_revoked_token(repository_contract
     assert logout.status_code == 200
     assert client.get_cookie(AUTH_COOKIE_NAME) is None
     assert client.get("/api/auth/me").status_code == 401
+
+
+def test_pay_contract_accepts_legacy_pay_demo_identity(repository_contract) -> None:
+    repository, password = repository_contract
+    app = create_app(repository=repository)
+    client = app.test_client()
+    client.get("/pay/login")
+
+    response = client.post(
+        "/api/auth/login",
+        json={"email": LEGACY_PAY_DEMO_USER_EMAIL, "password": password},
+        headers=csrf_headers(client),
+    )
+
+    assert response.status_code == 200
+    assert response.get_json()["user"]["email"] == LEGACY_PAY_DEMO_USER_EMAIL
 
 
 def test_pay_contract_terms_interaction_payment_idempotency_and_reset(repository_contract) -> None:

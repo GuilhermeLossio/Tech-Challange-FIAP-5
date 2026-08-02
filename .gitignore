@@ -187,8 +187,10 @@ cython_debug/
 data/raw/*
 data/processed/*
 data/golden_set/*
+data/demo/*.local.xlsx
 reports/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/golden_set/.gitkeep
+!data/demo/.gitkeep
 !reports/.gitkeep

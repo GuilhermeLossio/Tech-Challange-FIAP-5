@@ -5,7 +5,12 @@ import pytest
 from src.core.config import load_settings
 from src.demo.ecloe_pay.app import AUTH_COOKIE_NAME, CSRF_COOKIE_NAME, create_app
 from src.demo.ecloe_pay.i18n import LOCALE_COOKIE_NAME
-from src.demo.ecloe_pay.repositories import DEMO_BUCKET_NAME, MemoryPayRepository
+from src.demo.ecloe_pay.repositories import (
+    DEMO_BUCKET_NAME,
+    LEGACY_PAY_DEMO_USER_EMAIL,
+    SHARED_DEMO_USER_EMAIL,
+    MemoryPayRepository,
+)
 
 
 def csrf_headers(client) -> dict[str, str]:
@@ -20,7 +25,7 @@ def authenticated_client(app=None):
     client.get("/pay/login")
     response = client.post(
         "/api/auth/login",
-        json={"email": "demo.pay@ecloe.local", "password": "change-this-demo-password"},
+        json={"email": SHARED_DEMO_USER_EMAIL, "password": "change-this-demo-password"},
         headers=csrf_headers(client),
     )
     assert response.status_code == 200
@@ -180,7 +185,7 @@ def test_pay_flask_login_logout_flow() -> None:
 
     invalid = client.post(
         "/api/auth/login",
-        json={"email": "demo.pay@ecloe.local", "password": "wrong"},
+        json={"email": SHARED_DEMO_USER_EMAIL, "password": "wrong"},
         headers=csrf_headers(client),
     )
     missing = client.post(
@@ -190,7 +195,7 @@ def test_pay_flask_login_logout_flow() -> None:
     )
     valid = client.post(
         "/api/auth/login",
-        json={"email": " DEMO.PAY@ECLOE.LOCAL ", "password": "change-this-demo-password"},
+        json={"email": " DEMO.MARKET@ECLOE.LOCAL ", "password": "change-this-demo-password"},
         headers=csrf_headers(client),
     )
 
@@ -203,14 +208,14 @@ def test_pay_flask_login_logout_flow() -> None:
     assert auth_cookie.http_only is True
     assert auth_cookie.same_site == "Lax"
     assert auth_cookie.secure is False
-    assert "demo.pay" not in auth_cookie.value
+    assert "demo.market" not in auth_cookie.value
     assert "change-this-demo-password" not in auth_cookie.value
     csrf_cookie = client.get_cookie(CSRF_COOKIE_NAME)
     assert csrf_cookie is not None
     assert csrf_cookie.http_only is False
     me = client.get("/api/auth/me")
     logout = client.post("/api/auth/logout", json={}, headers=csrf_headers(client))
-    assert valid.get_json()["user"]["email"] == "demo.pay@ecloe.local"
+    assert valid.get_json()["user"]["email"] == SHARED_DEMO_USER_EMAIL
     assert me.status_code == 200
     assert logout.status_code == 200
     assert client.get_cookie(AUTH_COOKIE_NAME) is None
@@ -226,7 +231,7 @@ def test_pay_flask_login_uses_configured_demo_credentials(monkeypatch) -> None:
 
     default_login = client.post(
         "/api/auth/login",
-        json={"email": "demo.pay@ecloe.local", "password": "change-this-demo-password"},
+        json={"email": SHARED_DEMO_USER_EMAIL, "password": "change-this-demo-password"},
         headers=csrf_headers(client),
     )
     configured_login = client.post(
@@ -250,7 +255,8 @@ def test_pay_login_page_has_demo_identity_copy_without_credentials() -> None:
     body = response.get_data(as_text=True)
     assert "Identidade demonstrativa - nenhuma conta bancaria real" in body
     assert "Azure SQL" in body
-    assert "demo.pay@ecloe.local" not in body
+    assert SHARED_DEMO_USER_EMAIL not in body
+    assert LEGACY_PAY_DEMO_USER_EMAIL not in body
     assert "change-this-demo-password" not in body
 
 
@@ -273,7 +279,7 @@ def test_pay_flask_mutating_routes_require_csrf_token() -> None:
 
     response = client.post(
         "/api/auth/login",
-        json={"email": "demo.pay@ecloe.local", "password": "wrong"},
+        json={"email": SHARED_DEMO_USER_EMAIL, "password": "wrong"},
     )
 
     assert response.status_code == 403
@@ -287,7 +293,7 @@ def test_pay_flask_limits_login_attempts_by_ip_and_email() -> None:
     responses = [
         client.post(
             "/api/auth/login",
-            json={"email": "demo.pay@ecloe.local", "password": "wrong"},
+            json={"email": SHARED_DEMO_USER_EMAIL, "password": "wrong"},
             headers=csrf_headers(client),
         )
         for _ in range(6)
@@ -310,7 +316,7 @@ def test_pay_flask_pay_route_redirects_to_login_by_default() -> None:
 def test_pay_flask_rejects_expired_session() -> None:
     app = create_app()
     repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
-    user = repository.authenticate("demo.pay@ecloe.local", "change-this-demo-password")
+    user = repository.authenticate(SHARED_DEMO_USER_EMAIL, "change-this-demo-password")
     assert user is not None
     auth_session = repository.create_auth_session(user.user_id)
     auth_session.expires_at = datetime.now(UTC) - timedelta(seconds=1)
@@ -325,7 +331,7 @@ def test_pay_flask_rejects_expired_session() -> None:
 def test_pay_flask_rejects_revoked_session_token() -> None:
     app = create_app()
     repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
-    user = repository.authenticate("demo.pay@ecloe.local", "change-this-demo-password")
+    user = repository.authenticate(SHARED_DEMO_USER_EMAIL, "change-this-demo-password")
     assert user is not None
     auth_session = repository.create_auth_session(user.user_id)
     repository.revoke_auth_session(auth_session.auth_session_id)
@@ -350,7 +356,7 @@ def test_pay_flask_reset_requires_authentication() -> None:
 def test_memory_pay_repository_rolls_back_payment_state_when_outbox_fails() -> None:
     app = create_app()
     repository: MemoryPayRepository = app.pay_repository  # type: ignore[attr-defined]
-    user = repository.get_user_by_email("demo.pay@ecloe.local")
+    user = repository.get_user_by_email(SHARED_DEMO_USER_EMAIL)
     assert user is not None
     session = repository.get_or_create_demo_session(user.user_id)
     repository.accept_terms(session.session_id)

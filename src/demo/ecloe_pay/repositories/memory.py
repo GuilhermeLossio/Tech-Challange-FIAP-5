@@ -11,12 +11,15 @@ from werkzeug.security import check_password_hash, generate_password_hash
 from src.core.config import Settings
 from src.demo.ecloe_pay.repositories.base import (
     DEMO_CONFIRMATION_CODE,
+    DEMO_USER_DISPLAY_NAME,
+    DEMO_USER_PERSONA_LABEL,
     AuthSession,
     DemoSession,
     DemoUser,
     PaymentOrder,
     PayRepository,
     WalletSnapshot,
+    demo_identity_emails,
     initial_session,
     normalize_email,
     reward_payload,
@@ -38,10 +41,9 @@ class MemoryPayRepository(PayRepository):
         self._seed_user()
 
     def _seed_user(self) -> None:
-        self.create_or_update_demo_user(
-            self.settings.ecloe_pay_demo_user_email,
-            generate_password_hash(self.settings.ecloe_pay_demo_user_password),
-        )
+        password_hash = generate_password_hash(self.settings.ecloe_pay_demo_user_password)
+        for email in demo_identity_emails(self.settings.ecloe_pay_demo_user_email):
+            self.create_or_update_demo_user(email, password_hash)
 
     def get_user_by_email(self, email: str) -> DemoUser | None:
         email_normalized = normalize_email(email)
@@ -55,8 +57,8 @@ class MemoryPayRepository(PayRepository):
         user = DemoUser(
             user_id=user_id_for_email(email_normalized),
             email=email_normalized,
-            display_name="ECloe Pay Demo Persona",
-            persona_label="Synthetic wallet validation persona",
+            display_name=DEMO_USER_DISPLAY_NAME,
+            persona_label=DEMO_USER_PERSONA_LABEL,
         )
         self.users[user.user_id] = (user, password_hash)
         return user

@@ -11,7 +11,14 @@ from typing import Any
 from werkzeug.security import generate_password_hash
 
 from src.core.config import load_settings
-from src.demo.ecloe_pay.repositories.base import initial_session, normalize_email, user_id_for_email
+from src.demo.ecloe_pay.repositories.base import (
+    DEMO_USER_DISPLAY_NAME,
+    DEMO_USER_PERSONA_LABEL,
+    demo_identity_emails,
+    initial_session,
+    normalize_email,
+    user_id_for_email,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_FILE = ROOT / "src" / "demo" / "ecloe_pay" / "schema.sql"
@@ -19,6 +26,7 @@ MIGRATION_ID = "20260728_ecloe_pay_azure_sql_schema"
 PLACEHOLDER_PASSWORD = "change-this-demo-password"
 SQL_TOKEN_SCOPE = "https://database.windows.net/.default"
 REQUIRED_ODBC_DRIVER_FAMILY = "ODBC Driver 18"
+SEED_XLSX_ENV = "ECLOE_PAY_LOGIN_SEED_XLSX"
 
 
 @dataclass(frozen=True)
@@ -150,16 +158,16 @@ def _create_or_update_persona(connection: Any, email: str, password_hash: str) -
                     is_active, is_demo, pii_allowed
                 )
                 VALUES (
-                    :user_id, :email_normalized, N'ECloe Pay Demo Persona',
-                    N'Synthetic wallet validation persona', :password_hash, 1, 1, 0
+                    :user_id, :email_normalized, :display_name, :persona_label,
+                    :password_hash, 1, 1, 0
                 )
             END
             ELSE
             BEGIN
                 UPDATE ecloe_pay.demo_users
                 SET password_hash = :password_hash,
-                    display_name = N'ECloe Pay Demo Persona',
-                    persona_label = N'Synthetic wallet validation persona',
+                    display_name = :display_name,
+                    persona_label = :persona_label,
                     is_active = 1,
                     is_demo = 1,
                     pii_allowed = 0,
@@ -168,7 +176,13 @@ def _create_or_update_persona(connection: Any, email: str, password_hash: str) -
             END
             """
         ),
-        {"user_id": user_id, "email_normalized": email_normalized, "password_hash": password_hash},
+        {
+            "user_id": user_id,
+            "email_normalized": email_normalized,
+            "display_name": DEMO_USER_DISPLAY_NAME,
+            "persona_label": DEMO_USER_PERSONA_LABEL,
+            "password_hash": password_hash,
+        },
     )
     return user_id, "updated" if existed else "created"
 
@@ -275,7 +289,8 @@ def _validate_seed(connection: Any, email: str) -> bool:
 
 def initialize() -> InitSummary:
     settings = load_settings()
-    password = _require_explicit_demo_password(settings.ecloe_pay_demo_user_password)
+    seed_xlsx = os.getenv(SEED_XLSX_ENV, "").strip()
+    password = "" if seed_xlsx else _require_explicit_demo_password(settings.ecloe_pay_demo_user_password)
     _validate_odbc_driver(settings.ecloe_pay_sql_driver)
     access_token = _entra_access_token(settings.ecloe_pay_sql_auth_mode)
     engine = _engine_with_entra_token(settings, access_token)
@@ -288,14 +303,32 @@ def initialize() -> InitSummary:
         transaction = connection.begin()
         try:
             migrations_applied = _apply_schema(connection)
-            password_hash = generate_password_hash(password)
-            user_id, persona_status = _create_or_update_persona(
-                connection,
-                settings.ecloe_pay_demo_user_email,
-                password_hash,
-            )
+            if seed_xlsx:
+                from scripts.seed_ecloe_pay_login_xlsx import (
+                    load_seed_rows,
+                    upsert_seed_row,
+                )
+
+                rows = load_seed_rows(Path(seed_xlsx))
+                for row in rows:
+                    upsert_seed_row(connection, row, generate_password_hash(row.password))
+                user_id = rows[0].user_id
+                validation_email = rows[0].email_normalized
+                persona_status = f"xlsx:{len(rows)}"
+            else:
+                password_hash = generate_password_hash(password)
+                persona_statuses = []
+                primary_user_id = ""
+                for email in demo_identity_emails(settings.ecloe_pay_demo_user_email):
+                    user_id, status = _create_or_update_persona(connection, email, password_hash)
+                    persona_statuses.append(status)
+                    if not primary_user_id:
+                        primary_user_id = user_id
+                persona_status = "created" if "created" in persona_statuses else "updated"
+                user_id = primary_user_id
+                validation_email = settings.ecloe_pay_demo_user_email
             _seed_deterministic_demo_state(connection, user_id)
-            seed_validation_ok = _validate_seed(connection, settings.ecloe_pay_demo_user_email)
+            seed_validation_ok = _validate_seed(connection, validation_email)
         except Exception:
             transaction.rollback()
             raise

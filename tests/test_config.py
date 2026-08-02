@@ -70,6 +70,8 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.ecloe_pay_sql_database == "ecloe_validation"
     assert settings.ecloe_pay_sql_auth_mode == "entra_interactive"
     assert settings.ecloe_pay_cookie_secure is False
+    assert settings.ecloe_pay_demo_user_email == "demo.market@ecloe.local"
+    assert settings.ecloe_pay_demo_user_password == "change-this-demo-password"
 
 
 def test_config_rejects_unknown_ecloe_pay_database_mode(monkeypatch) -> None:

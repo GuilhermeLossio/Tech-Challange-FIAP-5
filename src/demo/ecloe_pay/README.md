@@ -58,6 +58,38 @@ ECLOE_PAY_SQL_DATABASE=ecloe_validation
 ECLOE_PAY_SQL_AUTH_MODE=azure_cli
 ```
 
+By default the Pay login uses the shared ECloe demo persona email
+`demo.market@ecloe.local`, matching the planned ECloe Market login. Set
+`ECLOE_DEMO_USER_EMAIL` and `ECLOE_DEMO_USER_PASSWORD` to share one demo
+identity across Market and Pay, or use the Pay-specific
+`ECLOE_PAY_DEMO_USER_EMAIL` and `ECLOE_PAY_DEMO_USER_PASSWORD` variables when
+the Pay surface needs an explicit override.
+
+For multi-persona login seeding, generate a local unmasked XLSX file:
+
+```powershell
+python -m scripts.seed_ecloe_pay_login_xlsx --generate
+```
+
+The generated `data/demo/ecloe_pay_login_seed.local.xlsx` file contains
+simulated plaintext passwords and profile data for local preparation only. It is
+ignored by Git. Import it into Azure SQL with:
+
+```powershell
+python -m scripts.seed_ecloe_pay_login_xlsx --xlsx data/demo/ecloe_pay_login_seed.local.xlsx
+```
+
+Or have the SQL initializer import it after applying the schema:
+
+```powershell
+$env:ECLOE_PAY_LOGIN_SEED_XLSX="data/demo/ecloe_pay_login_seed.local.xlsx"
+python -m scripts.init_ecloe_pay_sql
+```
+
+Only password hashes are stored in Azure SQL. Profile fields are stored in
+`ecloe_pay.demo_user_profiles`; sensitive columns use Azure SQL Dynamic Data
+Masking, and the routine Pay runtime identity should not receive `UNMASK`.
+
 Use `entra_interactive` only for local development, `azure_cli` after `az login`,
 and `managed_identity` in cloud. The demo login persona is synthetic and must not
 be confused with a real banking account.

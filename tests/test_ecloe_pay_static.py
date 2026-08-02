@@ -68,12 +68,18 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
     assert "ecloe_pay.payment_orders" in schema
     assert "ecloe_pay.benefit_interactions" in schema
     assert "ecloe_pay.demo_users" in schema
+    assert "ecloe_pay.demo_user_profiles" in schema
     assert "ecloe_pay.auth_sessions" in schema
     assert "ecloe_pay.demo_sessions" in schema
     assert "ecloe_pay.wallet_snapshots" in schema
     assert "ecloe-pay-demo-artifacts" in schema
     assert "ecloe_pay.schema_migrations" in schema
-    assert "email_normalized NVARCHAR(254) NOT NULL" in schema
+    assert "email_normalized NVARCHAR(254) MASKED WITH (FUNCTION = 'email()') NOT NULL" in schema
+    assert "full_name NVARCHAR(160) MASKED WITH" in schema
+    assert "address_line1 NVARCHAR(240) MASKED WITH" in schema
+    assert "postal_code NVARCHAR(40) MASKED WITH" in schema
+    assert "phone NVARCHAR(40) MASKED WITH" in schema
+    assert "sys.masked_columns" in schema
     assert "token_hash NVARCHAR(128) NOT NULL" in schema
     assert "last_seen_at DATETIMEOFFSET(7) NULL" in schema
     assert "DATETIMEOFFSET(7)" in schema
@@ -85,6 +91,7 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
     assert "uq_payment_orders_idempotency_key" in schema
     assert "uq_outbox_events_event_id" in schema
     assert "ix_auth_sessions_valid" in schema
+    assert "ix_demo_user_profiles_country" in schema
     assert "ix_demo_sessions_user" in schema
     assert "ix_payment_orders_session" in schema
     assert "ix_benefit_interactions_session" in schema
@@ -218,6 +225,7 @@ def test_pay_login_page_matches_demo_identity_and_csrf_flow() -> None:
     assert 'id="loginForm"' in login
     assert 'id="email"' in login
     assert 'id="password"' in login
+    assert "demo.market@ecloe.local" not in login
     assert 'value="demo.pay@ecloe.local"' not in login
     assert "demo.pay@ecloe.local" not in login
     assert "change-this-demo-password" not in login
@@ -258,6 +266,20 @@ def test_pay_demo_documents_flask_run_command() -> None:
     assert "http://127.0.0.1:5000/" in readme
     assert ".\\scripts\\allow_current_sql_client_ip.ps1" in readme
     assert ".\\scripts\\remove_current_sql_client_ip.ps1" in readme
+
+
+def test_cloud_notebook_documents_pay_login_xlsx_seed_and_masking() -> None:
+    notebook = (ROOT / "notebooks" / "05_cloud_artifacts_and_cosmos.ipynb").read_text(encoding="utf-8")
+
+    assert "ECloe Pay Azure SQL Login Seed" in notebook
+    assert "scripts.seed_ecloe_pay_login_xlsx --generate" in notebook
+    assert "data/demo/ecloe_pay_login_seed.local.xlsx" in notebook
+    assert "data/demo/*.local.xlsx" in notebook
+    assert "ecloe_pay.demo_user_profiles" in notebook
+    assert "Azure SQL Dynamic Data Masking" in notebook
+    assert "runtime_unmask_permission" in notebook
+    assert "not granted" in notebook
+    assert "plaintext passwords are never stored in SQL" in notebook
 
 
 def test_pay_landing_declares_demo_storage_and_financial_boundaries() -> None:

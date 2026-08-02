@@ -189,10 +189,13 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         ecloe_pay_sql_driver=_env("ECLOE_PAY_SQL_DRIVER", "ODBC Driver 18 for SQL Server"),
         ecloe_pay_session_ttl_seconds=int(_env("ECLOE_PAY_SESSION_TTL_SECONDS", "3600")),
         ecloe_pay_cookie_secure=_bool_env("ECLOE_PAY_COOKIE_SECURE", False),
-        ecloe_pay_demo_user_email=_env("ECLOE_PAY_DEMO_USER_EMAIL", "demo.pay@ecloe.local"),
+        ecloe_pay_demo_user_email=_env(
+            "ECLOE_PAY_DEMO_USER_EMAIL",
+            _env("ECLOE_DEMO_USER_EMAIL", "demo.market@ecloe.local"),
+        ),
         ecloe_pay_demo_user_password=_env(
             "ECLOE_PAY_DEMO_USER_PASSWORD",
-            "change-this-demo-password",
+            _env("ECLOE_DEMO_USER_PASSWORD", "change-this-demo-password"),
         ),
     )
     _validate_ecloe_pay_settings(settings)

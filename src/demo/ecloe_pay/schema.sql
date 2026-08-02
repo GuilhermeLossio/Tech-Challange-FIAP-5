@@ -8,7 +8,7 @@ IF OBJECT_ID(N'ecloe_pay.demo_users', N'U') IS NULL
 BEGIN
     CREATE TABLE ecloe_pay.demo_users (
         user_id NVARCHAR(64) NOT NULL CONSTRAINT pk_demo_users PRIMARY KEY,
-        email_normalized NVARCHAR(254) NOT NULL,
+        email_normalized NVARCHAR(254) MASKED WITH (FUNCTION = 'email()') NOT NULL,
         display_name NVARCHAR(120) NOT NULL,
         persona_label NVARCHAR(120) NOT NULL,
         password_hash NVARCHAR(512) NOT NULL,
@@ -21,6 +21,97 @@ BEGIN
         CONSTRAINT ck_demo_users_is_demo CHECK (is_demo = 1),
         CONSTRAINT ck_demo_users_pii_allowed CHECK (pii_allowed = 0)
     );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.masked_columns
+    WHERE object_id = OBJECT_ID(N'ecloe_pay.demo_users')
+        AND name = N'email_normalized'
+        AND is_masked = 1
+)
+BEGIN
+    ALTER TABLE ecloe_pay.demo_users
+        ALTER COLUMN email_normalized ADD MASKED WITH (FUNCTION = 'email()');
+END;
+GO
+
+IF OBJECT_ID(N'ecloe_pay.demo_user_profiles', N'U') IS NULL
+BEGIN
+    CREATE TABLE ecloe_pay.demo_user_profiles (
+        user_id NVARCHAR(64) NOT NULL CONSTRAINT pk_demo_user_profiles PRIMARY KEY,
+        full_name NVARCHAR(160) MASKED WITH (FUNCTION = 'partial(2, "****", 1)') NOT NULL,
+        address_line1 NVARCHAR(240) MASKED WITH (FUNCTION = 'partial(4, "****", 2)') NOT NULL,
+        city NVARCHAR(120) NOT NULL,
+        state_region NVARCHAR(120) NOT NULL,
+        postal_code NVARCHAR(40) MASKED WITH (FUNCTION = 'partial(2, "****", 1)') NOT NULL,
+        country NVARCHAR(80) NOT NULL,
+        phone NVARCHAR(40) MASKED WITH (FUNCTION = 'partial(3, "****", 2)') NOT NULL,
+        preferred_language NVARCHAR(12) NOT NULL,
+        market_segment NVARCHAR(80) NOT NULL,
+        wallet_status NVARCHAR(40) NOT NULL,
+        masking_enabled BIT NOT NULL CONSTRAINT df_demo_user_profiles_masking_enabled DEFAULT 1,
+        created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_demo_user_profiles_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+        updated_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_demo_user_profiles_updated_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+        CONSTRAINT fk_demo_user_profiles_demo_users
+            FOREIGN KEY (user_id) REFERENCES ecloe_pay.demo_users(user_id),
+        CONSTRAINT ck_demo_user_profiles_masking_enabled CHECK (masking_enabled = 1),
+        CONSTRAINT ck_demo_user_profiles_wallet_status CHECK (wallet_status IN (N'active', N'review', N'inactive')),
+        CONSTRAINT ck_demo_user_profiles_preferred_language CHECK (preferred_language IN (N'pt-BR', N'en-US'))
+    );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.masked_columns
+    WHERE object_id = OBJECT_ID(N'ecloe_pay.demo_user_profiles')
+        AND name = N'full_name'
+        AND is_masked = 1
+)
+BEGIN
+    ALTER TABLE ecloe_pay.demo_user_profiles
+        ALTER COLUMN full_name ADD MASKED WITH (FUNCTION = 'partial(2, "****", 1)');
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.masked_columns
+    WHERE object_id = OBJECT_ID(N'ecloe_pay.demo_user_profiles')
+        AND name = N'address_line1'
+        AND is_masked = 1
+)
+BEGIN
+    ALTER TABLE ecloe_pay.demo_user_profiles
+        ALTER COLUMN address_line1 ADD MASKED WITH (FUNCTION = 'partial(4, "****", 2)');
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.masked_columns
+    WHERE object_id = OBJECT_ID(N'ecloe_pay.demo_user_profiles')
+        AND name = N'postal_code'
+        AND is_masked = 1
+)
+BEGIN
+    ALTER TABLE ecloe_pay.demo_user_profiles
+        ALTER COLUMN postal_code ADD MASKED WITH (FUNCTION = 'partial(2, "****", 1)');
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1
+    FROM sys.masked_columns
+    WHERE object_id = OBJECT_ID(N'ecloe_pay.demo_user_profiles')
+        AND name = N'phone'
+        AND is_masked = 1
+)
+BEGIN
+    ALTER TABLE ecloe_pay.demo_user_profiles
+        ALTER COLUMN phone ADD MASKED WITH (FUNCTION = 'partial(3, "****", 2)');
 END;
 GO
 
@@ -202,6 +293,15 @@ IF NOT EXISTS (
 BEGIN
     CREATE INDEX ix_demo_sessions_user
         ON ecloe_pay.demo_sessions (user_id, created_at DESC);
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM sys.indexes WHERE name = N'ix_demo_user_profiles_country' AND object_id = OBJECT_ID(N'ecloe_pay.demo_user_profiles')
+)
+BEGIN
+    CREATE INDEX ix_demo_user_profiles_country
+        ON ecloe_pay.demo_user_profiles (country, state_region, city);
 END;
 GO
 

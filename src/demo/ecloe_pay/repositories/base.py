@@ -7,6 +7,10 @@ from typing import Any, Protocol
 
 DEMO_BUCKET_NAME = "ecloe-pay-demo-artifacts"
 DEMO_CONFIRMATION_CODE = "0426"
+SHARED_DEMO_USER_EMAIL = "demo.market@ecloe.local"
+LEGACY_PAY_DEMO_USER_EMAIL = "demo.pay@ecloe.local"
+DEMO_USER_DISPLAY_NAME = "ECloe Demo Persona"
+DEMO_USER_PERSONA_LABEL = "Synthetic marketplace-wallet validation persona"
 DUMMY_PASSWORD_HASH = (
     "scrypt:32768:8:1$demoMissingPersonaSalt$"
     "8b8ab077e81740d9916f3cf5183f16bea14e97be7115cd89aa86f28ecb9156e4370d44"
@@ -126,6 +130,24 @@ class PayRepository(Protocol):
 
 def normalize_email(email: str) -> str:
     return email.strip().lower()
+
+
+def demo_identity_emails(configured_email: str) -> tuple[str, ...]:
+    configured_normalized = normalize_email(configured_email)
+    if configured_normalized in {SHARED_DEMO_USER_EMAIL, LEGACY_PAY_DEMO_USER_EMAIL}:
+        emails = [
+            configured_email,
+            SHARED_DEMO_USER_EMAIL,
+            LEGACY_PAY_DEMO_USER_EMAIL,
+        ]
+    else:
+        emails = [configured_email]
+    normalized = []
+    for email in emails:
+        email_normalized = normalize_email(email)
+        if email_normalized and email_normalized not in normalized:
+            normalized.append(email_normalized)
+    return tuple(normalized)
 
 
 def user_id_for_email(email: str) -> str:
