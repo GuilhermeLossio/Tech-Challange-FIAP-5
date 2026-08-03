@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ product.title_pt if locale == "pt-BR" else product.title_en }} - ECloe Market</title>
+  <link rel="stylesheet" href="/market/assets/market.css" />
+</head>
+<body class="market-body">
+  <main class="content product-detail">
+    <a class="secondary-link" href="/market">{{ t("market.back") }}</a>
+    <article class="card product-detail-card">
+      <img src="{{ product.thumbnail }}" alt="" />
+      <div>
+        <p class="eyebrow">{{ t("market.demoOnly") }}</p>
+        <h1>{{ product.title_pt if locale == "pt-BR" else product.title_en }}</h1>
+        <p>{{ product.description_pt if locale == "pt-BR" else product.description_en }}</p>
+        <p><strong>R$ {{ "%.2f"|format(product.price_cents / 100) }}</strong></p>
+        <p>{{ t("market.stock") }} {{ product.stock_quantity }} · {{ product.brand }}</p>
+        <p class="synthetic-note">{{ t("market.syntheticProduct") }}</p>
+        <a class="primary-link" href="/market/cart">{{ t("market.addPlanned") }}</a>
+        {% if user %}
+          <a class="secondary-link" href="/pay">{{ t("market.openPay") }}</a>
+        {% else %}
+          <a class="secondary-link" href="/market/checkout">{{ t("market.checkoutLogin") }}</a>
+        {% endif %}
+      </div>
+    </article>
+  </main>
+</body>
+</html>

@@ -1,0 +1,228 @@
+@import url("https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Nunito:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap");
+
+@layer settings, base, utilities, components;
+
+@layer settings {
+  :root {
+    color-scheme: light;
+    --font-body: Nunito, "Segoe UI", system-ui, sans-serif;
+    --font-display: "Baloo 2", Nunito, sans-serif;
+    --font-mono: "Space Mono", monospace;
+    --color-ink: #073f36;
+    --color-heading: #064437;
+    --color-muted: #5f706d;
+    --color-line: rgba(7, 63, 54, 0.12);
+    --color-paper: #ffffff;
+    --color-page: #f7fcf7;
+    --color-rose: #ff7fab;
+    --color-rose-soft: #ffe1ec;
+    --color-mint: #9ee7d4;
+    --color-mint-soft: #e3fbf3;
+    --color-lemon: #ffe18a;
+    --color-lemon-soft: #fff6dc;
+    --color-success: #146c45;
+    --radius-sm: 8px;
+    --radius-md: 14px;
+    --radius-lg: 18px;
+    --shadow-card: 0 18px 42px -28px rgba(7, 63, 54, 0.45);
+    --text-sm: 0.88rem;
+    --text-body: 1rem;
+    --text-title: clamp(1.8rem, 4vw, 2.6rem);
+    --text-hero: clamp(3.2rem, 7vw, 5rem);
+  }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--color-page);
+    color: var(--color-ink);
+    font-family: var(--font-body);
+    margin: 0;
+    min-width: 320px;
+  }
+
+  button,
+  input {
+    font: inherit;
+  }
+
+  button,
+  .primary-link,
+  .secondary-link {
+    align-items: center;
+    border: 0;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: inline-flex;
+    font-weight: 800;
+    justify-content: center;
+    min-height: 44px;
+    padding: 0 16px;
+    text-decoration: none;
+  }
+
+  button {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+  }
+
+  button:focus-visible,
+  input:focus-visible,
+  a:focus-visible {
+    outline: 3px solid #74c6ff;
+    outline-offset: 3px;
+  }
+
+  h1,
+  h2 {
+    color: var(--color-heading);
+    font-family: var(--font-display);
+    font-weight: 800;
+    letter-spacing: 0;
+    margin: 0;
+  }
+}
+
+@layer utilities {
+  .card {
+    background: rgba(255, 255, 255, 0.92);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-card);
+  }
+
+  .sr-only {
+    border: 0;
+    clip: rect(0, 0, 0, 0);
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    padding: 0;
+    position: absolute;
+    white-space: nowrap;
+    width: 1px;
+  }
+
+  .eyebrow,
+  .text-mono {
+    font-family: var(--font-mono);
+  }
+
+  .eyebrow {
+    color: #1d7a62;
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    margin: 0 0 8px;
+    text-transform: uppercase;
+  }
+
+  .primary-link {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .secondary-link,
+  .details-button,
+  .round-menu-button,
+  .secondary-button {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    color: var(--color-ink);
+  }
+}
+
+@layer components {
+  .pill {
+    background: var(--color-lemon-soft);
+    border: 1px solid var(--color-lemon);
+    border-radius: 999px;
+    color: #7b6109;
+    display: inline-flex;
+    font-weight: 800;
+    padding: 7px 12px;
+  }
+
+  .pill.success {
+    background: #dcf7e4;
+    border-color: #9bddaf;
+    color: var(--color-success);
+  }
+
+  .action-row {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+  }
+
+  .sprite-icon,
+  .sprite-art {
+    --sprite-scale: 1;
+    --sprite-x: 0;
+    --sprite-y: 0;
+    --sprite-w: 1;
+    --sprite-h: 1;
+    background-color: transparent;
+    position: relative;
+  }
+
+  .sprite-icon {
+    aspect-ratio: 1;
+    border: 0;
+    border-radius: var(--radius-sm);
+    display: inline-grid;
+    flex: 0 0 auto;
+    overflow: hidden;
+    place-items: center;
+    width: 52px;
+  }
+
+  .sprite-icon::before,
+  .sprite-art::before {
+    background-image: url("./assets/ecloe-pay-spritesheet.png");
+    background-position: calc(var(--sprite-x) * var(--sprite-scale) * -1px) calc(var(--sprite-y) * var(--sprite-scale) * -1px);
+    background-repeat: no-repeat;
+    background-size: calc(1568 * var(--sprite-scale) * 1px) calc(947 * var(--sprite-scale) * 1px);
+    content: "";
+    display: block;
+  }
+
+  .sprite-icon::before {
+    height: calc(var(--sprite-h) * var(--sprite-scale) * 1px);
+    width: calc(var(--sprite-w) * var(--sprite-scale) * 1px);
+  }
+
+  .sprite-art {
+    display: block;
+    overflow: hidden;
+  }
+
+  .sprite-art::before {
+    height: calc(var(--sprite-h) * var(--sprite-scale) * 1px);
+    width: calc(var(--sprite-w) * var(--sprite-scale) * 1px);
+  }
+
+  .sprite-brand-mark { --sprite-scale: 0.3; --sprite-x: 63; --sprite-y: 69; --sprite-w: 195; --sprite-h: 187; }
+  .sprite-cloe-waving { --sprite-scale: 0.64; --sprite-x: 371; --sprite-y: 28; --sprite-w: 208; --sprite-h: 235; }
+  .sprite-cloe-heart { --sprite-scale: 0.91; --sprite-x: 684; --sprite-y: 14; --sprite-w: 199; --sprite-h: 241; }
+  .sprite-monthly-goal { --sprite-scale: 0.32; --sprite-x: 1022; --sprite-y: 72; --sprite-w: 167; --sprite-h: 168; }
+  .sprite-wallet { --sprite-scale: 0.16; --sprite-x: 1341; --sprite-y: 67; --sprite-w: 164; --sprite-h: 153; }
+  .sprite-rewards { --sprite-scale: 0.18; --sprite-x: 89; --sprite-y: 388; --sprite-w: 139; --sprite-h: 147; }
+  .sprite-activity { --sprite-scale: 0.17; --sprite-x: 718; --sprite-y: 390; --sprite-w: 155; --sprite-h: 157; }
+  .sprite-security-icon { --sprite-scale: 0.15; --sprite-x: 1035; --sprite-y: 384; --sprite-w: 142; --sprite-h: 173; }
+  .sprite-rewards-tile { --sprite-scale: 0.3; --sprite-x: 1346; --sprite-y: 395; --sprite-w: 154; --sprite-h: 160; }
+  .sprite-pix { --sprite-scale: 0.32; --sprite-x: 396; --sprite-y: 714; --sprite-w: 152; --sprite-h: 152; }
+  .sprite-payment-card { --sprite-scale: 0.3; --sprite-x: 396; --sprite-y: 409; --sprite-w: 160; --sprite-h: 120; }
+  .sprite-cashback { --sprite-scale: 0.34; --sprite-x: 1040; --sprite-y: 710; --sprite-w: 131; --sprite-h: 157; }
+  .sprite-security-tile { --sprite-scale: 0.3; --sprite-x: 1344; --sprite-y: 715; --sprite-w: 154; --sprite-h: 159; }
+}

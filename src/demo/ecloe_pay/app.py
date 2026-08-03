@@ -8,7 +8,15 @@ import time
 from dataclasses import asdict
 from pathlib import Path
 
-from flask import Flask, jsonify, make_response, redirect, render_template, request
+from flask import (
+    Flask,
+    jsonify,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+)
 
 from src.core.config import Settings, load_settings
 from src.demo.ecloe_pay.i18n import (
@@ -23,6 +31,7 @@ from src.demo.ecloe_pay.repositories import (
 )
 
 DEMO_DIR = Path(__file__).resolve().parent
+SHARED_DEMO_DIR = DEMO_DIR.parent / "shared"
 AUTH_COOKIE_NAME = "ecloe_pay_session"
 CSRF_COOKIE_NAME = "ecloe_pay_csrf"
 CSRF_HEADER_NAME = "X-CSRF-Token"
@@ -182,13 +191,25 @@ def create_app(
     def harden_auth_responses(response):
         if request.path.startswith("/api/auth/"):
             response.headers["Cache-Control"] = "no-store"
-        if request.method == "GET" and request.path in {"/pay/login", "/pay"}:
+        if request.method == "GET" and request.path in {
+            "/pay/login",
+            "/pay",
+            "/market",
+            "/market/cart",
+            "/market/checkout",
+            "/market/orders",
+            "/demo/summary",
+        }:
             _set_csrf_cookie(response, settings)
         return response
 
     @app.get("/")
     def landing():
         return _render_demo_template("landing.html", settings)
+
+    @app.get("/shared/<path:filename>")
+    def shared_static(filename: str):
+        return send_from_directory(SHARED_DEMO_DIR, filename)
 
     @app.get("/pay")
     def pay():

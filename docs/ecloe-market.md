@@ -4,8 +4,9 @@
 
 | Area | Status | Notes |
 |:---|:---|:---|
-| ECloe Market product surface | Planned for demo | Simulated marketplace experience inside the ECloe Demo application. |
-| Catalog, cart, checkout, and order APIs | Planned for demo | Target API surface for marketplace behavior and transaction state. |
+| ECloe Market product surface | Implemented | Shared Flask demo route, public `/market` surface, product grid, product detail page, and synthetic-data notices. |
+| Catalog APIs | Implemented | Local normalized catalog, categories, product listing, product detail APIs, and deterministic seed script. |
+| Cart, checkout, and order APIs | Planned for demo | Target API surface for marketplace behavior and transaction state. |
 | Azure SQL transaction model | Planned for demo | Recommended source of truth for catalog, inventory, carts, checkout, orders, and outbox records. |
 | Recommendation integration | Planned for demo | Market/BFF aggregates context, gets eligible offers from upstream services, and calls ECloe Engine. |
 | ECloe Engine API | Implemented | Existing FastAPI service for decisions, likelihood estimates, policy metadata, and reward ingestion. |
@@ -13,9 +14,9 @@
 
 ## Purpose
 
-ECloe Market is the planned marketplace surface for the ECloe ecosystem. It simulates product browsing, category navigation, cart management, checkout, order creation, and marketplace behavior signals that can be aggregated before ECloe Engine selects the next best eligible action.
+ECloe Market is the marketplace surface for the ECloe ecosystem. The current implementation covers the shared demo entrypoint, public Market shell, local synthetic catalog, category browsing, product listing, product details, and catalog APIs. Browsing is public; the shared demo login is requested only when the user continues to checkout or reaches account-specific order views. If the user is already authenticated through ECloe Pay, Market reuses that account context.
 
-The current repository already implements ECloe Engine. ECloe Market, ECloe Pay, and the integrated demo application are still planned surfaces. This document defines the target Market scope so future implementation can stay aligned with the existing Engine API, privacy boundary, and low-consumption Azure direction.
+The current repository already implements ECloe Engine and ECloe Pay, and now includes the first ECloe Market demo foundation. This document keeps the full target Market scope so future implementation can stay aligned with the existing Engine API, privacy boundary, and low-consumption Azure direction.
 
 ## Architecture Diagrams
 
@@ -57,7 +58,7 @@ ECloe Engine does not price products, approve payments, check inventory, execute
 
 | Capability | Status | Notes |
 |:---|:---|:---|
-| Product catalog | Planned for demo | Categories, products, product variants, attributes, status, and product detail screens. |
+| Product catalog | Implemented | Deterministic local synthetic catalog, category list, product listing API, product detail API, and product screens. |
 | Pricing | Planned for demo | Current product price lookup and historical price copy into order items. |
 | Inventory | Planned for demo | Available and reserved quantities with concurrency protection during checkout. |
 | Cart | Planned for demo | Cart creation, item add/remove, quantity updates, expiry, and checkout preparation. |
@@ -324,6 +325,8 @@ inventory:write
 ```
 
 Market should derive `customer_id` from the authenticated subject. A client must not be allowed to submit another customer's identifier directly.
+
+Public catalog browsing does not require authentication. Authentication begins at checkout and for account-specific order views, using the same shared demo session as ECloe Pay.
 
 ## Observability
 

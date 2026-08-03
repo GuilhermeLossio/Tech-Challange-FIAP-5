@@ -1,0 +1,130 @@
+@import url("/shared/core.css");
+
+@layer page {
+  .market-body {
+    background:
+      radial-gradient(circle at 8% 8%, rgba(158, 231, 212, 0.42), transparent 28%),
+      radial-gradient(circle at 92% 12%, rgba(255, 225, 138, 0.42), transparent 26%),
+      var(--color-page);
+  }
+
+  .market-shell {
+    display: grid;
+    grid-template-columns: 282px minmax(0, 1fr);
+    min-height: 100vh;
+  }
+
+  .market-sidebar {
+    background: rgba(255, 255, 255, 0.72);
+    border-right: 1px solid var(--color-line);
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+    padding: 30px 22px;
+  }
+
+  .market-brand,
+  .market-topbar,
+  .topbar-actions,
+  .section-heading {
+    align-items: center;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+  }
+
+  .market-brand {
+    justify-content: flex-start;
+  }
+
+  .market-content {
+    display: grid;
+    gap: 26px;
+    padding: 30px;
+  }
+
+  .market-hero {
+    align-items: center;
+    display: grid;
+    gap: 18px;
+    grid-template-columns: minmax(0, 1fr) 180px;
+    padding: 28px;
+  }
+
+  .category-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .product-grid {
+    display: grid;
+    gap: 18px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+
+  .product-card {
+    display: grid;
+    gap: 14px;
+    padding: 16px;
+  }
+
+  .product-card img,
+  .product-detail-card img {
+    aspect-ratio: 4 / 3;
+    background: var(--color-mint-soft);
+    border-radius: var(--radius-sm);
+    object-fit: cover;
+    width: 100%;
+  }
+
+  .product-card h3,
+  .product-card p {
+    margin: 0;
+  }
+
+  .product-card-copy {
+    display: grid;
+    gap: 8px;
+  }
+
+  .product-detail,
+  .planned-page {
+    display: grid;
+    gap: 18px;
+    margin: 0 auto;
+    max-width: 1020px;
+    padding: 32px;
+  }
+
+  .product-detail-card {
+    display: grid;
+    gap: 28px;
+    grid-template-columns: minmax(260px, 0.9fr) minmax(0, 1.1fr);
+    padding: 26px;
+  }
+
+  .planned-card {
+    padding: 28px;
+  }
+
+  .synthetic-note {
+    background: var(--color-lemon-soft);
+    border: 1px solid var(--color-lemon);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+  }
+
+  @media (max-width: 920px) {
+    .market-shell,
+    .product-detail-card,
+    .market-hero {
+      grid-template-columns: 1fr;
+    }
+
+    .market-sidebar {
+      border-bottom: 1px solid var(--color-line);
+      border-right: 0;
+    }
+  }
+}

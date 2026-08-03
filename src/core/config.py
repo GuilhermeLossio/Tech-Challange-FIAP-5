@@ -14,6 +14,7 @@ ROOT_DIR = Path(__file__).resolve().parents[2]
 ECLOE_COSMOS_ACCOUNT = "ecloe5cosmos1266cl"
 DEFAULT_AZURE_COSMOS_ENDPOINT = f"https://{ECLOE_COSMOS_ACCOUNT}.documents.azure.com:443/"
 ECLOE_PAY_DATABASE_MODES = {"memory", "azure_sql"}
+ECLOE_MARKET_DATABASE_MODES = {"memory", "azure_sql"}
 ECLOE_PAY_SQL_AUTH_MODES = {"entra_interactive", "azure_cli", "managed_identity"}
 CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
 
@@ -108,6 +109,9 @@ class Settings:
     ecloe_pay_cookie_secure: bool
     ecloe_pay_demo_user_email: str
     ecloe_pay_demo_user_password: str
+    ecloe_market_database_mode: str
+    ecloe_market_catalog_path: Path
+    ecloe_market_catalog_seed: int
 
     @property
     def raw_file(self) -> Path:
@@ -197,8 +201,13 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
             "ECLOE_PAY_DEMO_USER_PASSWORD",
             _env("ECLOE_DEMO_USER_PASSWORD", "change-this-demo-password"),
         ),
+        ecloe_market_database_mode=_env("ECLOE_MARKET_DATABASE_MODE", "memory").lower(),
+        ecloe_market_catalog_path=ROOT_DIR
+        / _env("ECLOE_MARKET_CATALOG_PATH", "data/demo/ecloe_market_catalog.json"),
+        ecloe_market_catalog_seed=int(_env("ECLOE_MARKET_CATALOG_SEED", "426")),
     )
     _validate_ecloe_pay_settings(settings)
+    _validate_ecloe_market_settings(settings)
     return settings
 
 
@@ -229,6 +238,11 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
             and settings.ecloe_pay_sql_auth_mode != "managed_identity"
         ):
             raise ValueError("Cloud ECloe Pay Azure SQL must use managed_identity.")
+
+
+def _validate_ecloe_market_settings(settings: Settings) -> None:
+    if settings.ecloe_market_database_mode not in ECLOE_MARKET_DATABASE_MODES:
+        raise ValueError(f"Unsupported ECLOE_MARKET_DATABASE_MODE: {settings.ecloe_market_database_mode}")
 
 
 settings = load_settings(use_env_file=False)

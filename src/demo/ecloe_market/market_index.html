@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ t("market.title") }}</title>
+  <link rel="stylesheet" href="/market/assets/market.css" />
+</head>
+<body class="market-body">
+  <div class="app-shell market-shell">
+    <aside class="sidebar market-sidebar" aria-label="{{ t("market.sidebarAria") }}">
+      <header class="brand market-brand">
+        <span class="brand-sprite sprite-art sprite-brand-mark" aria-hidden="true"></span>
+        <h1>ECloe Market</h1>
+      </header>
+      <nav class="nav-list" aria-label="{{ t("market.navAria") }}">
+        <a class="nav-link active" href="/market" aria-current="page">{{ t("market.home") }}</a>
+        <a class="nav-link" href="#categories">{{ t("market.categories") }}</a>
+        <a class="nav-link" href="#offers">{{ t("market.offers") }}</a>
+        <a class="nav-link" href="/market/cart">{{ t("market.cart") }}</a>
+        <a class="nav-link" href="/market/orders">{{ t("market.orders") }}</a>
+        <a class="nav-link" href="/pay">{{ t("market.pay") }}</a>
+      </nav>
+      <section class="card companion-card">
+        <span class="cloe-image small sprite-art sprite-cloe-waving" aria-hidden="true"></span>
+        <p class="companion-heading">{{ t("market.syntheticTitle") }}</p>
+        <p>{{ t("market.syntheticCopy") }}</p>
+      </section>
+    </aside>
+
+    <main class="content market-content">
+      <header class="topbar market-topbar">
+        <div class="welcome-copy">
+          <p class="eyebrow">{{ t("market.session") }}</p>
+          <h2>{{ t("market.greeting") }}</h2>
+          <span>{{ user.display_name if user else t("market.publicBrowsing") }}</span>
+        </div>
+        <div class="topbar-actions">
+          <a class="secondary-link" href="/market/cart" aria-label="{{ t("market.cartAria") }}">{{ t("market.cart") }}</a>
+          {% if user %}
+            <a class="primary-link" href="/pay">{{ t("market.openPay") }}</a>
+          {% else %}
+            <a class="primary-link" href="/market/checkout">{{ t("market.checkoutLogin") }}</a>
+          {% endif %}
+        </div>
+      </header>
+
+      <section class="market-hero card">
+        <div>
+          <p class="eyebrow">{{ t("market.demoOnly") }}</p>
+          <h2>{{ t("market.heroTitle") }}</h2>
+          <p>{{ t("market.heroCopy") }}</p>
+        </div>
+        <span class="cloe-image large sprite-art sprite-cloe-heart" aria-hidden="true"></span>
+      </section>
+
+      <section id="categories" class="category-strip" aria-label="{{ t("market.categories") }}">
+        {% for category in categories %}
+          <a class="pill" href="/market?category_id={{ category.category_id }}">{{ category.title_pt if locale == "pt-BR" else category.title_en }}</a>
+        {% endfor %}
+      </section>
+
+      <section id="offers" class="section-heading">
+        <div>
+          <p class="eyebrow">{{ t("market.recommended") }}</p>
+          <h2>{{ t("market.products") }}</h2>
+        </div>
+      </section>
+
+      <section class="product-grid" aria-live="polite">
+        {% for product in products %}
+          <article class="card product-card">
+            <img src="{{ product.thumbnail }}" alt="" loading="lazy" />
+            <div class="product-card-copy">
+              <span class="pill">{{ product.brand }}</span>
+              <h3>{{ product.title_pt if locale == "pt-BR" else product.title_en }}</h3>
+              <p>{{ t("market.syntheticProduct") }}</p>
+              <strong>R$ {{ "%.2f"|format(product.price_cents / 100) }}</strong>
+              <span>{{ t("market.stock") }} {{ product.stock_quantity }}</span>
+            </div>
+            <a class="primary-link" href="/market/products/{{ product.product_id }}">{{ t("market.viewProduct") }}</a>
+          </article>
+        {% endfor %}
+      </section>
+    </main>
+  </div>
+</body>
+</html>
