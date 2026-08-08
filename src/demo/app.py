@@ -8,7 +8,7 @@ from src.core.config import Settings, load_settings
 from src.demo.ecloe_market.blueprint import market_blueprint
 from src.demo.ecloe_pay.app import create_app as create_pay_app
 from src.demo.ecloe_pay.repositories import PayRepository
-from src.market.repositories import MarketRepository, MemoryMarketRepository
+from src.market.repositories import MarketRepository, create_market_repository
 
 
 def create_app(
@@ -19,9 +19,7 @@ def create_app(
 ) -> Flask:
     settings = settings or load_settings(use_env_file=False)
     app = create_pay_app(settings=settings, repository=pay_repository)
-    app.market_repository = market_repository or MemoryMarketRepository(  # type: ignore[attr-defined]
-        settings.ecloe_market_catalog_path
-    )
+    app.market_repository = market_repository or create_market_repository(settings)  # type: ignore[attr-defined]
     app.register_blueprint(market_blueprint)
     return app
 

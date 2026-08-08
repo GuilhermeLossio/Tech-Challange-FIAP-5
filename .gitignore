@@ -188,9 +188,11 @@ data/raw/*
 data/processed/*
 data/golden_set/*
 data/demo/*.local.xlsx
+data/external/*
 reports/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/golden_set/.gitkeep
 !data/demo/.gitkeep
+!data/external/.gitkeep
 !reports/.gitkeep

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ t("market.cart") }} - ECloe Market</title>
+  <link rel="stylesheet" href="/market/assets/market.css" />
+</head>
+<body class="market-body marketplace-body">
+  <header class="marketplace-header">
+    <div class="marketplace-header-main">
+      <a class="marketplace-logo" href="/market" aria-label="ECloe Market">
+        <span class="brand-sprite sprite-art sprite-brand-mark" aria-hidden="true"></span>
+        <strong>ECloe Market</strong>
+      </a>
+      <form class="marketplace-search" action="/market" method="get">
+        <input name="q" type="search" placeholder="{{ t("market.searchPlaceholder") }}" aria-label="{{ t("market.search") }}" />
+        <button type="submit">{{ t("market.searchAction") }}</button>
+      </form>
+      <nav class="marketplace-actions" aria-label="{{ t("market.navAria") }}">
+        <a href="/pay">{{ t("market.pay") }}</a>
+        <a class="cart-link" href="/market/cart">{{ t("market.cart") }} <span data-cart-count>{{ cart.total_items }}</span></a>
+      </nav>
+    </div>
+  </header>
+
+  <main class="cart-page">
+    <section class="cart-items-panel">
+      <div class="results-header">
+        <div>
+          <p class="eyebrow">{{ t("market.demoOnly") }}</p>
+          <h1>{{ t("market.cartTitle") }}</h1>
+        </div>
+        <a class="secondary-link" href="/market">{{ t("market.continueShopping") }}</a>
+      </div>
+
+      {% if cart.empty %}
+        <article class="empty-cart">
+          <span class="cloe-image small sprite-art sprite-cloe-waving" aria-hidden="true"></span>
+          <h2>{{ t("market.emptyCart") }}</h2>
+          <p>{{ t("market.emptyCartCopy") }}</p>
+          <a class="primary-link" href="/market">{{ t("market.exploreDeals") }}</a>
+        </article>
+      {% else %}
+        <div class="cart-item-list">
+          {% for item in cart.items %}
+            <article class="cart-item" data-cart-item="{{ item.cart_item_id }}">
+              <img src="{{ item.thumbnail }}" alt="" />
+              <div>
+                <h2>{{ item.title }}</h2>
+                <p>{{ t("market.syntheticProduct") }}</p>
+                <strong>R$ {{ "%.2f"|format(item.unit_price_cents / 100) }}</strong>
+              </div>
+              <label>
+                <span>{{ t("market.quantity") }}</span>
+                <input data-cart-quantity="{{ item.cart_item_id }}" type="number" min="1" max="9" value="{{ item.quantity }}" />
+              </label>
+              <strong>R$ {{ "%.2f"|format(item.subtotal_cents / 100) }}</strong>
+              <button class="secondary-link" type="button" data-remove-cart-item="{{ item.cart_item_id }}">{{ t("market.remove") }}</button>
+            </article>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </section>
+
+    <aside class="cart-summary-panel">
+      <h2>{{ t("market.summary") }}</h2>
+      <dl>
+        <div>
+          <dt>{{ t("market.items") }}</dt>
+          <dd data-cart-count>{{ cart.total_items }}</dd>
+        </div>
+        <div>
+          <dt>{{ t("market.total") }}</dt>
+          <dd>R$ {{ "%.2f"|format(cart.total_cents / 100) }}</dd>
+        </div>
+      </dl>
+      <p class="synthetic-note">{{ t("market.cartDemoCopy") }}</p>
+      <a class="primary-link full-width" href="/market/checkout">{{ t("market.startCheckout") }}</a>
+      {% if user %}
+        <a class="secondary-link full-width" href="/pay">{{ t("market.openPay") }}</a>
+      {% else %}
+        <a class="secondary-link full-width" href="/market/checkout">{{ t("market.checkoutLogin") }}</a>
+      {% endif %}
+    </aside>
+  </main>
+  <script src="/market/assets/market.js"></script>
+</body>
+</html>

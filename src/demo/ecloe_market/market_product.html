@@ -6,26 +6,81 @@
   <title>{{ product.title_pt if locale == "pt-BR" else product.title_en }} - ECloe Market</title>
   <link rel="stylesheet" href="/market/assets/market.css" />
 </head>
-<body class="market-body">
-  <main class="content product-detail">
+<body class="market-body marketplace-body">
+  <header class="marketplace-header">
+    <div class="marketplace-header-main">
+      <a class="marketplace-logo" href="/market" aria-label="ECloe Market">
+        <span class="brand-sprite sprite-art sprite-brand-mark" aria-hidden="true"></span>
+        <strong>ECloe Market</strong>
+      </a>
+      <form class="marketplace-search" action="/market" method="get">
+        <input name="q" type="search" placeholder="{{ t("market.searchPlaceholder") }}" aria-label="{{ t("market.search") }}" />
+        <button type="submit">{{ t("market.searchAction") }}</button>
+      </form>
+      <nav class="marketplace-actions" aria-label="{{ t("market.navAria") }}">
+        <a href="/pay">{{ t("market.pay") }}</a>
+        <a class="cart-link" href="/market/cart">{{ t("market.cart") }} <span data-cart-count>{{ cart.total_items }}</span></a>
+        {% if user %}
+          <span class="identity-chip">{{ user.display_name }}</span>
+        {% else %}
+          <a class="identity-chip" href="/market/checkout">{{ t("market.checkoutLogin") }}</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <main class="product-page">
     <a class="secondary-link" href="/market">{{ t("market.back") }}</a>
-    <article class="card product-detail-card">
-      <img src="{{ product.thumbnail }}" alt="" />
-      <div>
+    <article class="product-commerce-card">
+      <section class="product-gallery" aria-label="{{ t("market.gallery") }}">
+        <img src="{{ product.thumbnail }}" alt="" />
+        <div class="thumbnail-row">
+          {% for image in product.images %}
+            <img src="{{ image }}" alt="" />
+          {% endfor %}
+        </div>
+      </section>
+
+      <section class="product-main-copy">
         <p class="eyebrow">{{ t("market.demoOnly") }}</p>
         <h1>{{ product.title_pt if locale == "pt-BR" else product.title_en }}</h1>
         <p>{{ product.description_pt if locale == "pt-BR" else product.description_en }}</p>
-        <p><strong>R$ {{ "%.2f"|format(product.price_cents / 100) }}</strong></p>
-        <p>{{ t("market.stock") }} {{ product.stock_quantity }} · {{ product.brand }}</p>
+        <dl class="product-facts">
+          <div>
+            <dt>{{ t("market.category") }}</dt>
+            <dd>{{ category.title_pt if category and locale == "pt-BR" else category.title_en if category else product.category_id }}</dd>
+          </div>
+          <div>
+            <dt>{{ t("market.brand") }}</dt>
+            <dd>{{ product.brand }}</dd>
+          </div>
+          <div>
+            <dt>{{ t("market.variants") }}</dt>
+            <dd>{{ detail.default_variant.title_pt if detail.default_variant and locale == "pt-BR" else detail.default_variant.title_en if detail.default_variant else product.sku }}</dd>
+          </div>
+          <div>
+            <dt>{{ t("market.availability") }}</dt>
+            <dd>{{ t("market.stock") }} {{ detail.inventory.available_quantity if detail.inventory else product.stock_quantity }}</dd>
+          </div>
+        </dl>
         <p class="synthetic-note">{{ t("market.syntheticProduct") }}</p>
-        <a class="primary-link" href="/market/cart">{{ t("market.addPlanned") }}</a>
+      </section>
+
+      <aside class="purchase-panel" aria-label="{{ t("market.purchasePanel") }}">
+        <span class="seller-chip">{{ t("market.demoSeller") }}</span>
+        <strong class="product-price">R$ {{ "%.2f"|format((detail.current_price.price_cents if detail.current_price else product.price_cents) / 100) }}</strong>
+        <p class="shipping-badge">{{ t("market.deliveryBadge") }}</p>
+        <p>{{ t("market.payBenefitCopy") }}</p>
+        <button class="primary-link full-width" type="button" data-add-product="{{ product.product_id }}">{{ t("market.addToCart") }}</button>
+        <a class="secondary-link full-width" href="/market/cart">{{ t("market.goToCart") }}</a>
         {% if user %}
-          <a class="secondary-link" href="/pay">{{ t("market.openPay") }}</a>
+          <a class="secondary-link full-width" href="/pay">{{ t("market.openPay") }}</a>
         {% else %}
-          <a class="secondary-link" href="/market/checkout">{{ t("market.checkoutLogin") }}</a>
+          <a class="secondary-link full-width" href="/market/checkout">{{ t("market.checkoutLogin") }}</a>
         {% endif %}
-      </div>
+      </aside>
     </article>
   </main>
+  <script src="/market/assets/market.js"></script>
 </body>
 </html>

@@ -4,17 +4,20 @@
 
 | Area | Status | Notes |
 |:---|:---|:---|
-| ECloe Market product surface | Implemented | Shared Flask demo route, public `/market` surface, product grid, product detail page, and synthetic-data notices. |
-| Catalog APIs | Implemented | Local normalized catalog, categories, product listing, product detail APIs, and deterministic seed script. |
+| ECloe Market product surface | Implemented | Shared Flask demo route, public `/market` surface, filters, sort controls, product grid, product detail page, and synthetic-data notices. |
+| Catalog APIs | Implemented | Local normalized catalog, categories, product listing, product detail APIs, product variants, current prices, stock, and deterministic seed script. |
 | Cart, checkout, and order APIs | Planned for demo | Target API surface for marketplace behavior and transaction state. |
-| Azure SQL transaction model | Planned for demo | Recommended source of truth for catalog, inventory, carts, checkout, orders, and outbox records. |
+| Azure SQL catalog model | Implemented | `ecloe_market` schema, catalog/price/stock tables, idempotent seed command, and runtime repository behind `ECLOE_MARKET_DATABASE_MODE=azure_sql`. |
+| Azure SQL transaction model | Planned for demo | Future source of truth for carts, checkout, orders, payment references, and outbox records. |
 | Recommendation integration | Planned for demo | Market/BFF aggregates context, gets eligible offers from upstream services, and calls ECloe Engine. |
 | ECloe Engine API | Implemented | Existing FastAPI service for decisions, likelihood estimates, policy metadata, and reward ingestion. |
 | Real payment processing, fraud, risk, credit, pricing automation, and eligibility decisions | Out of scope | These remain upstream responsibilities and are not performed by ECloe Market or ECloe Engine. |
 
 ## Purpose
 
-ECloe Market is the marketplace surface for the ECloe ecosystem. The current implementation covers the shared demo entrypoint, public Market shell, local synthetic catalog, category browsing, product listing, product details, and catalog APIs. Browsing is public; the shared demo login is requested only when the user continues to checkout or reaches account-specific order views. If the user is already authenticated through ECloe Pay, Market reuses that account context.
+ECloe Market is the marketplace surface for the ECloe ecosystem. The current implementation covers the shared demo entrypoint, public marketplace shell, local synthetic catalog, Azure SQL catalog persistence, category browsing, product listing, product details, variants, current prices, stock, demo cart, and catalog APIs. Browsing is public; the shared demo login is requested only when the user continues to checkout or reaches account-specific order views. If the user is already authenticated through ECloe Pay, Market reuses that account context.
+
+The Market experience is a separate purchase-oriented surface. It may reuse ECloe Pay ecosystem assets such as the mascot, logo mark, and visual tokens, but the layout follows marketplace patterns: horizontal header, dominant search, category navigation, filtered result listings, product purchase panel, and cart summary. It must not copy third-party brand identity, text, CSS, or proprietary layout.
 
 The current repository already implements ECloe Engine and ECloe Pay, and now includes the first ECloe Market demo foundation. This document keeps the full target Market scope so future implementation can stay aligned with the existing Engine API, privacy boundary, and low-consumption Azure direction.
 
@@ -38,6 +41,12 @@ The checkout flow shows the planned order path: validate the cart, revalidate pr
 
 The file and data flow separates source files, migrations, Azure SQL transaction state, committed outbox rows, Outbox Publisher polling, Service Bus events, projection workers, Cosmos read models, and explicit Blob exports. Service Bus is a broker only; it does not write Blob Storage.
 
+### Class Diagram
+
+![ECloe Market class diagram](ecloe-market-class-diagram.svg)
+
+The class diagram is the implementation contract for the Market domain. Classes shown in the diagram must map to domain dataclasses, repository methods, Azure SQL tables where persistence is required, and static tests. The diagram separates catalog, cart, checkout, order, payment reference, marketplace event, and outbox responsibilities while preserving the rule that Market does not write Pay tables directly.
+
 ## Product Role
 
 ```text
@@ -58,10 +67,10 @@ ECloe Engine does not price products, approve payments, check inventory, execute
 
 | Capability | Status | Notes |
 |:---|:---|:---|
-| Product catalog | Implemented | Deterministic local synthetic catalog, category list, product listing API, product detail API, and product screens. |
-| Pricing | Planned for demo | Current product price lookup and historical price copy into order items. |
-| Inventory | Planned for demo | Available and reserved quantities with concurrency protection during checkout. |
-| Cart | Planned for demo | Cart creation, item add/remove, quantity updates, expiry, and checkout preparation. |
+| Product catalog | Implemented | Deterministic local synthetic catalog, Azure SQL seed, category list, filtered product listing API, product detail API, and product screens. |
+| Pricing | Implemented | Current synthetic price lookup in integer cents for public catalog and product detail. Historical order snapshots remain planned. |
+| Inventory | Implemented | Available and reserved synthetic quantities in the catalog repository. Checkout reservation and concurrency protection remain planned. |
+| Cart | Implemented | Public demo cart in memory mode with item add/remove and quantity update. Azure SQL cart persistence remains planned. |
 | Checkout | Planned for demo | Cart snapshot, price revalidation, stock reservation, idempotency, and correlation ID. |
 | Orders | Planned for demo | Order creation, order item snapshots, status changes, cancellation, and payment confirmation link. |
 | Marketplace events | Planned for demo | Product and checkout events written through outbox for reliable async delivery. |
@@ -82,7 +91,26 @@ ECloe Market must not:
 
 ## Persistence Decision
 
-The recommended primary database for ECloe Market is **Azure SQL Database** with a low-consumption serverless or small service tier.
+The recommended primary database for ECloe Market is **Azure SQL Database** with a low-consumption serverless or small service tier. The current implementation already provides the PR 2 catalog schema and runtime repository for `ECLOE_MARKET_DATABASE_MODE=azure_sql`; transaction tables for cart, checkout, orders, payment references, and outbox remain planned.
+
+To initialize the PR 2 catalog schema and seed the local synthetic catalog into Azure SQL:
+
+```bash
+python -m scripts.init_ecloe_market_sql
+```
+
+Routine runtime access should remain schema-scoped, for example `GRANT SELECT, INSERT, UPDATE, DELETE ON SCHEMA::ecloe_market TO [<managed-identity-name-or-user-email>]`, without `db_owner`. Migration or validation identities may use broader privileges only during controlled setup.
+
+The executable beta does not require Azure SQL. When `ECLOE_MARKET_DATABASE_MODE=memory`, the app reads `data/demo/ecloe_market_catalog.json` and serves local images from `src/demo/ecloe_market/assets/catalog/`.
+
+The target product image dataset is Kaggle [`fatihkgg/ecommerce-product-images-18k`](https://www.kaggle.com/datasets/fatihkgg/ecommerce-product-images-18k). If the dataset is available locally, regenerate the beta catalog with one of:
+
+```bash
+python -m scripts.seed_ecloe_market_catalog --kaggle-dir data/external/ecommerce-product-images-18k
+python -m scripts.seed_ecloe_market_catalog --kaggle-archive data/external/ecommerce-product-images-18k.zip
+```
+
+If the Kaggle files are not available, the same command without flags creates deterministic local product-image assets so the marketplace remains runnable.
 
 Azure SQL is the source of truth for:
 
@@ -417,3 +445,4 @@ ECloe Market is ready for the planned demo when:
 - [`ecloe-market-overview.svg`](ecloe-market-overview.svg) - ECloe Market overview diagram.
 - [`ecloe-market-checkout-flow.svg`](ecloe-market-checkout-flow.svg) - ECloe Market checkout and order flow diagram.
 - [`ecloe-market-file-flow.svg`](ecloe-market-file-flow.svg) - ECloe Market file and data flow diagram.
+- [`ecloe-market-class-diagram.svg`](ecloe-market-class-diagram.svg) - ECloe Market domain class diagram.

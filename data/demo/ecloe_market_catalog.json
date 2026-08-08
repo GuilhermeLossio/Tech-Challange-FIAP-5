@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "source": "dummyjson",
-    "source_url": "https://dummyjson.com/products?limit=60",
+    "source": "ecommerce_product_images_18k_local_fallback",
+    "source_url": "https://www.kaggle.com/datasets/fatihkgg/ecommerce-product-images-18k",
     "seed": 426,
     "generated_at": "2026-08-03T00:00:00+00:00",
     "synthetic_notice": "All products, brands, prices, stock values, and ratings are synthetic demo data for ECloe Market."
@@ -53,7 +53,7 @@
   "products": [
     {
       "product_id": "prd_demo_0001",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "1",
       "slug": "glow-balm-01-0001",
       "title_pt": "Glow balm 01 demonstrativo",
@@ -67,16 +67,16 @@
       "currency": "BRL",
       "stock_quantity": 14,
       "rating": 4.1,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0001.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0001.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0002",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "2",
       "slug": "mint-desk-lamp-02-0002",
       "title_pt": "Mint desk lamp 02 demonstrativo",
@@ -90,16 +90,16 @@
       "currency": "BRL",
       "stock_quantity": 22,
       "rating": 4.2,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0002.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0002.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0003",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "3",
       "slug": "clover-keyboard-03-0003",
       "title_pt": "Clover keyboard 03 demonstrativo",
@@ -113,16 +113,16 @@
       "currency": "BRL",
       "stock_quantity": 10,
       "rating": 4.3,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0003.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0003.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0004",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "4",
       "slug": "lemon-pantry-kit-04-0004",
       "title_pt": "Lemon pantry kit 04 demonstrativo",
@@ -136,16 +136,16 @@
       "currency": "BRL",
       "stock_quantity": 15,
       "rating": 4.4,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0004.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0004.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0005",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "5",
       "slug": "rosette-serum-05-0005",
       "title_pt": "Rosette serum 05 demonstrativo",
@@ -159,16 +159,16 @@
       "currency": "BRL",
       "stock_quantity": 23,
       "rating": 4.5,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0005.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0005.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0006",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "6",
       "slug": "cloe-tote-06-0006",
       "title_pt": "Cloe tote 06 demonstrativo",
@@ -182,16 +182,16 @@
       "currency": "BRL",
       "stock_quantity": 10,
       "rating": 4.6,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0006.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0006.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0007",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "7",
       "slug": "smart-herb-pot-07-0007",
       "title_pt": "Smart herb pot 07 demonstrativo",
@@ -205,16 +205,16 @@
       "currency": "BRL",
       "stock_quantity": 19,
       "rating": 4.7,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0007.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0007.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0008",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "8",
       "slug": "daily-care-set-08-0008",
       "title_pt": "Daily care set 08 demonstrativo",
@@ -228,16 +228,16 @@
       "currency": "BRL",
       "stock_quantity": 8,
       "rating": 4.8,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0008.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0008.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0009",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "9",
       "slug": "soft-linen-throw-09-0009",
       "title_pt": "Soft linen throw 09 demonstrativo",
@@ -251,16 +251,16 @@
       "currency": "BRL",
       "stock_quantity": 16,
       "rating": 4.1,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0009.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0009.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0010",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "10",
       "slug": "pocket-speaker-10-0010",
       "title_pt": "Pocket speaker 10 demonstrativo",
@@ -274,16 +274,16 @@
       "currency": "BRL",
       "stock_quantity": 23,
       "rating": 4.2,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0010.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0010.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0011",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "11",
       "slug": "glow-balm-11-0011",
       "title_pt": "Glow balm 11 demonstrativo",
@@ -297,16 +297,16 @@
       "currency": "BRL",
       "stock_quantity": 9,
       "rating": 4.3,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0011.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0011.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0012",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "12",
       "slug": "mint-desk-lamp-12-0012",
       "title_pt": "Mint desk lamp 12 demonstrativo",
@@ -320,16 +320,16 @@
       "currency": "BRL",
       "stock_quantity": 14,
       "rating": 4.4,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0012.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0012.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0013",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "13",
       "slug": "clover-keyboard-13-0013",
       "title_pt": "Clover keyboard 13 demonstrativo",
@@ -343,16 +343,16 @@
       "currency": "BRL",
       "stock_quantity": 6,
       "rating": 4.5,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0013.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0013.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0014",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "14",
       "slug": "lemon-pantry-kit-14-0014",
       "title_pt": "Lemon pantry kit 14 demonstrativo",
@@ -366,16 +366,16 @@
       "currency": "BRL",
       "stock_quantity": 12,
       "rating": 4.6,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0014.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0014.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0015",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "15",
       "slug": "rosette-serum-15-0015",
       "title_pt": "Rosette serum 15 demonstrativo",
@@ -389,16 +389,16 @@
       "currency": "BRL",
       "stock_quantity": 18,
       "rating": 4.7,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0015.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0015.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0016",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "16",
       "slug": "cloe-tote-16-0016",
       "title_pt": "Cloe tote 16 demonstrativo",
@@ -412,16 +412,16 @@
       "currency": "BRL",
       "stock_quantity": 6,
       "rating": 4.8,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0016.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0016.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0017",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "17",
       "slug": "smart-herb-pot-17-0017",
       "title_pt": "Smart herb pot 17 demonstrativo",
@@ -435,16 +435,16 @@
       "currency": "BRL",
       "stock_quantity": 13,
       "rating": 4.1,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0017.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0017.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0018",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "18",
       "slug": "daily-care-set-18-0018",
       "title_pt": "Daily care set 18 demonstrativo",
@@ -458,16 +458,16 @@
       "currency": "BRL",
       "stock_quantity": 21,
       "rating": 4.2,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0018.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0018.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0019",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "19",
       "slug": "soft-linen-throw-19-0019",
       "title_pt": "Soft linen throw 19 demonstrativo",
@@ -481,16 +481,16 @@
       "currency": "BRL",
       "stock_quantity": 8,
       "rating": 4.3,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0019.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0019.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0020",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "20",
       "slug": "pocket-speaker-20-0020",
       "title_pt": "Pocket speaker 20 demonstrativo",
@@ -504,16 +504,16 @@
       "currency": "BRL",
       "stock_quantity": 15,
       "rating": 4.4,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0020.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0020.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0021",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "21",
       "slug": "glow-balm-21-0021",
       "title_pt": "Glow balm 21 demonstrativo",
@@ -527,16 +527,16 @@
       "currency": "BRL",
       "stock_quantity": 20,
       "rating": 4.5,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0021.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0021.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0022",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "22",
       "slug": "mint-desk-lamp-22-0022",
       "title_pt": "Mint desk lamp 22 demonstrativo",
@@ -550,16 +550,16 @@
       "currency": "BRL",
       "stock_quantity": 10,
       "rating": 4.6,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0022.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0022.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0023",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "23",
       "slug": "clover-keyboard-23-0023",
       "title_pt": "Clover keyboard 23 demonstrativo",
@@ -573,16 +573,16 @@
       "currency": "BRL",
       "stock_quantity": 16,
       "rating": 4.7,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0023.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0023.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0024",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "24",
       "slug": "lemon-pantry-kit-24-0024",
       "title_pt": "Lemon pantry kit 24 demonstrativo",
@@ -596,16 +596,16 @@
       "currency": "BRL",
       "stock_quantity": 24,
       "rating": 4.8,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0024.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0024.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0025",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "25",
       "slug": "rosette-serum-25-0025",
       "title_pt": "Rosette serum 25 demonstrativo",
@@ -619,16 +619,16 @@
       "currency": "BRL",
       "stock_quantity": 13,
       "rating": 4.1,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0025.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0025.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0026",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "26",
       "slug": "cloe-tote-26-0026",
       "title_pt": "Cloe tote 26 demonstrativo",
@@ -642,16 +642,16 @@
       "currency": "BRL",
       "stock_quantity": 19,
       "rating": 4.2,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0026.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0026.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0027",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "27",
       "slug": "smart-herb-pot-27-0027",
       "title_pt": "Smart herb pot 27 demonstrativo",
@@ -665,16 +665,16 @@
       "currency": "BRL",
       "stock_quantity": 24,
       "rating": 4.3,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0027.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0027.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0028",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "28",
       "slug": "daily-care-set-28-0028",
       "title_pt": "Daily care set 28 demonstrativo",
@@ -688,16 +688,16 @@
       "currency": "BRL",
       "stock_quantity": 14,
       "rating": 4.4,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0028.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0028.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0029",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "29",
       "slug": "soft-linen-throw-29-0029",
       "title_pt": "Soft linen throw 29 demonstrativo",
@@ -711,16 +711,16 @@
       "currency": "BRL",
       "stock_quantity": 22,
       "rating": 4.5,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0029.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0029.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0030",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "30",
       "slug": "pocket-speaker-30-0030",
       "title_pt": "Pocket speaker 30 demonstrativo",
@@ -734,16 +734,16 @@
       "currency": "BRL",
       "stock_quantity": 8,
       "rating": 4.6,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0030.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0030.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0031",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "31",
       "slug": "glow-balm-31-0031",
       "title_pt": "Glow balm 31 demonstrativo",
@@ -757,16 +757,16 @@
       "currency": "BRL",
       "stock_quantity": 18,
       "rating": 4.7,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0031.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0031.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0032",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "32",
       "slug": "mint-desk-lamp-32-0032",
       "title_pt": "Mint desk lamp 32 demonstrativo",
@@ -780,16 +780,16 @@
       "currency": "BRL",
       "stock_quantity": 6,
       "rating": 4.8,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0032.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0032.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0033",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "33",
       "slug": "clover-keyboard-33-0033",
       "title_pt": "Clover keyboard 33 demonstrativo",
@@ -803,16 +803,16 @@
       "currency": "BRL",
       "stock_quantity": 11,
       "rating": 4.1,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0033.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0033.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0034",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "34",
       "slug": "lemon-pantry-kit-34-0034",
       "title_pt": "Lemon pantry kit 34 demonstrativo",
@@ -826,16 +826,16 @@
       "currency": "BRL",
       "stock_quantity": 18,
       "rating": 4.2,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0034.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0034.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0035",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "35",
       "slug": "rosette-serum-35-0035",
       "title_pt": "Rosette serum 35 demonstrativo",
@@ -849,16 +849,16 @@
       "currency": "BRL",
       "stock_quantity": 24,
       "rating": 4.3,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0035.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0035.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0036",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "36",
       "slug": "cloe-tote-36-0036",
       "title_pt": "Cloe tote 36 demonstrativo",
@@ -872,16 +872,16 @@
       "currency": "BRL",
       "stock_quantity": 13,
       "rating": 4.4,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0036.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0036.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0037",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "37",
       "slug": "smart-herb-pot-37-0037",
       "title_pt": "Smart herb pot 37 demonstrativo",
@@ -895,16 +895,16 @@
       "currency": "BRL",
       "stock_quantity": 18,
       "rating": 4.5,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0037.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0037.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0038",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "38",
       "slug": "daily-care-set-38-0038",
       "title_pt": "Daily care set 38 demonstrativo",
@@ -918,16 +918,16 @@
       "currency": "BRL",
       "stock_quantity": 8,
       "rating": 4.6,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0038.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0038.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0039",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "39",
       "slug": "soft-linen-throw-39-0039",
       "title_pt": "Soft linen throw 39 demonstrativo",
@@ -941,16 +941,16 @@
       "currency": "BRL",
       "stock_quantity": 13,
       "rating": 4.7,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0039.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0039.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0040",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "40",
       "slug": "pocket-speaker-40-0040",
       "title_pt": "Pocket speaker 40 demonstrativo",
@@ -964,16 +964,16 @@
       "currency": "BRL",
       "stock_quantity": 23,
       "rating": 4.8,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0040.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0040.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0041",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "41",
       "slug": "glow-balm-41-0041",
       "title_pt": "Glow balm 41 demonstrativo",
@@ -987,16 +987,16 @@
       "currency": "BRL",
       "stock_quantity": 8,
       "rating": 4.1,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0041.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0041.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0042",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "42",
       "slug": "mint-desk-lamp-42-0042",
       "title_pt": "Mint desk lamp 42 demonstrativo",
@@ -1010,16 +1010,16 @@
       "currency": "BRL",
       "stock_quantity": 17,
       "rating": 4.2,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0042.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0042.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0043",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "43",
       "slug": "clover-keyboard-43-0043",
       "title_pt": "Clover keyboard 43 demonstrativo",
@@ -1033,16 +1033,16 @@
       "currency": "BRL",
       "stock_quantity": 7,
       "rating": 4.3,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0043.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0043.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0044",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "44",
       "slug": "lemon-pantry-kit-44-0044",
       "title_pt": "Lemon pantry kit 44 demonstrativo",
@@ -1056,16 +1056,16 @@
       "currency": "BRL",
       "stock_quantity": 11,
       "rating": 4.4,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0044.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0044.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0045",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "45",
       "slug": "rosette-serum-45-0045",
       "title_pt": "Rosette serum 45 demonstrativo",
@@ -1079,16 +1079,16 @@
       "currency": "BRL",
       "stock_quantity": 21,
       "rating": 4.5,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0045.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0045.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0046",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "46",
       "slug": "cloe-tote-46-0046",
       "title_pt": "Cloe tote 46 demonstrativo",
@@ -1102,16 +1102,16 @@
       "currency": "BRL",
       "stock_quantity": 6,
       "rating": 4.6,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0046.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0046.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0047",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "47",
       "slug": "smart-herb-pot-47-0047",
       "title_pt": "Smart herb pot 47 demonstrativo",
@@ -1125,16 +1125,16 @@
       "currency": "BRL",
       "stock_quantity": 13,
       "rating": 4.7,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0047.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0047.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0048",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "48",
       "slug": "daily-care-set-48-0048",
       "title_pt": "Daily care set 48 demonstrativo",
@@ -1148,16 +1148,16 @@
       "currency": "BRL",
       "stock_quantity": 20,
       "rating": 4.8,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0048.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0048.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0049",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "49",
       "slug": "soft-linen-throw-49-0049",
       "title_pt": "Soft linen throw 49 demonstrativo",
@@ -1171,16 +1171,16 @@
       "currency": "BRL",
       "stock_quantity": 10,
       "rating": 4.1,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0049.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0049.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0050",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "50",
       "slug": "pocket-speaker-50-0050",
       "title_pt": "Pocket speaker 50 demonstrativo",
@@ -1194,16 +1194,16 @@
       "currency": "BRL",
       "stock_quantity": 16,
       "rating": 4.2,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0050.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0050.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0051",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "51",
       "slug": "glow-balm-51-0051",
       "title_pt": "Glow balm 51 demonstrativo",
@@ -1217,16 +1217,16 @@
       "currency": "BRL",
       "stock_quantity": 6,
       "rating": 4.3,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0051.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0051.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0052",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "52",
       "slug": "mint-desk-lamp-52-0052",
       "title_pt": "Mint desk lamp 52 demonstrativo",
@@ -1240,16 +1240,16 @@
       "currency": "BRL",
       "stock_quantity": 10,
       "rating": 4.4,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0052.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0052.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0053",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "53",
       "slug": "clover-keyboard-53-0053",
       "title_pt": "Clover keyboard 53 demonstrativo",
@@ -1263,16 +1263,16 @@
       "currency": "BRL",
       "stock_quantity": 20,
       "rating": 4.5,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0053.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0053.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0054",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "54",
       "slug": "lemon-pantry-kit-54-0054",
       "title_pt": "Lemon pantry kit 54 demonstrativo",
@@ -1286,16 +1286,16 @@
       "currency": "BRL",
       "stock_quantity": 8,
       "rating": 4.6,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0054.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0054.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0055",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "55",
       "slug": "rosette-serum-55-0055",
       "title_pt": "Rosette serum 55 demonstrativo",
@@ -1309,16 +1309,16 @@
       "currency": "BRL",
       "stock_quantity": 12,
       "rating": 4.7,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0055.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0055.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0056",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "56",
       "slug": "cloe-tote-56-0056",
       "title_pt": "Cloe tote 56 demonstrativo",
@@ -1332,16 +1332,16 @@
       "currency": "BRL",
       "stock_quantity": 21,
       "rating": 4.8,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0056.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0056.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0057",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "57",
       "slug": "smart-herb-pot-57-0057",
       "title_pt": "Smart herb pot 57 demonstrativo",
@@ -1355,16 +1355,16 @@
       "currency": "BRL",
       "stock_quantity": 8,
       "rating": 4.1,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0057.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0057.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0058",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "58",
       "slug": "daily-care-set-58-0058",
       "title_pt": "Daily care set 58 demonstrativo",
@@ -1378,16 +1378,16 @@
       "currency": "BRL",
       "stock_quantity": 15,
       "rating": 4.2,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0058.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0058.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0059",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "59",
       "slug": "soft-linen-throw-59-0059",
       "title_pt": "Soft linen throw 59 demonstrativo",
@@ -1401,16 +1401,16 @@
       "currency": "BRL",
       "stock_quantity": 20,
       "rating": 4.3,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0059.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0059.svg"
       ],
       "is_demo": true,
       "status": "active"
     },
     {
       "product_id": "prd_demo_0060",
-      "source": "dummyjson",
+      "source": "ecommerce_product_images_18k_local_fallback",
       "source_id": "60",
       "slug": "pocket-speaker-60-0060",
       "title_pt": "Pocket speaker 60 demonstrativo",
@@ -1424,9 +1424,9 @@
       "currency": "BRL",
       "stock_quantity": 10,
       "rating": 4.4,
-      "thumbnail": "/market/assets/product-placeholder.svg",
+      "thumbnail": "/market/assets/catalog/prd_demo_0060.svg",
       "images": [
-        "/market/assets/product-placeholder.svg"
+        "/market/assets/catalog/prd_demo_0060.svg"
       ],
       "is_demo": true,
       "status": "active"

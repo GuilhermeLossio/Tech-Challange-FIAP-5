@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="480" height="480" viewBox="0 0 480 480" role="img">
+<rect width="480" height="480" rx="36" fill="#f0e5ff"/>
+<circle cx="360" cy="112" r="74" fill="#b889ff" opacity="0.55"/>
+<rect x="104" y="128" width="272" height="220" rx="28" fill="#ffffff" stroke="#073f36" stroke-width="8"/>
+<path d="M150 292h180M162 210h156M190 250h100" stroke="#b889ff" stroke-width="18" stroke-linecap="round"/>
+<path d="M126 362h228" stroke="#073f36" stroke-width="10" stroke-linecap="round"/>
+<text x="240" y="414" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="24" font-weight="700" fill="#064437">Glow balm 31</text>
+<text x="240" y="446" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="18" fill="#31564f">prd_demo_0031</text>
+</svg>

@@ -243,6 +243,22 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
 def _validate_ecloe_market_settings(settings: Settings) -> None:
     if settings.ecloe_market_database_mode not in ECLOE_MARKET_DATABASE_MODES:
         raise ValueError(f"Unsupported ECLOE_MARKET_DATABASE_MODE: {settings.ecloe_market_database_mode}")
+    if settings.ecloe_market_database_mode == "azure_sql":
+        missing = []
+        if not settings.ecloe_pay_sql_server:
+            missing.append("ECLOE_PAY_SQL_SERVER")
+        if not settings.ecloe_pay_sql_database:
+            missing.append("ECLOE_PAY_SQL_DATABASE")
+        if not settings.ecloe_pay_sql_driver:
+            missing.append("ECLOE_PAY_SQL_DRIVER")
+        if missing:
+            raise ValueError(f"Missing ECloe Market Azure SQL settings: {missing}")
+    if (
+        settings.app_environment in CLOUD_ENVIRONMENTS
+        and settings.ecloe_market_database_mode == "azure_sql"
+        and settings.ecloe_pay_sql_auth_mode != "managed_identity"
+    ):
+        raise ValueError("Cloud ECloe Market Azure SQL must use managed_identity.")
 
 
 settings = load_settings(use_env_file=False)

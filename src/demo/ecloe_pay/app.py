@@ -201,6 +201,8 @@ def create_app(
             "/demo/summary",
         }:
             _set_csrf_cookie(response, settings)
+        if request.method == "GET" and request.path.startswith("/market/products/"):
+            _set_csrf_cookie(response, settings)
         return response
 
     @app.get("/")
