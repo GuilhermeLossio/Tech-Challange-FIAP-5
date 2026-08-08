@@ -48,7 +48,7 @@ BEGIN
         currency CHAR(3) NOT NULL CONSTRAINT df_market_products_currency DEFAULT 'BRL',
         stock_quantity INT NOT NULL,
         rating DECIMAL(3, 2) NOT NULL,
-        thumbnail NVARCHAR(260) NOT NULL,
+        thumbnail NVARCHAR(1024) NOT NULL,
         images_json NVARCHAR(MAX) NOT NULL,
         is_demo BIT NOT NULL CONSTRAINT df_market_products_is_demo DEFAULT 1,
         status NVARCHAR(20) NOT NULL,
@@ -334,6 +334,27 @@ IF NOT EXISTS (
 BEGIN
     INSERT INTO ecloe_market.schema_migrations (migration_id)
     VALUES (N'20260803_ecloe_market_catalog_pr2');
+END;
+GO
+
+IF COL_LENGTH(N'ecloe_market.products', N'thumbnail') IS NOT NULL
+    AND (
+        SELECT max_length
+        FROM sys.columns
+        WHERE object_id = OBJECT_ID(N'ecloe_market.products')
+            AND name = N'thumbnail'
+    ) < 2048
+BEGIN
+    ALTER TABLE ecloe_market.products ALTER COLUMN thumbnail NVARCHAR(1024) NOT NULL;
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM ecloe_market.schema_migrations WHERE migration_id = N'20260808_ecloe_market_blob_urls'
+)
+BEGIN
+    INSERT INTO ecloe_market.schema_migrations (migration_id)
+    VALUES (N'20260808_ecloe_market_blob_urls');
 END;
 GO
 

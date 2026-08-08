@@ -112,6 +112,13 @@ class Settings:
     ecloe_market_database_mode: str
     ecloe_market_catalog_path: Path
     ecloe_market_catalog_seed: int
+    ecloe_market_blob_container: str
+    ecloe_market_blob_prefix: str
+    ecloe_market_catalog_azure_path: Path
+    ecloe_market_image_model_dir: Path
+    ecloe_market_image_backend: str
+    ecloe_market_image_space: str
+    ecloe_market_image_space_api_name: str
 
     @property
     def raw_file(self) -> Path:
@@ -205,6 +212,21 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         ecloe_market_catalog_path=ROOT_DIR
         / _env("ECLOE_MARKET_CATALOG_PATH", "data/demo/ecloe_market_catalog.json"),
         ecloe_market_catalog_seed=int(_env("ECLOE_MARKET_CATALOG_SEED", "426")),
+        ecloe_market_blob_container=_env(
+            "ECLOE_MARKET_BLOB_CONTAINER",
+            "ecloe-market-demo-assets",
+        ),
+        ecloe_market_blob_prefix=_env("ECLOE_MARKET_BLOB_PREFIX", "catalog").strip("/"),
+        ecloe_market_catalog_azure_path=ROOT_DIR
+        / _env("ECLOE_MARKET_CATALOG_AZURE_PATH", "data/demo/ecloe_market_catalog.azure.json"),
+        ecloe_market_image_model_dir=ROOT_DIR
+        / _env("ECLOE_MARKET_IMAGE_MODEL_DIR", "data/external/HunyuanImage-3"),
+        ecloe_market_image_backend=_env("ECLOE_MARKET_IMAGE_BACKEND", "local").lower(),
+        ecloe_market_image_space=_env(
+            "ECLOE_MARKET_IMAGE_SPACE",
+            "GuilhermeL/ecloe-hunyuan-image-3-demo",
+        ),
+        ecloe_market_image_space_api_name=_env("ECLOE_MARKET_IMAGE_SPACE_API_NAME", "/generate"),
     )
     _validate_ecloe_pay_settings(settings)
     _validate_ecloe_market_settings(settings)

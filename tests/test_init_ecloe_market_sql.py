@@ -9,6 +9,8 @@ def test_ecloe_market_init_schema_is_idempotent_and_market_scoped() -> None:
     assert "IF NOT EXISTS" in schema
     assert "ecloe_market.schema_migrations" in schema
     assert init_ecloe_market_sql.MIGRATION_ID in schema
+    assert "20260808_ecloe_market_blob_urls" in schema
+    assert "thumbnail NVARCHAR(1024)" in schema
     assert "ecloe_pay" not in schema
 
 

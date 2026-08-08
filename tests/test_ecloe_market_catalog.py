@@ -108,3 +108,56 @@ def test_ecloe_market_catalog_uses_fictional_display_brands() -> None:
     }
 
     assert {product.brand for product in catalog.products} <= allowed_brands
+
+
+def test_ecloe_market_catalog_loader_accepts_azure_blob_image_urls(tmp_path: Path) -> None:
+    catalog_path = tmp_path / "catalog.azure.json"
+    image_url = (
+        "https://acct.blob.core.windows.net/ecloe-market-demo-assets/"
+        "catalog/images/prd_demo_0001_01.png"
+    )
+    catalog_path.write_text(
+        """
+        {
+          "metadata": {},
+          "categories": [
+            {
+              "category_id": "cat_tech",
+              "slug": "tech",
+              "title_pt": "Tecnologia",
+              "title_en": "Tech",
+              "is_demo": true
+            }
+          ],
+          "products": [
+            {
+              "product_id": "prd_demo_0001",
+              "source": "test",
+              "source_id": "1",
+              "slug": "demo",
+              "title_pt": "Demo",
+              "title_en": "Demo",
+              "description_pt": "Demo",
+              "description_en": "Demo",
+              "category_id": "cat_tech",
+              "brand": "ECloe Essentials",
+              "sku": "ECLOE-0001",
+              "price_cents": 1000,
+              "currency": "BRL",
+              "stock_quantity": 5,
+              "rating": 4.5,
+              "thumbnail": "__IMAGE_URL__",
+              "images": ["__IMAGE_URL__"],
+              "is_demo": true,
+              "status": "active"
+            }
+          ]
+        }
+        """.replace("__IMAGE_URL__", image_url),
+        encoding="utf-8",
+    )
+
+    catalog = load_catalog(catalog_path)
+
+    assert catalog.products[0].thumbnail == image_url
+    assert catalog.products[0].images == (image_url,)

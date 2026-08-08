@@ -238,3 +238,59 @@ Azure SQL repository contract tests are opt-in. Common CI runs do not depend on 
 ```powershell
 python -m pytest tests/test_ecloe_pay_contract.py
 ```
+
+## ECloe Market Catalog Assets
+
+ECloe Market keeps the local app default in memory mode with the synthetic catalog JSON. For Azure validation, publish the catalog as two artifacts: product metadata in Azure SQL and catalog images plus the Azure-ready JSON snapshot in Azure Blob Storage.
+
+The image-generation step is separate and opt-in because `tencent/HunyuanImage-3.0` is a large GPU-oriented model. Download the model outside the normal app dependency path, for example under `data/external/HunyuanImage-3/`, and install the required image stack only in the environment that will run generation.
+
+Non-secret local settings:
+
+```text
+AZURE_STORAGE_ACCOUNT_URL=https://<storage-account>.blob.core.windows.net
+ECLOE_MARKET_BLOB_CONTAINER=ecloe-market-demo-assets
+ECLOE_MARKET_BLOB_PREFIX=catalog
+ECLOE_MARKET_CATALOG_AZURE_PATH=data/demo/ecloe_market_catalog.azure.json
+ECLOE_MARKET_IMAGE_MODEL_DIR=data/external/HunyuanImage-3
+ECLOE_MARKET_IMAGE_BACKEND=space
+ECLOE_MARKET_IMAGE_SPACE=GuilhermeL/ecloe-hunyuan-image-3-demo
+ECLOE_MARKET_IMAGE_SPACE_API_NAME=/generate
+```
+
+The image generator supports two backends:
+
+| Backend | Use |
+|:---|:---|
+| `local` | Loads `tencent/HunyuanImage-3.0` in the current machine from `ECLOE_MARKET_IMAGE_MODEL_DIR`. |
+| `space` | Calls a Gradio Space API with `gradio_client`, using `ECLOE_MARKET_IMAGE_SPACE` and `ECLOE_MARKET_IMAGE_SPACE_API_NAME`. |
+
+The repository includes a Space template in `spaces/hunyuan-image-3-demo/`. Create and upload it with the Hugging Face CLI after authenticating locally:
+
+```powershell
+hf auth login
+hf repo create GuilhermeL/ecloe-hunyuan-image-3-demo --type space --sdk gradio
+hf upload GuilhermeL/ecloe-hunyuan-image-3-demo spaces/hunyuan-image-3-demo . --repo-type space
+```
+
+Catalog operational sequence:
+
+```powershell
+az login
+python -m scripts.generate_ecloe_market_catalog_images
+python -m scripts.publish_ecloe_market_catalog_to_azure
+```
+
+Then point the SQL seed to the Azure-ready JSON and initialize the Market schema:
+
+```text
+ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json
+ECLOE_MARKET_DATABASE_MODE=azure_sql
+ECLOE_PAY_SQL_AUTH_MODE=azure_cli
+```
+
+```powershell
+python -m scripts.init_ecloe_market_sql
+```
+
+Cloud runtime must use Managed Identity for both Blob access and Azure SQL. Do not store real customer, payment, CPF, card, bank, or credential data in the ECloe Market catalog assets.
