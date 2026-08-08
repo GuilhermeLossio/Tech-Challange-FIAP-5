@@ -119,6 +119,7 @@ class Settings:
     ecloe_market_image_backend: str
     ecloe_market_image_space: str
     ecloe_market_image_space_api_name: str
+    ecloe_market_image_space_extra_kwargs: str
 
     @property
     def raw_file(self) -> Path:
@@ -227,6 +228,7 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
             "GuilhermeL/ecloe-hunyuan-image-3-demo",
         ),
         ecloe_market_image_space_api_name=_env("ECLOE_MARKET_IMAGE_SPACE_API_NAME", "/generate"),
+        ecloe_market_image_space_extra_kwargs=_env("ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS", "{}"),
     )
     _validate_ecloe_pay_settings(settings)
     _validate_ecloe_market_settings(settings)

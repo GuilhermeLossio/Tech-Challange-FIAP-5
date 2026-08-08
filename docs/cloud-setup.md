@@ -256,6 +256,7 @@ ECLOE_MARKET_IMAGE_MODEL_DIR=data/external/HunyuanImage-3
 ECLOE_MARKET_IMAGE_BACKEND=space
 ECLOE_MARKET_IMAGE_SPACE=GuilhermeL/ecloe-hunyuan-image-3-demo
 ECLOE_MARKET_IMAGE_SPACE_API_NAME=/generate
+ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS={}
 ```
 
 The image generator supports two backends:
@@ -264,6 +265,14 @@ The image generator supports two backends:
 |:---|:---|
 | `local` | Loads `tencent/HunyuanImage-3.0` in the current machine from `ECLOE_MARKET_IMAGE_MODEL_DIR`. |
 | `space` | Calls a Gradio Space API with `gradio_client`, using `ECLOE_MARKET_IMAGE_SPACE` and `ECLOE_MARKET_IMAGE_SPACE_API_NAME`. |
+
+If using a public Space with a different endpoint signature, pass additional endpoint parameters as JSON in `ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS`. For example, a Space with `/infer` may need:
+
+```text
+ECLOE_MARKET_IMAGE_SPACE=Alae65/HunyuanImage-3
+ECLOE_MARKET_IMAGE_SPACE_API_NAME=/infer
+ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS={"randomize_seed":false,"diff_infer_steps":50,"image_size":"1024x1024"}
+```
 
 The repository includes a Space template in `spaces/hunyuan-image-3-demo/`. Create and upload it with the Hugging Face CLI after authenticating locally:
 

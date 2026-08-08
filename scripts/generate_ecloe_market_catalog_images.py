@@ -68,7 +68,7 @@ class HunyuanImageGenerator:
 
 
 class HuggingFaceSpaceImageGenerator:
-    def __init__(self, space: str, *, api_name: str) -> None:
+    def __init__(self, space: str, *, api_name: str, extra_kwargs: dict[str, Any] | None = None) -> None:
         if not space:
             raise RuntimeError("ECLOE_MARKET_IMAGE_SPACE is required when image backend is 'space'.")
         try:
@@ -80,10 +80,16 @@ class HuggingFaceSpaceImageGenerator:
             ) from error
         self.client = Client(space)
         self.api_name = api_name
+        self.extra_kwargs = extra_kwargs or {}
 
     def generate(self, prompt: str, output_path: Path, *, seed: int) -> None:
         output_path.parent.mkdir(parents=True, exist_ok=True)
-        result = self.client.predict(prompt=prompt, seed=seed, api_name=self.api_name)
+        result = self.client.predict(
+            prompt=prompt,
+            seed=seed,
+            **self.extra_kwargs,
+            api_name=self.api_name,
+        )
         _save_space_result(result, output_path)
 
 
@@ -125,11 +131,16 @@ def build_image_generator(
     model_dir: Path,
     space: str,
     space_api_name: str,
+    space_extra_kwargs: dict[str, Any] | None = None,
 ) -> ImageGenerator:
     if backend == "local":
         return HunyuanImageGenerator(model_dir)
     if backend == "space":
-        return HuggingFaceSpaceImageGenerator(space, api_name=space_api_name)
+        return HuggingFaceSpaceImageGenerator(
+            space,
+            api_name=space_api_name,
+            extra_kwargs=space_extra_kwargs,
+        )
     raise RuntimeError("ECLOE_MARKET_IMAGE_BACKEND must be either 'local' or 'space'.")
 
 
@@ -144,6 +155,7 @@ def complete_catalog_images(
     backend: str = "local",
     space: str = "",
     space_api_name: str = "/generate",
+    space_extra_kwargs: dict[str, Any] | None = None,
 ) -> ImageCompletionSummary:
     payload = _read_catalog(catalog_path)
     image_generator = generator or build_image_generator(
@@ -151,6 +163,7 @@ def complete_catalog_images(
         model_dir=model_dir,
         space=space,
         space_api_name=space_api_name,
+        space_extra_kwargs=space_extra_kwargs,
     )
     products_updated = 0
     images_generated = 0
@@ -219,6 +232,16 @@ def _product_prompt(product: dict[str, Any], *, variant: int) -> str:
     )
 
 
+def _parse_space_extra_kwargs(raw: str) -> dict[str, Any]:
+    try:
+        payload = json.loads(raw or "{}")
+    except json.JSONDecodeError as error:
+        raise RuntimeError("ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS must be a JSON object.") from error
+    if not isinstance(payload, dict):
+        raise RuntimeError("ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS must be a JSON object.")
+    return payload
+
+
 def main() -> int:
     settings = load_settings()
     parser = argparse.ArgumentParser(description="Complete ECloe Market catalog images with HunyuanImage.")
@@ -233,6 +256,11 @@ def main() -> int:
     )
     parser.add_argument("--space", default=settings.ecloe_market_image_space)
     parser.add_argument("--space-api-name", default=settings.ecloe_market_image_space_api_name)
+    parser.add_argument(
+        "--space-extra-kwargs",
+        default=settings.ecloe_market_image_space_extra_kwargs,
+        help="JSON object with additional Gradio endpoint parameters.",
+    )
     parser.add_argument("--seed", type=int, default=settings.ecloe_market_catalog_seed)
     args = parser.parse_args()
 
@@ -246,6 +274,7 @@ def main() -> int:
             backend=args.backend,
             space=args.space,
             space_api_name=args.space_api_name,
+            space_extra_kwargs=_parse_space_extra_kwargs(args.space_extra_kwargs),
         )
     except RuntimeError as error:
         print(f"ECloe Market image generation failed: {error}", file=sys.stderr)

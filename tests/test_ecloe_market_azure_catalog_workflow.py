@@ -169,14 +169,25 @@ def test_ecloe_market_space_generator_calls_gradio_client(tmp_path: Path, monkey
     )
     output_path = tmp_path / "catalog-image.png"
 
-    generator = HuggingFaceSpaceImageGenerator("GuilhermeL/ecloe-hunyuan-image-3-demo", api_name="/generate")
+    generator = HuggingFaceSpaceImageGenerator(
+        "Alae65/HunyuanImage-3",
+        api_name="/infer",
+        extra_kwargs={"randomize_seed": False, "diff_infer_steps": 50, "image_size": "1024x1024"},
+    )
     generator.generate("demo prompt", output_path, seed=426)
 
     assert output_path.read_bytes() == b"space-png"
     assert calls == [
         (
-            "GuilhermeL/ecloe-hunyuan-image-3-demo",
-            {"prompt": "demo prompt", "seed": 426, "api_name": "/generate"},
+            "Alae65/HunyuanImage-3",
+            {
+                "prompt": "demo prompt",
+                "seed": 426,
+                "randomize_seed": False,
+                "diff_infer_steps": 50,
+                "image_size": "1024x1024",
+                "api_name": "/infer",
+            },
         )
     ]
 

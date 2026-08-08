@@ -196,3 +196,4 @@ reports/*
 !data/demo/.gitkeep
 !data/external/.gitkeep
 !reports/.gitkeep
+/src/demo/ecloe_market/assets
