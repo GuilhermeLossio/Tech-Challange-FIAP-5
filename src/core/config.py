@@ -15,6 +15,8 @@ ECLOE_COSMOS_ACCOUNT = "ecloe5cosmos1266cl"
 DEFAULT_AZURE_COSMOS_ENDPOINT = f"https://{ECLOE_COSMOS_ACCOUNT}.documents.azure.com:443/"
 ECLOE_PAY_DATABASE_MODES = {"memory", "azure_sql"}
 ECLOE_MARKET_DATABASE_MODES = {"memory", "azure_sql"}
+ECLOE_MARKET_IMAGE_BACKENDS = {"zimage-local", "space", "local", "hunyuan-local", "catalog"}
+ECLOE_MARKET_IMAGE_OFFLOAD_MODES = {"model", "sequential", "none"}
 ECLOE_PAY_SQL_AUTH_MODES = {"entra_interactive", "azure_cli", "managed_identity"}
 CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
 
@@ -120,6 +122,11 @@ class Settings:
     ecloe_market_image_space: str
     ecloe_market_image_space_api_name: str
     ecloe_market_image_space_extra_kwargs: str
+    ecloe_market_image_zimage_model: str
+    ecloe_market_image_height: int
+    ecloe_market_image_width: int
+    ecloe_market_image_steps: int
+    ecloe_market_image_offload_mode: str
 
     @property
     def raw_file(self) -> Path:
@@ -222,13 +229,24 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         / _env("ECLOE_MARKET_CATALOG_AZURE_PATH", "data/demo/ecloe_market_catalog.azure.json"),
         ecloe_market_image_model_dir=ROOT_DIR
         / _env("ECLOE_MARKET_IMAGE_MODEL_DIR", "data/external/HunyuanImage-3"),
-        ecloe_market_image_backend=_env("ECLOE_MARKET_IMAGE_BACKEND", "local").lower(),
+        ecloe_market_image_backend=_env("ECLOE_MARKET_IMAGE_BACKEND", "zimage-local").lower(),
         ecloe_market_image_space=_env(
             "ECLOE_MARKET_IMAGE_SPACE",
-            "GuilhermeL/ecloe-hunyuan-image-3-demo",
+            "mrfakename/Z-Image-Turbo",
         ),
-        ecloe_market_image_space_api_name=_env("ECLOE_MARKET_IMAGE_SPACE_API_NAME", "/generate"),
-        ecloe_market_image_space_extra_kwargs=_env("ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS", "{}"),
+        ecloe_market_image_space_api_name=_env("ECLOE_MARKET_IMAGE_SPACE_API_NAME", "/generate_image"),
+        ecloe_market_image_space_extra_kwargs=_env(
+            "ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS",
+            '{"height":1024,"width":1024,"num_inference_steps":9,"randomize_seed":false}',
+        ),
+        ecloe_market_image_zimage_model=_env(
+            "ECLOE_MARKET_IMAGE_ZIMAGE_MODEL",
+            "Tongyi-MAI/Z-Image-Turbo",
+        ),
+        ecloe_market_image_height=int(_env("ECLOE_MARKET_IMAGE_HEIGHT", "1024")),
+        ecloe_market_image_width=int(_env("ECLOE_MARKET_IMAGE_WIDTH", "1024")),
+        ecloe_market_image_steps=int(_env("ECLOE_MARKET_IMAGE_STEPS", "9")),
+        ecloe_market_image_offload_mode=_env("ECLOE_MARKET_IMAGE_OFFLOAD_MODE", "model").lower(),
     )
     _validate_ecloe_pay_settings(settings)
     _validate_ecloe_market_settings(settings)
@@ -267,6 +285,16 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
 def _validate_ecloe_market_settings(settings: Settings) -> None:
     if settings.ecloe_market_database_mode not in ECLOE_MARKET_DATABASE_MODES:
         raise ValueError(f"Unsupported ECLOE_MARKET_DATABASE_MODE: {settings.ecloe_market_database_mode}")
+    if settings.ecloe_market_image_backend not in ECLOE_MARKET_IMAGE_BACKENDS:
+        raise ValueError(f"Unsupported ECLOE_MARKET_IMAGE_BACKEND: {settings.ecloe_market_image_backend}")
+    if settings.ecloe_market_image_offload_mode not in ECLOE_MARKET_IMAGE_OFFLOAD_MODES:
+        raise ValueError(f"Unsupported ECLOE_MARKET_IMAGE_OFFLOAD_MODE: {settings.ecloe_market_image_offload_mode}")
+    if settings.ecloe_market_image_height <= 0:
+        raise ValueError("ECLOE_MARKET_IMAGE_HEIGHT must be greater than zero.")
+    if settings.ecloe_market_image_width <= 0:
+        raise ValueError("ECLOE_MARKET_IMAGE_WIDTH must be greater than zero.")
+    if settings.ecloe_market_image_steps <= 0:
+        raise ValueError("ECLOE_MARKET_IMAGE_STEPS must be greater than zero.")
     if settings.ecloe_market_database_mode == "azure_sql":
         missing = []
         if not settings.ecloe_pay_sql_server:

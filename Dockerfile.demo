@@ -1,0 +1,37 @@
+FROM python:3.14.6-slim
+
+ARG VCS_REF=unknown
+ARG VERSION=0.1.0
+
+LABEL org.opencontainers.image.title="ecloe-demo-web" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}"
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8000 \
+    APP_ENVIRONMENT=cloud \
+    ECLOE_PAY_DATABASE_MODE=memory \
+    ECLOE_MARKET_DATABASE_MODE=memory \
+    ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json \
+    ECLOE_PAY_COOKIE_SECURE=true
+
+WORKDIR /app
+
+RUN addgroup --system ecloe && adduser --system --ingroup ecloe ecloe
+
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY data/demo ./data/demo
+
+RUN python -m pip install --upgrade pip \
+    && python -m pip install --no-cache-dir -e "." gunicorn
+
+USER ecloe
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/market' % os.getenv('PORT','8000'), timeout=3).read()"
+
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8000} src.demo.app:app --workers 1 --threads 4 --timeout 60"]

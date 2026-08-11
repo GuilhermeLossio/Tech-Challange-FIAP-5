@@ -41,6 +41,12 @@ azure-sql = [
 space-image = [
     "gradio_client>=1.8.0",
 ]
+zimage-local = [
+    "accelerate>=1.0.0",
+    "diffusers>=0.35.0",
+    "pillow>=10.0.0",
+    "transformers>=4.50.0",
+]
 
 [build-system]
 requires = ["setuptools>=69.0"]

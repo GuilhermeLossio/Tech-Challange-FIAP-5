@@ -243,7 +243,7 @@ python -m pytest tests/test_ecloe_pay_contract.py
 
 ECloe Market keeps the local app default in memory mode with the synthetic catalog JSON. For Azure validation, publish the catalog as two artifacts: product metadata in Azure SQL and catalog images plus the Azure-ready JSON snapshot in Azure Blob Storage.
 
-The image-generation step is separate and opt-in because `tencent/HunyuanImage-3.0` is a large GPU-oriented model. Download the model outside the normal app dependency path, for example under `data/external/HunyuanImage-3/`, and install the required image stack only in the environment that will run generation.
+The image-generation step is separate and opt-in. The recommended generator runs `Tongyi-MAI/Z-Image-Turbo` locally on an NVIDIA GPU with PyTorch CUDA and `diffusers`, so it does not depend on the public Hugging Face Space quota. The normal app install stays lightweight and local memory mode does not need image-generation dependencies.
 
 Non-secret local settings:
 
@@ -253,28 +253,65 @@ ECLOE_MARKET_BLOB_CONTAINER=ecloe-market-demo-assets
 ECLOE_MARKET_BLOB_PREFIX=catalog
 ECLOE_MARKET_CATALOG_AZURE_PATH=data/demo/ecloe_market_catalog.azure.json
 ECLOE_MARKET_IMAGE_MODEL_DIR=data/external/HunyuanImage-3
-ECLOE_MARKET_IMAGE_BACKEND=space
-ECLOE_MARKET_IMAGE_SPACE=GuilhermeL/ecloe-hunyuan-image-3-demo
-ECLOE_MARKET_IMAGE_SPACE_API_NAME=/generate
-ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS={}
+ECLOE_MARKET_IMAGE_BACKEND=zimage-local
+ECLOE_MARKET_IMAGE_SPACE=mrfakename/Z-Image-Turbo
+ECLOE_MARKET_IMAGE_SPACE_API_NAME=/generate_image
+ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS={"height":1024,"width":1024,"num_inference_steps":9,"randomize_seed":false}
+ECLOE_MARKET_IMAGE_ZIMAGE_MODEL=Tongyi-MAI/Z-Image-Turbo
+ECLOE_MARKET_IMAGE_HEIGHT=768
+ECLOE_MARKET_IMAGE_WIDTH=768
+ECLOE_MARKET_IMAGE_STEPS=8
+ECLOE_MARKET_IMAGE_OFFLOAD_MODE=model
 ```
 
-The image generator supports two backends:
+The image generator supports three backends:
 
 | Backend | Use |
 |:---|:---|
-| `local` | Loads `tencent/HunyuanImage-3.0` in the current machine from `ECLOE_MARKET_IMAGE_MODEL_DIR`. |
-| `space` | Calls a Gradio Space API with `gradio_client`, using `ECLOE_MARKET_IMAGE_SPACE` and `ECLOE_MARKET_IMAGE_SPACE_API_NAME`. |
+| `zimage-local` | Loads `Tongyi-MAI/Z-Image-Turbo` locally with `diffusers` and CUDA. |
+| `local` / `hunyuan-local` | Loads `tencent/HunyuanImage-3.0` in the current machine from `ECLOE_MARKET_IMAGE_MODEL_DIR`. |
+| `space` | Calls a quota-limited Gradio Space API with `gradio_client`, using `ECLOE_MARKET_IMAGE_SPACE` and `ECLOE_MARKET_IMAGE_SPACE_API_NAME`. |
+| `catalog` | Generates deterministic placeholder PNGs with the repository's built-in renderer for offline fallback only. |
 
-If using a public Space with a different endpoint signature, pass additional endpoint parameters as JSON in `ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS`. For example, a Space with `/infer` may need:
+Use a separate Python 3.12 image-generation environment for local GPU inference. The main repository `.venv` is pinned to Python 3.14.6, while PyTorch CUDA wheels on Windows may require an older supported Python version.
 
-```text
-ECLOE_MARKET_IMAGE_SPACE=Alae65/HunyuanImage-3
-ECLOE_MARKET_IMAGE_SPACE_API_NAME=/infer
-ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS={"randomize_seed":false,"diff_infer_steps":50,"image_size":"1024x1024"}
+```powershell
+py -3.12 -m venv .venv-image
+.venv-image\Scripts\python.exe -m pip install --upgrade pip
+.venv-image\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
+.venv-image\Scripts\python.exe -m pip install diffusers transformers accelerate pillow python-dotenv
 ```
 
-The repository includes a Space template in `spaces/hunyuan-image-3-demo/`. Create and upload it with the Hugging Face CLI after authenticating locally:
+Then generate images locally:
+
+```powershell
+$env:PYTHONPATH="."
+.venv-image\Scripts\python.exe -m scripts.generate_ecloe_market_catalog_images `
+  --backend zimage-local `
+  --height 768 `
+  --width 768 `
+  --steps 8 `
+  --offload-mode model `
+  --force
+```
+
+For 16 GB GPUs, `--offload-mode model` is the recommended default. If loading still fails with CUDA OOM, rerun with `--offload-mode sequential`; it is slower but uses less VRAM. Use `--offload-mode none` only when there is enough VRAM to keep the full pipeline on GPU.
+
+The Space fallback uses `/generate_image` and accepts explicit dimensions, inference steps, seed, and seed-randomization settings:
+
+```text
+ECLOE_MARKET_IMAGE_SPACE=mrfakename/Z-Image-Turbo
+ECLOE_MARKET_IMAGE_SPACE_API_NAME=/generate_image
+ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS={"height":1024,"width":1024,"num_inference_steps":9,"randomize_seed":false}
+```
+
+If you need the old Hunyuan local path, download the model outside the normal app dependency path, for example under `data/external/HunyuanImage-3/`, install the required GPU/image stack only in the generation environment, and run with `--backend hunyuan-local`.
+
+If using a different public Space, pass additional endpoint parameters as JSON in `ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS`.
+
+If a local `.env` still contains older image settings, pass the Space options explicitly on the command line. Command-line values override the loaded settings for that run.
+
+The repository includes a Hunyuan Space template in `spaces/hunyuan-image-3-demo/`. Create and upload it with the Hugging Face CLI after authenticating locally:
 
 ```powershell
 hf auth login
@@ -286,8 +323,14 @@ Catalog operational sequence:
 
 ```powershell
 az login
-python -m scripts.generate_ecloe_market_catalog_images
-python -m scripts.publish_ecloe_market_catalog_to_azure
+.venv-image\Scripts\python.exe -m scripts.generate_ecloe_market_catalog_images `
+  --backend zimage-local `
+  --height 768 `
+  --width 768 `
+  --steps 8 `
+  --offload-mode model `
+  --force
+.venv\Scripts\python.exe -m scripts.publish_ecloe_market_catalog_to_azure
 ```
 
 Then point the SQL seed to the Azure-ready JSON and initialize the Market schema:
@@ -303,3 +346,40 @@ python -m scripts.init_ecloe_market_sql
 ```
 
 Cloud runtime must use Managed Identity for both Blob access and Azure SQL. Do not store real customer, payment, CPF, card, bank, or credential data in the ECloe Market catalog assets.
+
+## Demo Market/Pay GitHub Actions Deployment
+
+Use `.github/workflows/deploy-demo-web.yml` to deploy the navigable ECloe Market/Pay demo through GitHub Actions. This workflow is intentionally separate from the ECloe Engine API deployment in `.github/workflows/deploy.yml`.
+
+Required GitHub environment secrets:
+
+```text
+AZURE_CLIENT_ID=<federated-credential-app-client-id>
+AZURE_TENANT_ID=<tenant-id>
+AZURE_SUBSCRIPTION_ID=<subscription-id>
+```
+
+Required GitHub environment variables:
+
+```text
+AZURE_RESOURCE_GROUP=FIAPTechChallange5
+ACR_NAME=<existing-acr-name>
+ACR_LOGIN_SERVER=<existing-acr-name>.azurecr.io
+```
+
+The demo workflow builds `Dockerfile.demo`, pushes `ecloe-demo-web:<tag>` to ACR, creates or updates the selected Container App, and smoke-tests:
+
+```text
+/market
+/pay/login
+```
+
+The first GitHub Actions deployment keeps the demo in local-memory mode inside the container:
+
+```text
+ECLOE_PAY_DATABASE_MODE=memory
+ECLOE_MARKET_DATABASE_MODE=memory
+ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json
+```
+
+This is deliberate for the first online run. Azure SQL seeding and managed-identity SQL runtime can be enabled in a later deployment after private networking or an explicitly approved temporary SQL access path is ready.
