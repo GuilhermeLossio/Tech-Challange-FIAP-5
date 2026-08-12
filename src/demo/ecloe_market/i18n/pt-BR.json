@@ -42,6 +42,7 @@
     "sortPriceDesc": "Maior preco",
     "sortTitle": "Nome",
     "applyFilters": "Aplicar",
+    "noResults": "Nenhum produto encontrado para os filtros atuais.",
     "pagination": "Paginas do catalogo",
     "previous": "Anterior",
     "next": "Proxima",

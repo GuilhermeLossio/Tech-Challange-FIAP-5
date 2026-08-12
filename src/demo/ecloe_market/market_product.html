@@ -33,10 +33,23 @@
     <a class="secondary-link" href="/market">{{ t("market.back") }}</a>
     <article class="product-commerce-card">
       <section class="product-gallery" aria-label="{{ t("market.gallery") }}">
-        <img src="{{ product.thumbnail }}" alt="" />
+        <div class="product-gallery-main">
+          <img
+            data-product-gallery-main
+            src="{{ product.thumbnail }}"
+            alt="{{ product.title_pt if locale == "pt-BR" else product.title_en }}"
+            onerror="this.src='/market/assets/product-placeholder.svg'"
+          />
+        </div>
         <div class="thumbnail-row">
           {% for image in product.images %}
-            <img src="{{ image }}" alt="" />
+            <button class="gallery-thumb {{ 'active' if loop.first else '' }}" type="button" data-gallery-image="{{ image }}">
+              <img
+                src="{{ image }}"
+                alt="{{ product.title_pt if locale == "pt-BR" else product.title_en }}"
+                onerror="this.src='/market/assets/product-placeholder.svg'"
+              />
+            </button>
           {% endfor %}
         </div>
       </section>

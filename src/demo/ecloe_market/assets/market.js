@@ -71,4 +71,17 @@
       window.location.reload();
     });
   });
+
+  const galleryMain = document.querySelector("[data-product-gallery-main]");
+  document.querySelectorAll("[data-gallery-image]").forEach((button) => {
+    button.addEventListener("click", () => {
+      if (!galleryMain) {
+        return;
+      }
+      galleryMain.src = button.dataset.galleryImage;
+      document.querySelectorAll("[data-gallery-image]").forEach((thumb) => {
+        thumb.classList.toggle("active", thumb === button);
+      });
+    });
+  });
 })();

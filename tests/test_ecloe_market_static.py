@@ -135,6 +135,28 @@ def test_ecloe_market_home_uses_marketplace_layout_not_pay_sidebar_only() -> Non
     assert "market-sidebar" not in html
 
 
+def test_ecloe_market_images_use_catalog_gallery_layout() -> None:
+    index_html = (ROOT / "src" / "demo" / "ecloe_market" / "market_index.html").read_text(
+        encoding="utf-8"
+    )
+    product_html = (ROOT / "src" / "demo" / "ecloe_market" / "market_product.html").read_text(
+        encoding="utf-8"
+    )
+    market_css = (
+        ROOT / "src" / "demo" / "ecloe_market" / "assets" / "market.css"
+    ).read_text(encoding="utf-8")
+    market_js = (ROOT / "src" / "demo" / "ecloe_market" / "assets" / "market.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert "product-image-panel" in index_html
+    assert "product-card-thumbs" in index_html
+    assert "data-product-gallery-main" in product_html
+    assert "data-gallery-image" in product_html
+    assert "object-fit: contain" in market_css
+    assert "data-gallery-image" in market_js
+
+
 def test_ecloe_market_runtime_uses_repository_factory() -> None:
     app_source = (ROOT / "src" / "demo" / "app.py").read_text(encoding="utf-8")
     factory_source = (ROOT / "src" / "market" / "repositories" / "factory.py").read_text(

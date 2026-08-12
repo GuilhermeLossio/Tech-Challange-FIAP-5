@@ -189,7 +189,7 @@
 
   .sprite-icon::before,
   .sprite-art::before {
-    background-image: url("./assets/ecloe-pay-spritesheet.png");
+    background-image: url("/assets/ecloe-pay-spritesheet.png");
     background-position: calc(var(--sprite-x) * var(--sprite-scale) * -1px) calc(var(--sprite-y) * var(--sprite-scale) * -1px);
     background-repeat: no-repeat;
     background-size: calc(1568 * var(--sprite-scale) * 1px) calc(947 * var(--sprite-scale) * 1px);

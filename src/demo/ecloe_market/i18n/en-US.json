@@ -42,6 +42,7 @@
     "sortPriceDesc": "Highest price",
     "sortTitle": "Name",
     "applyFilters": "Apply",
+    "noResults": "No products found for the current filters.",
     "pagination": "Catalog pages",
     "previous": "Previous",
     "next": "Next",
