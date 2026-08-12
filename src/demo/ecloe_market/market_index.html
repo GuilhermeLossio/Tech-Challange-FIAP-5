@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="/market/assets/market.css" />
 </head>
 <body class="market-body marketplace-body">
+  <a class="skip-link" href="#offers">{{ t("market.skipToOffers") }}</a>
   <header class="marketplace-header">
     <div class="marketplace-header-main">
       <a class="marketplace-logo" href="/market" aria-label="ECloe Market">
@@ -52,9 +53,46 @@
         <p class="eyebrow">{{ t("market.demoOnly") }}</p>
         <h1>{{ t("market.heroTitle") }}</h1>
         <p>{{ t("market.heroCopy") }}</p>
-        <a class="primary-link" href="#offers">{{ t("market.exploreDeals") }}</a>
+        <div class="hero-actions">
+          <a class="primary-link" href="#offers">{{ t("market.exploreDeals") }}</a>
+          <a class="secondary-link" href="/market/cart">{{ t("market.reviewCart") }}</a>
+        </div>
       </div>
-      <span class="cloe-image large sprite-art sprite-cloe-heart" aria-hidden="true"></span>
+      <div class="hero-summary" aria-label="{{ t('market.marketSnapshot') }}">
+        <span class="cloe-image large sprite-art sprite-cloe-heart" aria-hidden="true"></span>
+        <dl>
+          <div>
+            <dt>{{ t("market.visibleProducts") }}</dt>
+            <dd>{{ products|length }}</dd>
+          </div>
+          <div>
+            <dt>{{ t("market.categories") }}</dt>
+            <dd>{{ categories|length }}</dd>
+          </div>
+          <div>
+            <dt>{{ t("market.cart") }}</dt>
+            <dd data-cart-count>{{ cart.total_items }}</dd>
+          </div>
+        </dl>
+      </div>
+    </section>
+
+    <section class="journey-rail" aria-label="{{ t('market.journeyAria') }}">
+      <a class="journey-step active" href="/market" aria-current="page">
+        <span>1</span>
+        <strong>ECloe Market</strong>
+        <small>{{ t("market.journeyBrowse") }}</small>
+      </a>
+      <a class="journey-step" href="/market/cart">
+        <span>2</span>
+        <strong>{{ t("market.cart") }}</strong>
+        <small>{{ t("market.journeyCart") }}</small>
+      </a>
+      <a class="journey-step" href="/pay">
+        <span>3</span>
+        <strong>ECloe Pay</strong>
+        <small>{{ t("market.journeyPay") }}</small>
+      </a>
     </section>
 
     <section class="marketplace-quick-cats" id="categories" aria-label="{{ t('market.categories') }}">
@@ -106,6 +144,14 @@
               <option value="title" {{ "selected" if catalog_query.sort == "title" else "" }}>{{ t("market.sortTitle") }}</option>
             </select>
           </label>
+          <label>
+            <span>{{ t("market.pageSize") }}</span>
+            <select name="limit">
+              {% for page_size in [8, 12, 16, 24] %}
+                <option value="{{ page_size }}" {{ "selected" if catalog_query.limit == page_size else "" }}>{{ page_size }}</option>
+              {% endfor %}
+            </select>
+          </label>
           <button class="primary-link" type="submit">{{ t("market.applyFilters") }}</button>
         </form>
       </aside>
@@ -116,8 +162,23 @@
             <p class="eyebrow">{{ t("market.recommended") }}</p>
             <h2>{{ t("market.products") }}</h2>
           </div>
-          <span>{{ t("market.publicBrowsing") }}</span>
+          <div class="results-meta">
+            <span>{{ t("market.publicBrowsing") }}</span>
+            <span>{{ t("market.page") }} {{ catalog_query.page }}</span>
+          </div>
         </header>
+
+        <div class="filter-summary" aria-label="{{ t('market.activeFilters') }}">
+          {% if catalog_query.query %}
+            <span>{{ t("market.search") }}: {{ catalog_query.query }}</span>
+          {% endif %}
+          {% if catalog_query.category_id and categories_by_id.get(catalog_query.category_id) %}
+            {% set active_category = categories_by_id[catalog_query.category_id] %}
+            <span>{{ t("market.category") }}: {{ active_category.title_pt if locale == 'pt-BR' else active_category.title_en }}</span>
+          {% endif %}
+          <span>{{ t("market.sort") }}: {{ t("market.sortFeatured") if catalog_query.sort == "featured" else t("market.sortPriceAsc") if catalog_query.sort == "price_asc" else t("market.sortPriceDesc") if catalog_query.sort == "price_desc" else t("market.sortTitle") }}</span>
+          <a href="/market">{{ t("market.clearFilters") }}</a>
+        </div>
 
         <section class="product-grid marketplace-product-grid" aria-live="polite">
           {% for product in products %}
@@ -146,15 +207,23 @@
                 {% endif %}
               </div>
               <div class="product-card-copy">
-                <span class="pill">{{ product.brand }}</span>
+                <div class="product-card-topline">
+                  <span class="pill">{{ product.brand }}</span>
+                  <span class="demo-tag">{{ t("market.demoTag") }}</span>
+                </div>
                 <h3><a href="/market/products/{{ product.product_id }}">{{ product_title }}</a></h3>
                 {% if categories_by_id.get(product.category_id) %}
                   {% set product_category = categories_by_id[product.category_id] %}
                   <span>{{ product_category.title_pt if locale == 'pt-BR' else product_category.title_en }}</span>
                 {% endif %}
                 <strong class="price">R$ {{ "%.2f"|format(product.price_cents / 100) }}</strong>
-                <span class="shipping-badge">{{ t("market.deliveryBadge") }}</span>
-                <span>{{ t("market.stock") }} {{ product.stock_quantity }}</span>
+                <div class="product-badges">
+                  <span class="shipping-badge">{{ t("market.deliveryBadge") }}</span>
+                  <span>{{ t("market.stock") }} {{ product.stock_quantity }}</span>
+                </div>
+                <div class="stock-meter" aria-label="{{ t('market.stockMeter') }}">
+                  <span style="width: {{ [100, product.stock_quantity]|min }}%"></span>
+                </div>
               </div>
               <div class="product-card-actions">
                 <button class="primary-link" type="button" data-add-product="{{ product.product_id }}">{{ t("market.addToCart") }}</button>
@@ -179,6 +248,11 @@
       </div>
     </section>
   </main>
+  <div class="cart-toast" data-cart-toast role="status" aria-live="polite" hidden>{{ t("market.addedToCart") }}</div>
+  <aside class="mobile-cart-bar" aria-label="{{ t('market.cart') }}">
+    <span>{{ t("market.cart") }}: <strong data-cart-count>{{ cart.total_items }}</strong></span>
+    <a class="primary-link" href="/market/cart">{{ t("market.goToCart") }}</a>
+  </aside>
   <script src="/market/assets/market.js"></script>
 </body>
 </html>

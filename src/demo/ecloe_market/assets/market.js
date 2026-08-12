@@ -22,6 +22,20 @@
     });
   }
 
+  function showCartToast() {
+    const toast = document.querySelector("[data-cart-toast]");
+    if (!toast) {
+      return;
+    }
+    toast.hidden = false;
+    toast.classList.add("visible");
+    window.clearTimeout(showCartToast.timeoutId);
+    showCartToast.timeoutId = window.setTimeout(() => {
+      toast.classList.remove("visible");
+      toast.hidden = true;
+    }, 2400);
+  }
+
   async function mutateCart(url, options) {
     const response = await fetch(url, {
       ...options,
@@ -46,7 +60,7 @@
             quantity: 1,
           }),
         });
-        button.textContent = button.textContent;
+        showCartToast();
       } finally {
         button.disabled = false;
       }
