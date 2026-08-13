@@ -29,6 +29,13 @@ from src.demo.ecloe_pay.repositories import (
     PayRepository,
     create_pay_repository,
 )
+from src.recommendation import (
+    Candidate,
+    CandidateType,
+    RecommendationRequest,
+    RecommendationService,
+    Surface,
+)
 
 DEMO_DIR = Path(__file__).resolve().parent
 SHARED_DEMO_DIR = DEMO_DIR.parent / "shared"
@@ -38,6 +45,20 @@ CSRF_HEADER_NAME = "X-CSRF-Token"
 LOGIN_RATE_LIMIT_ATTEMPTS = 5
 LOGIN_RATE_LIMIT_WINDOW_SECONDS = 300
 LOGGER = logging.getLogger(__name__)
+PAY_BENEFITS = {
+    "cashback_recurring_purchase": (
+        "Cashback for recurring purchases",
+        "Earn cashback on your recurring purchases.",
+    ),
+    "savings_goal": (
+        "Savings goal boost",
+        "Keep progress visible with a savings-goal benefit.",
+    ),
+    "financial_education": (
+        "Financial education",
+        "Open a short learning path selected for this wallet moment.",
+    ),
+}
 
 
 def _cookie_secure(settings: Settings) -> bool:
@@ -167,12 +188,62 @@ def _session_or_error(app: Flask):
     if user_id is None:
         return None, jsonify({"error": "ECloe Pay login is required."}), 401
     demo_session = repository.get_or_create_demo_session(user_id)
+    if not demo_session.selected_decision_id:
+        demo_session = _assign_pay_recommendation(app, repository, demo_session)
     return demo_session, None, None
+
+
+def _assign_pay_recommendation(app: Flask, repository: PayRepository, demo_session):
+    wallet = repository.wallet_snapshot(demo_session.session_id)
+    service: RecommendationService = app.recommendation_service  # type: ignore[attr-defined]
+    decision = service.decide(
+        RecommendationRequest(
+            request_id=f"req_pay_{demo_session.session_id}",
+            surface=Surface.pay,
+            decision_point="wallet_benefit",
+            context={
+                "channel": "Web",
+                "newbie": 0,
+                "wallet_engagement_band": "medium",
+                "benefit_response_band": "unknown",
+                "savings_goal_active": wallet.savings_goal_percent > 0,
+            },
+            candidates=(
+                Candidate(
+                    "cashback_recurring_purchase",
+                    CandidateType.benefit,
+                    priority=30,
+                    benefit_type="cashback",
+                ),
+                Candidate(
+                    "savings_goal",
+                    CandidateType.benefit,
+                    priority=20,
+                    benefit_type="savings",
+                ),
+                Candidate(
+                    "financial_education",
+                    CandidateType.benefit,
+                    priority=10,
+                    benefit_type="education",
+                ),
+            ),
+            limit=1,
+        )
+    )
+    selected = decision.ranked_candidates[0]
+    app.recommendation_decisions[decision.decision_id] = asdict(decision)  # type: ignore[attr-defined]
+    return repository.set_recommendation(
+        demo_session.session_id,
+        decision.decision_id,
+        selected.candidate_id,
+    )
 
 
 def create_app(
     settings: Settings | None = None,
     repository: PayRepository | None = None,
+    recommendation_service: RecommendationService | None = None,
 ) -> Flask:
     settings = settings or load_settings(use_env_file=False)
     app = Flask(
@@ -186,6 +257,10 @@ def create_app(
     app.pay_settings = settings  # type: ignore[attr-defined]
     app.pay_repository = repository or create_pay_repository(settings)  # type: ignore[attr-defined]
     app.pay_login_attempts = {}  # type: ignore[attr-defined]
+    app.recommendation_service = (  # type: ignore[attr-defined]
+        recommendation_service or RecommendationService.from_settings(settings)
+    )
+    app.recommendation_decisions = {}  # type: ignore[attr-defined]
 
     @app.after_request
     def harden_auth_responses(response):
@@ -289,14 +364,21 @@ def create_app(
         if response is not None:
             return response, status
         wallet = repository.wallet_snapshot(demo_session.session_id)
+        benefit_title, benefit_message = PAY_BENEFITS[demo_session.selected_offer_id]
+        decision = app.recommendation_decisions.get(demo_session.selected_decision_id, {})  # type: ignore[attr-defined]
         return jsonify(
             {
                 "session": asdict(demo_session),
                 "wallet": asdict(wallet),
                 "benefit": {
-                    "title": "Cashback for recurring purchases",
-                    "message": "Earn cashback on your recurring purchases.",
+                    "title": benefit_title,
+                    "message": benefit_message,
                     "offer_id": demo_session.selected_offer_id,
+                },
+                "recommendation": {
+                    "decision_id": demo_session.selected_decision_id,
+                    "policy": decision.get("policy", "deterministic_baseline"),
+                    "policy_version": decision.get("policy_version", "recommendation-v2"),
                 },
                 "security": {
                     "user_creation_allowed": False,
@@ -337,9 +419,9 @@ def create_app(
         payload = request.get_json(silent=True) or {}
         action = str(payload.get("action", "")).strip().lower()
         mapping = {
-            "open": ("click", 0.2),
-            "dismiss": ("dismissal", 0.0),
-            "accept": ("conversion", 1.0),
+            "open": ("open", 0.0),
+            "dismiss": ("rejection", 0.0),
+            "accept": ("acceptance", 1.0),
         }
         if action not in mapping:
             return jsonify({"error": "Unsupported benefit action."}), 400
@@ -350,7 +432,7 @@ def create_app(
             event_type,
             reward,
         )
-        return jsonify({"reward_event": reward_event, "engine_endpoint": "POST /v1/rewards"})
+        return jsonify({"reward_event": reward_event, "engine_endpoint": "POST /v2/feedback"})
 
     @app.post("/api/payment-orders/<payment_order_id>/simulate")
     def simulate_payment(payment_order_id: str):

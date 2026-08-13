@@ -8,7 +8,7 @@ from src.data.validate import validate_dataset
 def test_valid_dataset_passes_validation() -> None:
     dataframe = pd.DataFrame(
         {
-            "action": ["mens_email", "womens_email", "no_email"],
+            "action": ["legacy_variant_a", "legacy_variant_b", "legacy_control"],
             "reward": [1, 0, 0],
         }
     )
@@ -23,7 +23,7 @@ def test_blocked_column_fails_validation() -> None:
     dataframe = pd.DataFrame(
         {
             "customer_id": ["123"],
-            "action": ["mens_email"],
+            "action": ["legacy_variant_a"],
             "reward": [1],
         }
     )

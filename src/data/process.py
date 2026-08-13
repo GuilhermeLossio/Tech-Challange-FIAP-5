@@ -7,13 +7,8 @@ from pathlib import Path
 import pandas as pd
 
 from src.core.config import load_settings
+from src.data.legacy_hillstrom import action_for_segment
 from src.data.schemas import MODEL_CONTEXT_COLUMNS, REQUIRED_COLUMNS
-
-ACTION_MAP = {
-    "Mens E-Mail": "mens_email",
-    "Womens E-Mail": "womens_email",
-    "No E-Mail": "no_email",
-}
 
 
 def normalize_column_name(column: str) -> str:
@@ -40,7 +35,7 @@ def process_dataset(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(f"Missing required columns: {sorted(missing_columns)}")
 
     processed = processed.drop_duplicates().reset_index(drop=True)
-    processed["action"] = processed["segment"].map(ACTION_MAP)
+    processed["action"] = processed["segment"].map(action_for_segment)
 
     if processed["action"].isna().any():
         invalid_actions = processed.loc[processed["action"].isna(), "segment"].unique()

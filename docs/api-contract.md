@@ -99,7 +99,7 @@ The local serving strategy is currently `likelihood_ranker`, which ranks eligibl
   "estimates": [
     {
       "offer_id": "cashback_recurring_purchase",
-      "proxy_action": "womens_email",
+      "proxy_action": "legacy_variant_b",
       "purchase_likelihood": 0.1375,
       "confidence": "medium",
       "fallback_level": "action_rate",
@@ -171,3 +171,14 @@ Error payloads include a machine-readable `code` and a human-readable `message`.
 Payloads must not include direct identifiers, sensitive attributes, income, wealth, precise location, or raw browsing data. Upstream systems are responsible for eligibility filtering before calling the Decision API.
 
 Raw item-level purchase history should be transformed into coarse features before reaching ECloe. Examples include `frequent_grocery`, `high_value_cart`, or `recurring_checkout`, not full basket contents.
+
+## Recommendation API v2
+
+| Route | Scope | Status | Contract |
+|:---|:---|:---|:---|
+| `POST /v2/decisions` | `decision:write` | Implemented | Typed Market or Pay context and eligible candidates; creates an auditable decision. |
+| `POST /v2/likelihood-estimates` | `decision:read` | Implemented | Returns estimates without creating a decision. |
+| `POST /v2/feedback` | `reward:write` | Implemented | Validates decision, candidate, position, event time, and server-side reward mapping. |
+| `GET /v2/policies/current` | `policy:read` | Implemented | Returns the effective surface policy and shadow challengers. |
+
+V2 has no arbitrary context map. `MarketContext` and `PayContext` use strict allowlists, candidates use a discriminator, and Pay requires `limit=1`. Clients cannot submit numeric rewards. The complete request and response examples are in [`recommendation-system.md`](recommendation-system.md).

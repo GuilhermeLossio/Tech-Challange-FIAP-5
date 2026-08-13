@@ -107,6 +107,17 @@ class MemoryPayRepository(PayRepository):
     def get_demo_session(self, session_id: str) -> DemoSession | None:
         return self.demo_sessions.get(session_id)
 
+    def set_recommendation(
+        self,
+        session_id: str,
+        decision_id: str,
+        offer_id: str,
+    ) -> DemoSession:
+        session = self.demo_sessions[session_id]
+        session.selected_decision_id = decision_id
+        session.selected_offer_id = offer_id
+        return session
+
     def wallet_snapshot(self, session_id: str) -> WalletSnapshot:
         return WalletSnapshot()
 

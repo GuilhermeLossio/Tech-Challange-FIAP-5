@@ -133,6 +133,10 @@ def test_pay_flask_session_exposes_demo_boundaries_after_login() -> None:
     assert body["security"]["bucket_name"] == DEMO_BUCKET_NAME
     assert body["security"]["database_provider"] == "memory"
     assert body["security"]["database_schema"] == "ecloe_pay"
+    assert body["recommendation"]["decision_id"].startswith("dec_")
+    assert body["recommendation"]["policy"] == "deterministic_baseline"
+    assert body["benefit"]["offer_id"] == "cashback_recurring_purchase"
+    assert body["session"]["selected_decision_id"] == body["recommendation"]["decision_id"]
 
 
 def test_pay_flask_requires_terms_before_interaction() -> None:

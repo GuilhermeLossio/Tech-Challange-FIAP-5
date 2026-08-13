@@ -1,3 +1,5 @@
+import re
+
 from src.demo.app import create_app
 from src.demo.ecloe_pay.app import CSRF_COOKIE_NAME
 from src.demo.ecloe_pay.repositories import SHARED_DEMO_USER_EMAIL
@@ -34,6 +36,8 @@ def test_integrated_demo_market_catalog_is_public() -> None:
     assert "Visitor browsing the public catalog" in body
     assert "Search synthetic products" in body
     assert "Synthetic daily deals" in body
+    assert "Selected for this journey" in body
+    assert "deterministic_baseline" in body
 
 
 def test_integrated_demo_market_checkout_requires_shared_login() -> None:
@@ -162,3 +166,101 @@ def test_integrated_demo_market_cart_mutations_require_csrf() -> None:
 
     assert response.status_code == 403
     assert "CSRF" in response.get_json()["error"]
+
+
+def test_integrated_demo_market_persists_checkout_and_pending_order() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+    client.get("/market")
+    add = client.post(
+        "/api/market/cart/items",
+        json={"product_id": "prd_demo_0001", "quantity": 2},
+        headers=csrf_headers(client),
+    )
+    assert add.status_code == 200
+
+    checkout_headers = {
+        **csrf_headers(client),
+        "Idempotency-Key": "checkout-market-test-001",
+    }
+    first_checkout = client.post("/api/market/checkouts", headers=checkout_headers)
+    repeated_checkout = client.post("/api/market/checkouts", headers=checkout_headers)
+
+    assert first_checkout.status_code == 200
+    assert first_checkout.get_json() == repeated_checkout.get_json()
+    checkout = first_checkout.get_json()["checkout"]
+    assert checkout["status"] == "created"
+    assert checkout["total_cents"] == 3980
+
+    first_order = client.post(
+        "/api/market/orders",
+        json={"checkout_id": checkout["checkout_id"]},
+        headers=csrf_headers(client),
+    )
+    repeated_order = client.post(
+        "/api/market/orders",
+        json={"checkout_id": checkout["checkout_id"]},
+        headers=csrf_headers(client),
+    )
+    orders = client.get("/api/market/orders")
+
+    assert first_order.status_code == 200
+    assert first_order.get_json() == repeated_order.get_json()
+    assert first_order.get_json()["order"]["status"] == "payment_pending"
+    assert len(first_order.get_json()["order"]["items"]) == 1
+    assert orders.status_code == 200
+    assert len(orders.get_json()["orders"]) == 1
+
+
+def test_integrated_demo_market_checkout_api_requires_login() -> None:
+    app = create_app()
+    client = app.test_client()
+    client.get("/market")
+
+    response = client.post(
+        "/api/market/checkouts",
+        headers={**csrf_headers(client), "Idempotency-Key": "checkout-anonymous"},
+    )
+
+    assert response.status_code == 401
+
+
+def test_integrated_demo_market_records_only_feedback_from_presented_slate() -> None:
+    app = create_app()
+    client = app.test_client()
+    page = client.get("/market")
+    body = page.get_data(as_text=True)
+    match = re.search(
+        r'data-add-product="([^"]+)"\s+data-recommendation-decision="([^"]+)"\s+'
+        r'data-recommendation-position="([^"]+)"',
+        body,
+    )
+    assert match is not None
+    product_id, decision_id, position = match.groups()
+
+    accepted = client.post(
+        "/api/market/recommendations/feedback",
+        json={
+            "decision_id": decision_id,
+            "product_id": product_id,
+            "position": int(position),
+            "event_type": "add_to_cart",
+            "event_id": "evt_market_feedback_test",
+        },
+        headers=csrf_headers(client),
+    )
+    rejected = client.post(
+        "/api/market/recommendations/feedback",
+        json={
+            "decision_id": decision_id,
+            "product_id": "prd_not_presented",
+            "position": 1,
+            "event_type": "add_to_cart",
+        },
+        headers=csrf_headers(client),
+    )
+
+    assert accepted.status_code == 200
+    assert accepted.get_json()["terminal"] is False
+    assert rejected.status_code == 400
+    assert len(app.market_repository.recommendation_interactions) == 1

@@ -3,7 +3,16 @@ from __future__ import annotations
 import hashlib
 
 from src.market.application.catalog_loader import load_catalog
-from src.market.domain import Cart, CartItem, Category, Product, ProductDetail
+from src.market.domain import (
+    Cart,
+    CartItem,
+    Category,
+    CheckoutSession,
+    Order,
+    OrderItem,
+    Product,
+    ProductDetail,
+)
 from src.market.repositories.protocols import MarketRepository
 
 ALLOWED_SORTS = {"featured", "price_asc", "price_desc", "title"}
@@ -18,6 +27,10 @@ class MemoryMarketRepository(MarketRepository):
         self.prices = catalog.prices
         self.inventory_items = catalog.inventory_items
         self._carts: dict[str, Cart] = {}
+        self._checkouts: dict[str, CheckoutSession] = {}
+        self._checkout_by_idempotency: dict[str, CheckoutSession] = {}
+        self._orders: dict[str, Order] = {}
+        self.recommendation_interactions: list[dict[str, object]] = []
 
     def list_categories(self) -> list[Category]:
         return list(self.categories)
@@ -115,6 +128,8 @@ class MemoryMarketRepository(MarketRepository):
             raise ValueError("Synthetic ECloe Market price was not found.")
 
         cart = self.get_cart(session_key)
+        if cart.status != "active":
+            raise ValueError("Synthetic ECloe Market cart is not active.")
         safe_quantity = max(min(quantity, 9), 1)
         cart_item_id = _cart_item_id(cart.cart_id, selected_variant.variant_id)
         existing = next((item for item in cart.items if item.cart_item_id == cart_item_id), None)
@@ -137,6 +152,8 @@ class MemoryMarketRepository(MarketRepository):
 
     def update_cart_item(self, *, session_key: str, cart_item_id: str, quantity: int) -> Cart:
         cart = self.get_cart(session_key)
+        if cart.status != "active":
+            raise ValueError("Synthetic ECloe Market cart is not active.")
         if quantity <= 0:
             return self.remove_cart_item(session_key=session_key, cart_item_id=cart_item_id)
         items = tuple(
@@ -149,8 +166,120 @@ class MemoryMarketRepository(MarketRepository):
 
     def remove_cart_item(self, *, session_key: str, cart_item_id: str) -> Cart:
         cart = self.get_cart(session_key)
+        if cart.status != "active":
+            raise ValueError("Synthetic ECloe Market cart is not active.")
         items = tuple(item for item in cart.items if item.cart_item_id != cart_item_id)
         return self._save_cart(cart, items)
+
+    def start_checkout(
+        self,
+        *,
+        session_key: str,
+        user_id: str,
+        idempotency_key: str,
+    ) -> CheckoutSession:
+        existing = self._checkout_by_idempotency.get(idempotency_key)
+        if existing is not None:
+            if existing.user_id != user_id:
+                raise ValueError("Checkout idempotency key belongs to another user.")
+            return existing
+        cart = self.get_cart(session_key)
+        if cart.empty or cart.status != "active":
+            raise ValueError("Synthetic ECloe Market cart must be active and non-empty.")
+        self._revalidate_cart(cart)
+        checkout_id = _checkout_id(idempotency_key)
+        checkout = CheckoutSession(
+            checkout_id=checkout_id,
+            cart_id=cart.cart_id,
+            user_id=user_id,
+            status="created",
+            total_cents=cart.total_cents,
+            currency=cart.currency,
+            idempotency_key=idempotency_key,
+            correlation_id=f"corr_{checkout_id}",
+        )
+        self._carts[session_key] = Cart(
+            **{**cart.__dict__, "status": "checkout_started"}
+        )
+        self._checkouts[checkout_id] = checkout
+        self._checkout_by_idempotency[idempotency_key] = checkout
+        return checkout
+
+    def get_checkout(self, *, checkout_id: str, user_id: str) -> CheckoutSession | None:
+        checkout = self._checkouts.get(checkout_id)
+        return checkout if checkout is not None and checkout.user_id == user_id else None
+
+    def create_order(self, *, checkout_id: str, user_id: str) -> Order:
+        checkout = self.get_checkout(checkout_id=checkout_id, user_id=user_id)
+        if checkout is None:
+            raise ValueError("Synthetic ECloe Market checkout was not found.")
+        order_id = _order_id(checkout_id)
+        existing = self._orders.get(order_id)
+        if existing is not None:
+            return existing
+        cart = next(
+            (item for item in self._carts.values() if item.cart_id == checkout.cart_id),
+            None,
+        )
+        if cart is None or cart.empty:
+            raise ValueError("Synthetic ECloe Market checkout cart was not found.")
+        self._revalidate_cart(cart)
+        items = tuple(
+            OrderItem(
+                order_item_id=f"order_item_{item.cart_item_id.removeprefix('cart_item_')}",
+                order_id=order_id,
+                product_id=item.product_id,
+                variant_id=item.variant_id,
+                title_snapshot=item.title,
+                quantity=item.quantity,
+                unit_price_cents=item.unit_price_cents,
+                currency=item.currency,
+            )
+            for item in cart.items
+        )
+        order = Order(
+            order_id=order_id,
+            checkout_id=checkout_id,
+            user_id=user_id,
+            status="payment_pending",
+            items=items,
+            total_cents=checkout.total_cents,
+            currency=checkout.currency,
+        )
+        self._orders[order_id] = order
+        self._checkouts[checkout_id] = CheckoutSession(
+            **{**checkout.__dict__, "status": "payment_pending"}
+        )
+        return order
+
+    def list_orders(self, *, user_id: str) -> list[Order]:
+        return sorted(
+            (order for order in self._orders.values() if order.user_id == user_id),
+            key=lambda order: order.order_id,
+        )
+
+    def record_recommendation_interaction(
+        self,
+        *,
+        event_id: str,
+        session_key: str,
+        decision_id: str,
+        product_id: str,
+        position: int,
+        event_type: str,
+    ) -> None:
+        if any(item["event_id"] == event_id for item in self.recommendation_interactions):
+            return
+        self.recommendation_interactions.append(
+            {
+                "event_id": event_id,
+                "session_key": session_key,
+                "decision_id": decision_id,
+                "product_id": product_id,
+                "position": position,
+                "event_type": event_type,
+            }
+        )
 
     def _save_cart(self, cart: Cart, items: tuple[CartItem, ...]) -> Cart:
         updated = Cart(
@@ -163,6 +292,24 @@ class MemoryMarketRepository(MarketRepository):
         )
         self._carts[cart.session_key] = updated
         return updated
+
+    def _revalidate_cart(self, cart: Cart) -> None:
+        for item in cart.items:
+            detail = self.get_product_detail(item.product_id)
+            if detail is None:
+                raise ValueError("Synthetic ECloe Market product was not found.")
+            price = next(
+                (price for price in detail.current_prices if price.variant_id == item.variant_id),
+                None,
+            )
+            inventory = next(
+                (stock for stock in detail.inventory_items if stock.variant_id == item.variant_id),
+                None,
+            )
+            if price is None or price.price_cents != item.unit_price_cents:
+                raise ValueError("Synthetic ECloe Market price changed before checkout.")
+            if inventory is None or inventory.available_quantity < item.quantity:
+                raise ValueError("Requested quantity exceeds synthetic inventory.")
 
 
 def _sort_products(products: list[Product], sort: str) -> list[Product]:
@@ -185,3 +332,13 @@ def _cart_id(session_key: str) -> str:
 def _cart_item_id(cart_id: str, variant_id: str) -> str:
     digest = hashlib.sha256(f"{cart_id}:{variant_id}".encode()).hexdigest()[:16]
     return f"cart_item_{digest}"
+
+
+def _checkout_id(idempotency_key: str) -> str:
+    digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()[:20]
+    return f"checkout_demo_{digest}"
+
+
+def _order_id(checkout_id: str) -> str:
+    digest = hashlib.sha256(checkout_id.encode("utf-8")).hexdigest()[:20]
+    return f"order_demo_{digest}"

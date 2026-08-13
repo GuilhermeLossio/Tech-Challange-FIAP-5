@@ -4,8 +4,6 @@ CONTEXT_COLUMNS = [
     "recency",
     "history_segment",
     "history",
-    "mens",
-    "womens",
     "zip_code",
     "newbie",
     "channel",
@@ -14,8 +12,6 @@ CONTEXT_COLUMNS = [
 MODEL_CONTEXT_COLUMNS = [
     "recency",
     "history_segment",
-    "mens",
-    "womens",
     "newbie",
     "channel",
 ]
@@ -34,6 +30,10 @@ BLOCKED_COLUMNS = [
     "email",
     "phone",
     "gender",
+    "sex",
+    "sexo",
+    "mens",
+    "womens",
     "race",
     "income",
     "wealth",
@@ -42,9 +42,9 @@ BLOCKED_COLUMNS = [
 ]
 
 ALLOWED_ACTIONS = {
-    "mens_email",
-    "womens_email",
-    "no_email",
+    "legacy_variant_a",
+    "legacy_variant_b",
+    "legacy_control",
 }
 
 REQUIRED_COLUMNS = [

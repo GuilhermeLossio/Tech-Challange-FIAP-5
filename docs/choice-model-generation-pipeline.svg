@@ -1,0 +1,80 @@
+<svg viewBox="0 0 1180 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ECloe choice model generation pipeline</title>
+  <desc id="desc">A left-to-right pipeline from Hillstrom source data through minimization, offline policy simulation, artifact writing, and validation.</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+    </marker>
+    <g id="icon-web" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="6" width="32" height="24" rx="3"/>
+      <line x1="4" y1="13" x2="36" y2="13"/>
+      <circle cx="10" cy="10" r="1"/>
+      <circle cx="15" cy="10" r="1"/>
+    </g>
+    <g id="icon-data" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <ellipse cx="20" cy="9" rx="14" ry="5"/>
+      <path d="M6 9v18c0 3 6 5 14 5s14-2 14-5V9"/>
+      <path d="M6 18c0 3 6 5 14 5s14-2 14-5"/>
+    </g>
+    <g id="icon-filter" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 8h28L23 20v10l-6 3V20z"/>
+    </g>
+    <g id="icon-run" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="20" cy="20" r="14"/>
+      <path d="M17 14l10 6-10 6z"/>
+    </g>
+    <g id="icon-file" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M11 5h13l7 7v23H11z"/>
+      <path d="M24 5v8h7"/>
+      <path d="M15 21h12M15 27h12"/>
+    </g>
+    <g id="icon-check" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="20" cy="20" r="14"/>
+      <path d="M13 20l5 5 10-11"/>
+    </g>
+  </defs>
+  <rect width="1180" height="360" fill="#ffffff"/>
+  <text x="40" y="46" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#1f2328">Choice Model Generation Pipeline</text>
+  <text x="40" y="72" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#57606a">Offline generation uses minimized public data, deterministic seeds, and reviewed artifacts before any runtime policy change.</text>
+
+  <rect x="40" y="120" width="160" height="112" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2" data-card="true"/>
+  <use href="#icon-data" transform="translate(108 130) scale(.6)" color="#2563eb"/>
+  <text x="120" y="174" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328" text-anchor="middle">Hillstrom source</text>
+  <text x="120" y="195" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a" text-anchor="middle">Campaign context</text>
+  <text x="120" y="213" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a" text-anchor="middle">Observed conversion</text>
+
+  <line x1="200" y1="176" x2="248" y2="176" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+  <rect x="248" y="120" width="176" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-filter" transform="translate(324 130) scale(.6)" color="#57606a"/>
+  <text x="336" y="174" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328" text-anchor="middle">Minimize data</text>
+  <text x="336" y="195" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a" text-anchor="middle">Map action/reward</text>
+  <text x="336" y="213" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a" text-anchor="middle">Drop blocked fields</text>
+
+  <line x1="424" y1="176" x2="472" y2="176" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+  <rect x="472" y="120" width="176" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-run" transform="translate(548 130) scale(.6)" color="#57606a"/>
+  <text x="560" y="174" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328" text-anchor="middle">Simulate policies</text>
+  <text x="560" y="195" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a" text-anchor="middle">Same row order</text>
+  <text x="560" y="213" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a" text-anchor="middle">Seeded rewards</text>
+
+  <line x1="648" y1="176" x2="696" y2="176" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+  <rect x="696" y="120" width="176" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-file" transform="translate(772 130) scale(.6)" color="#57606a"/>
+  <text x="784" y="174" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328" text-anchor="middle">Write artifacts</text>
+  <text x="784" y="195" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a" text-anchor="middle">Metrics and policy</text>
+  <text x="784" y="213" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a" text-anchor="middle">Likelihood model</text>
+
+  <line x1="872" y1="176" x2="920" y2="176" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+
+  <rect x="920" y="120" width="200" height="112" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2" data-card="true"/>
+  <use href="#icon-check" transform="translate(1008 130) scale(.6)" color="#2563eb"/>
+  <text x="1020" y="174" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328" text-anchor="middle">Validate release</text>
+  <text x="1020" y="195" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a" text-anchor="middle">Checksums and gates</text>
+  <text x="1020" y="213" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a" text-anchor="middle">Manual promotion</text>
+
+  <rect x="40" y="276" width="1080" height="44" rx="8" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="60" y="303" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">Outputs: metrics.json, selected_policy.json, policy_versions.json, policy_state_thompson_sampling.json, purchase_likelihood_model.json, artifact_manifest.json.</text>
+</svg>

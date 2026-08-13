@@ -1,6 +1,6 @@
 const DEMO_STATE = Object.freeze({
   sessionId: "sess_pay_demo_001",
-  decisionId: "dec_demo_001",
+  decisionId: "",
   eventPrefix: "evt_pay_demo",
   idempotencyKey: "pay-demo:order_demo_7841:0426",
   confirmationCode: "0426",
@@ -23,6 +23,9 @@ const logoutButton = document.querySelector("#logoutButton");
 const runtimeMode = document.querySelector("#runtimeMode");
 const databaseProvider = document.querySelector("#databaseProvider");
 const databaseSchema = document.querySelector("#databaseSchema");
+const recommendationDecision = document.querySelector("#recommendationDecision");
+const recommendationOffer = document.querySelector("#recommendationOffer");
+const recommendationPolicy = document.querySelector("#recommendationPolicy");
 const viewDetailsButton = document.querySelector("#viewDetailsButton");
 const quickActionButtons = document.querySelectorAll(".quick-action[data-target]");
 const pageLocale = document.documentElement.lang || "en-US";
@@ -322,6 +325,9 @@ async function bootstrap() {
     const body = await getJson("/api/session");
     setAuthenticatedMode(auth, body.security);
     sessionId.textContent = body.session.session_id;
+    recommendationDecision.textContent = body.recommendation.decision_id;
+    recommendationOffer.textContent = body.benefit.offer_id;
+    recommendationPolicy.textContent = body.recommendation.policy;
     termsAccepted = Boolean(body.session.terms_accepted);
     appendTimeline(
       "API Flask da ECloe Pay conectada com dados sinteticos de carteira.",

@@ -35,6 +35,13 @@ class DecisionRecord:
     ttl: int | None = None
     id: str = field(default_factory=lambda: str(uuid4()))
     event_type: str = "decision"
+    surface: str = "pay"
+    decision_point: str = "legacy_offer"
+    selected_candidate_id: str | None = None
+    candidate_type: str = "benefit"
+    eligible_candidate_ids: list[str] = field(default_factory=list)
+    ranked_candidates: list[dict[str, Any]] = field(default_factory=list)
+    selection_probability: float = 1.0
 
     @property
     def partition_key(self) -> str:
@@ -54,6 +61,10 @@ class RewardRecord:
     ttl: int | None = None
     id: str = field(default_factory=lambda: str(uuid4()))
     record_type: str = "reward"
+    surface: str = "pay"
+    candidate_id: str | None = None
+    position: int | None = None
+    terminal: bool = True
 
     @property
     def partition_key(self) -> str:
@@ -364,6 +375,13 @@ def _record_to_dict(record: DecisionRecord) -> dict[str, Any]:
         "ttl": record.ttl,
         "id": record.id,
         "event_type": record.event_type,
+        "surface": record.surface,
+        "decision_point": record.decision_point,
+        "selected_candidate_id": record.selected_candidate_id,
+        "candidate_type": record.candidate_type,
+        "eligible_candidate_ids": record.eligible_candidate_ids,
+        "ranked_candidates": record.ranked_candidates,
+        "selection_probability": record.selection_probability,
     }
 
 
@@ -388,6 +406,10 @@ def _reward_to_dict(record: RewardRecord) -> dict[str, Any]:
         "ttl": record.ttl,
         "id": record.id,
         "record_type": record.record_type,
+        "surface": record.surface,
+        "candidate_id": record.candidate_id,
+        "position": record.position,
+        "terminal": record.terminal,
     }
 
 

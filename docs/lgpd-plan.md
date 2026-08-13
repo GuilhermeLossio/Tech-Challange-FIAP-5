@@ -182,3 +182,15 @@ In production, ECloe would support the rights provided under LGPD Art. 18:
 - In the Datathon 7MLET context, no real personal data is collected, stored, or processed.
 - A real implementation would require legal validation, DPO approval, a formal Legitimate Interest Assessment, and Banco Central review when applicable.
 - ECloe **must not be deployed in regulated production** without proper risk, suitability, and compliance validation.
+
+## 13. Recommendation Feature Controls
+
+| Control | Status | Enforcement |
+|:---|:---|:---|
+| Exclude sex and gender | Implemented | Ingestion adapter, strict API, runtime allowlist, training validation, artifact validation, and tests |
+| Prevent inferred gender affinity | Implemented | Gender-coded product categories normalize to `apparel` before modeling |
+| Pseudonymous correlation | Implemented | `subject_key` supports joins but is never a model feature |
+| Aggregate behavioral context | Implemented | Recency, frequency, history, cart, wallet, and response bands only |
+| Direct parity reporting by gender | Out of scope | These attributes are not collected and no parity claim is made |
+
+The blocked list also includes direct identifiers, precise location, income, wealth, balance, credit score, raw financial history, full basket contents, and detailed navigation. The implementation and verification matrix are documented in [`recommendation-system.md`](recommendation-system.md).

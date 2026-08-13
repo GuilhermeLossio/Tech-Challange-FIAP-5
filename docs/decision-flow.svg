@@ -98,7 +98,7 @@
     <use href="#icon-api" transform="translate(138 12) scale(0.58)" color="#57606a" aria-hidden="true"/>
     <circle cx="25" cy="24" r="15" fill="#57606a"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">2</text>
-    <text x="90" y="76" text-anchor="middle" class="cardTitle">Engine API</text>
+    <text x="90" y="76" text-anchor="middle" class="cardTitle">Engine Decision API</text>
     <text x="90" y="100" text-anchor="middle" class="cardSub">Checks schema,</text>
     <text x="90" y="118" text-anchor="middle" class="cardSub">eligible offers, and policy.</text>
   </g>
@@ -107,7 +107,7 @@
     <use href="#icon-decision" transform="translate(138 12) scale(0.58)" color="#2563eb" aria-hidden="true"/>
     <circle cx="25" cy="24" r="15" fill="#2563eb"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">3</text>
-    <text x="90" y="76" text-anchor="middle" class="cardTitle">Bandit Service</text>
+    <text x="90" y="76" text-anchor="middle" class="cardTitle">Policy Ranking</text>
     <text x="90" y="100" text-anchor="middle" class="cardSub">Loads active policy and</text>
     <text x="90" y="118" text-anchor="middle" class="cardSub">chooses one eligible offer.</text>
   </g>
@@ -116,7 +116,7 @@
     <use href="#icon-decision" transform="translate(138 12) scale(0.58)" color="#2563eb" aria-hidden="true"/>
     <circle cx="25" cy="24" r="15" fill="#2563eb"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">4</text>
-    <text x="90" y="76" text-anchor="middle" class="cardTitle">Offer</text>
+    <text x="90" y="76" text-anchor="middle" class="cardTitle">Ranked Offer</text>
     <text x="90" y="100" text-anchor="middle" class="cardSub">Action is shown with</text>
     <text x="90" y="118" text-anchor="middle" class="cardSub">auditable reason codes.</text>
   </g>
@@ -143,8 +143,8 @@
   <text x="70" y="396" class="sectionText">Offline learning path</text>
   <g data-card="true" transform="translate(260 426)">
     <rect width="240" height="42" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2.2"/>
-    <use href="#icon-decision" transform="translate(198 12) scale(0.58)" color="#57606a" aria-hidden="true"/>
-    <text x="120" y="26" text-anchor="middle" class="cardTitle">Policy Update</text>
+    <use href="#icon-decision" transform="translate(212 12) scale(0.45)" color="#57606a" aria-hidden="true"/>
+    <text x="120" y="26" text-anchor="middle" class="cardTitle" style="font-size:13.5px">Reviewed Policy Update</text>
   </g>
 
   <polyline points="1076,304 1076,408 380,408 380,426" fill="none" stroke="#2563eb" stroke-width="2.3" stroke-dasharray="7 7" marker-end="url(#arrowBlue)"/>

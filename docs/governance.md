@@ -74,3 +74,15 @@ Rollback should restore the last approved policy version and preserve decision l
 ## Documentation Updates
 
 The model card, system card, LGPD plan, API contract, and evaluation plan must be reviewed whenever the policy behavior, data flow, or production assumptions change.
+
+## Recommendation Policy Governance
+
+| Requirement | Status | Evidence |
+|:---|:---|:---|
+| Baseline is independently configurable for Market and Pay | Implemented | `RECOMMENDATION_MARKET_POLICY`, `RECOMMENDATION_PAY_POLICY` |
+| Minimum evidence guardrail | Implemented | Runtime prevents likelihood promotion below 1,000 decisions or 100 positives |
+| Shadow adaptive challengers | Implemented | Rankings are recorded without affecting presentation |
+| Manual artifact approval record | Planned for demo | `policy_versions` and Blob promotion metadata |
+| Adaptive canary | Future | Maximum epsilon 0.05 after approval |
+
+Rollback changes only the affected surface policy or artifact pointer and preserves historical decisions. A blocked-field finding, eligibility violation, out-of-stock selection, artifact mismatch, or material objective regression triggers immediate fallback to the deterministic baseline. Full procedures are in [`recommendation-system.md`](recommendation-system.md).

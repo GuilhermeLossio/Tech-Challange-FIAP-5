@@ -88,7 +88,7 @@
   <text x="365" y="140" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Perimeter and BFF</text>
   <rect x="375" y="190" width="160" height="74" rx="10" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
   <use href="#icon-shield" transform="translate(383 200) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="423" y="218" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Gateway</text>
+  <text x="419" y="218" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">API Gateway</text>
   <text x="455" y="238" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">auth, rate limit,</text>
   <text x="455" y="256" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">correlation IDs</text>
   <rect x="375" y="315" width="160" height="64" rx="10" fill="#eff6ff" stroke="#2563eb" data-card="true"/>
@@ -100,19 +100,19 @@
   <text x="670" y="140" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Domain APIs</text>
   <rect x="690" y="170" width="160" height="58" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" data-card="true"/>
   <use href="#icon-api" transform="translate(698 180) scale(0.30)" color="#2563eb" aria-hidden="true"/>
-  <text x="738" y="194" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Market API</text>
+  <text x="734" y="194" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2328">Market Transaction</text>
   <text x="770" y="213" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">cart and checkout</text>
   <rect x="690" y="262" width="160" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
   <use href="#icon-api" transform="translate(698 272) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="738" y="286" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Pay API</text>
+  <text x="734" y="286" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1f2328">Pay Transaction</text>
   <text x="770" y="305" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">wallet state</text>
   <rect x="690" y="350" width="160" height="42" rx="10" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
   <use href="#icon-api" transform="translate(698 360) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="738" y="378" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">Engine API</text>
+  <text x="734" y="378" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1f2328">Engine Decision</text>
 
   <rect x="965" y="180" width="170" height="80" rx="10" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
   <use href="#icon-api" transform="translate(973 190) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="1013" y="212" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Store</text>
+  <text x="1009" y="212" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Evidence Store</text>
   <text x="1050" y="234" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">implemented persistence</text>
 
   <polyline points="240,204 307,204 307,227 375,227" fill="none" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>

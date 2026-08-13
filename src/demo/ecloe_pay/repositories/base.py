@@ -103,6 +103,14 @@ class PayRepository(Protocol):
     def get_demo_session(self, session_id: str) -> DemoSession | None:
         ...
 
+    def set_recommendation(
+        self,
+        session_id: str,
+        decision_id: str,
+        offer_id: str,
+    ) -> DemoSession:
+        ...
+
     def wallet_snapshot(self, session_id: str) -> WalletSnapshot:
         ...
 
@@ -164,8 +172,8 @@ def initial_session(user_id: str) -> DemoSession:
         session_id=f"sess_pay_demo_{user_id[-6:]}",
         user_id=user_id,
         demo_subject_key=f"demo-subject-pay-{user_id[-6:]}",
-        selected_decision_id="dec_demo_001",
-        selected_offer_id="cashback_recurring_purchase",
+        selected_decision_id="",
+        selected_offer_id="",
         idempotency_key="pay-demo:order_demo_7841:0426",
         bucket_name=DEMO_BUCKET_NAME,
         payment_order_id="pay_order_demo_7841",
@@ -181,7 +189,7 @@ def reward_payload(session: DemoSession, event_id: str, event_type: str, reward:
         "event_type": event_type,
         "reward": reward,
         "occurred_at": datetime.now(UTC).isoformat(),
-        "accepted": event_type == "conversion",
+        "accepted": event_type == "acceptance",
     }
 
 

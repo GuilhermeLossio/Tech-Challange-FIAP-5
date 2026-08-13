@@ -208,7 +208,7 @@ BEGIN
         CONSTRAINT fk_benefit_interactions_demo_sessions
             FOREIGN KEY (session_id) REFERENCES ecloe_pay.demo_sessions(session_id),
         CONSTRAINT uq_benefit_interactions_event_id UNIQUE (event_id),
-        CONSTRAINT ck_benefit_interactions_event_type CHECK (event_type IN (N'click', N'dismissal', N'conversion')),
+        CONSTRAINT ck_benefit_interactions_event_type CHECK (event_type IN (N'open', N'rejection', N'acceptance', N'click', N'dismissal', N'conversion')),
         CONSTRAINT ck_benefit_interactions_reward CHECK (reward IN (0.00, 0.20, 1.00))
     );
 END;
@@ -241,7 +241,7 @@ BEGIN
         CONSTRAINT uq_outbox_events_event_id UNIQUE (event_id),
         CONSTRAINT ck_outbox_events_payload_json CHECK (ISJSON(payload) = 1),
         CONSTRAINT ck_outbox_events_attempts CHECK (attempts >= 0),
-        CONSTRAINT ck_outbox_events_event_type CHECK (event_type IN (N'click', N'dismissal', N'conversion', N'payment_verified', N'payment_rejected'))
+        CONSTRAINT ck_outbox_events_event_type CHECK (event_type IN (N'open', N'rejection', N'acceptance', N'click', N'dismissal', N'conversion', N'payment_verified', N'payment_rejected'))
     );
 END;
 GO
@@ -274,6 +274,26 @@ IF NOT EXISTS (
 BEGIN
     INSERT INTO ecloe_pay.schema_migrations (migration_id)
     VALUES (N'20260728_ecloe_pay_azure_sql_schema');
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM ecloe_pay.schema_migrations
+    WHERE migration_id = N'20260811_ecloe_pay_recommendation_events_v2'
+)
+BEGIN
+    IF OBJECT_ID(N'ecloe_pay.ck_benefit_interactions_event_type', N'C') IS NOT NULL
+        ALTER TABLE ecloe_pay.benefit_interactions DROP CONSTRAINT ck_benefit_interactions_event_type;
+    ALTER TABLE ecloe_pay.benefit_interactions WITH CHECK ADD CONSTRAINT ck_benefit_interactions_event_type
+        CHECK (event_type IN (N'open', N'rejection', N'acceptance', N'click', N'dismissal', N'conversion'));
+
+    IF OBJECT_ID(N'ecloe_pay.ck_outbox_events_event_type', N'C') IS NOT NULL
+        ALTER TABLE ecloe_pay.outbox_events DROP CONSTRAINT ck_outbox_events_event_type;
+    ALTER TABLE ecloe_pay.outbox_events WITH CHECK ADD CONSTRAINT ck_outbox_events_event_type
+        CHECK (event_type IN (N'open', N'rejection', N'acceptance', N'click', N'dismissal', N'conversion', N'payment_verified', N'payment_rejected'));
+
+    INSERT INTO ecloe_pay.schema_migrations (migration_id)
+    VALUES (N'20260811_ecloe_pay_recommendation_events_v2');
 END;
 GO
 

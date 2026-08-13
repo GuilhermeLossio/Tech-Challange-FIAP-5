@@ -203,3 +203,11 @@ The current runner is low-consumption by design:
 - small JSON/CSV reports only;
 - optional row cap through `--max-rows`;
 - deterministic seed for repeatable comparisons.
+
+## Recommendation v2 Batch Workflow
+
+Status: **Planned for demo**.
+
+The next training runner will create independent Market and Pay artifacts from Cosmos decisions and terminal rewards enriched only with approved `ecloe_features` views. It will use chronological train, validation, and test windows; reject future leakage and blocked fields; write feature manifests and checksums; and keep `subject_key` out of model inputs.
+
+The serving baseline, typed likelihood implementation, neutral Hillstrom adapter, synthetic seed generator, and privacy validators are **Implemented**. Adaptive policies remain shadow challengers and do not learn immediately from online feedback. Detailed gates and commands are in [`recommendation-system.md`](recommendation-system.md).

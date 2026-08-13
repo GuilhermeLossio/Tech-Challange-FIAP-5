@@ -127,6 +127,49 @@
       </article>
     </section>
 
+    <section
+      class="recommendation-band"
+      aria-labelledby="recommendation-title"
+      data-recommendation-decision="{{ recommendation.decision_id }}"
+    >
+      <header>
+        <div>
+          <p class="eyebrow">{{ t("market.predictiveRecommendation") }}</p>
+          <h2 id="recommendation-title">{{ t("market.recommendedForJourney") }}</h2>
+        </div>
+        <span class="recommendation-policy">{{ recommendation.policy }}</span>
+      </header>
+      <div class="recommendation-grid">
+        {% for product in recommended_products %}
+          {% set ranked = recommendation.ranked_candidates[loop.index0] %}
+          {% set product_title = product.title_pt if locale == 'pt-BR' else product.title_en %}
+          <article class="recommendation-item">
+            <a href="/market/products/{{ product.product_id }}">
+              <img
+                src="{{ product.thumbnail }}"
+                alt="{{ product_title }}"
+                loading="lazy"
+                onerror="this.onerror=null;this.src='/market/assets/product-placeholder.svg';"
+              />
+            </a>
+            <div>
+              <span>{{ t("market.recommendationRank") }} {{ ranked.rank }}</span>
+              <h3><a href="/market/products/{{ product.product_id }}">{{ product_title }}</a></h3>
+              <strong>R$ {{ "%.2f"|format(product.price_cents / 100) }}</strong>
+            </div>
+            <button
+              class="primary-link"
+              type="button"
+              data-add-product="{{ product.product_id }}"
+              data-recommendation-decision="{{ recommendation.decision_id }}"
+              data-recommendation-position="{{ ranked.rank }}"
+            >{{ t("market.addToCart") }}</button>
+          </article>
+        {% endfor %}
+      </div>
+      <p class="recommendation-note">{{ t("market.recommendationPrivacy") }}</p>
+    </section>
+
     <section class="marketplace-results" id="offers">
       <aside class="marketplace-filters" aria-label="{{ t('market.filters') }}">
         <h2>{{ t("market.filters") }}</h2>

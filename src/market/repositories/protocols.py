@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Protocol
 
-from src.market.domain import Cart, Category, Product, ProductDetail
+from src.market.domain import Cart, Category, CheckoutSession, Order, Product, ProductDetail
 
 
 class MarketRepository(Protocol):
@@ -43,4 +43,34 @@ class MarketRepository(Protocol):
         ...
 
     def remove_cart_item(self, *, session_key: str, cart_item_id: str) -> Cart:
+        ...
+
+    def start_checkout(
+        self,
+        *,
+        session_key: str,
+        user_id: str,
+        idempotency_key: str,
+    ) -> CheckoutSession:
+        ...
+
+    def get_checkout(self, *, checkout_id: str, user_id: str) -> CheckoutSession | None:
+        ...
+
+    def create_order(self, *, checkout_id: str, user_id: str) -> Order:
+        ...
+
+    def list_orders(self, *, user_id: str) -> list[Order]:
+        ...
+
+    def record_recommendation_interaction(
+        self,
+        *,
+        event_id: str,
+        session_key: str,
+        decision_id: str,
+        product_id: str,
+        position: int,
+        event_type: str,
+    ) -> None:
         ...

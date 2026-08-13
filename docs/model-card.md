@@ -101,3 +101,15 @@ A policy version should only be selected for the demo when it:
 - Has a documented rollback or fallback path to the baseline.
 
 The local training workflow is documented in [`training-workflow.md`](training-workflow.md).
+
+## Surface-Specific Recommendation Artifacts
+
+| Artifact | Status | Objective | Serving rule |
+|:---|:---|:---|:---|
+| Deterministic Market baseline | Implemented | Stable eligible product ordering | Default and final fallback |
+| Deterministic Pay baseline | Implemented | Stable eligible benefit ordering | Default and final fallback |
+| Market likelihood ranker | Planned for demo | Verified product purchase within 24 hours | Requires 1,000 decisions and 100 positives |
+| Pay likelihood ranker | Planned for demo | Verified benefit acceptance in session | Requires 1,000 decisions and 100 positives |
+| Adaptive bandit policies | Future | Controlled exploration of eligible candidates | Shadow first, then manually approved canary |
+
+Market and Pay artifacts must have different versions, checksums, evaluation reports, and promotion records. Sex, gender, identifying attributes, raw financial values, and detailed user histories are excluded from both artifacts. See [`recommendation-system.md`](recommendation-system.md) for calculations, reason codes, and limitations.

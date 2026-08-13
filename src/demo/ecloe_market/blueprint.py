@@ -3,6 +3,7 @@ from __future__ import annotations
 import secrets
 from dataclasses import asdict
 from pathlib import Path
+from uuid import uuid4
 
 from flask import Blueprint, current_app, jsonify, make_response, redirect, render_template, request
 
@@ -10,6 +11,8 @@ from src.demo.ecloe_pay.app import CSRF_COOKIE_NAME, CSRF_HEADER_NAME
 from src.demo.shared.auth import current_user
 from src.demo.shared.i18n import load_messages, resolve_locale, translate
 from src.market.repositories import MarketRepository
+from src.recommendation import Candidate, CandidateType, RecommendationRequest, Surface
+from src.recommendation.privacy import neutralize_category
 
 MARKET_DIR = Path(__file__).resolve().parent
 I18N_DIR = MARKET_DIR / "i18n"
@@ -95,6 +98,13 @@ def _optional_user():
     return user
 
 
+def _api_user_id():
+    _, user_id = current_user(current_app, request)
+    if user_id is None:
+        return None, (jsonify({"error": "Authentication is required."}), 401)
+    return user_id, None
+
+
 def _positive_int_arg(name: str, default: int, *, maximum: int | None = None) -> int:
     try:
         value = int(request.args.get(name, default))
@@ -143,6 +153,63 @@ def _cart_payload(cart) -> dict[str, object]:
     }
 
 
+def _price_band(price_cents: int) -> str:
+    if price_cents < 5000:
+        return "low"
+    if price_cents < 15000:
+        return "medium"
+    return "high"
+
+
+def _stock_band(quantity: int) -> str:
+    if quantity <= 0:
+        return "none"
+    if quantity < 10:
+        return "low"
+    if quantity < 40:
+        return "medium"
+    return "high"
+
+
+def _market_recommendations(
+    repository: MarketRepository,
+    session_key: str,
+    category_id: str | None,
+):
+    products = repository.list_products(sort="featured", limit=50, offset=0)
+    candidates = tuple(
+        Candidate(
+            candidate_id=product.product_id,
+            candidate_type=CandidateType.product,
+            available=product.active and product.stock_quantity > 0 and product.price_cents >= 0,
+            category_id=neutralize_category(product.category_id),
+            price_band=_price_band(product.price_cents),
+            stock_band=_stock_band(product.stock_quantity),
+            popularity_band="high" if product.rating >= 4.5 else "medium",
+            priority=int(product.rating * 10),
+        )
+        for product in products
+    )
+    context: dict[str, object] = {"channel": "Web", "newbie": 1}
+    if category_id:
+        context["category_affinities"] = [neutralize_category(category_id)]
+    decision = current_app.recommendation_service.decide(  # type: ignore[attr-defined]
+        RecommendationRequest(
+            request_id=f"req_market_{session_key[-12:]}",
+            surface=Surface.market,
+            decision_point="market_home",
+            context=context,
+            candidates=candidates,
+            limit=6,
+        )
+    )
+    decision_payload = asdict(decision)
+    decision_payload["session_key"] = session_key
+    current_app.recommendation_decisions[decision.decision_id] = decision_payload  # type: ignore[attr-defined]
+    products_by_id = {product.product_id: product for product in products}
+    return decision, [products_by_id[item.candidate_id] for item in decision.ranked_candidates]
+
+
 @market_blueprint.get("/market")
 def market_home():
     repository = _repository()
@@ -157,6 +224,11 @@ def market_home():
         offset=int(catalog_query["offset"]),
     )
     categories = repository.list_categories()
+    recommendation, recommended_products = _market_recommendations(
+        repository,
+        session_key,
+        catalog_query["category_id"],  # type: ignore[arg-type]
+    )
     categories_by_id = {category.category_id: category for category in categories}
     response = _render_market_template(
         "market_index.html",
@@ -167,6 +239,8 @@ def market_home():
         catalog_query=catalog_query,
         cart=cart,
         has_next_page=len(products) == int(catalog_query["limit"]),
+        recommendation=recommendation,
+        recommended_products=recommended_products,
     )
     return _attach_market_session(response, session_key)
 
@@ -244,6 +318,42 @@ def api_add_cart_item():
     return _attach_market_session(response, session_key)
 
 
+@market_blueprint.post("/api/market/recommendations/feedback")
+def api_recommendation_feedback():
+    if not _csrf_valid():
+        return _csrf_error()
+    payload = request.get_json(silent=True) or {}
+    decision_id = str(payload.get("decision_id", ""))
+    product_id = str(payload.get("product_id", ""))
+    event_type = str(payload.get("event_type", ""))
+    try:
+        position = int(payload.get("position", 0))
+    except (TypeError, ValueError):
+        position = 0
+    session_key = _market_session_key()
+    decision = current_app.recommendation_decisions.get(decision_id)  # type: ignore[attr-defined]
+    ranked = decision.get("ranked_candidates", []) if decision else []
+    valid = any(
+        item.get("candidate_id") == product_id and int(item.get("rank", 0)) == position
+        for item in ranked
+    ) and decision.get("session_key") == session_key
+    if not valid or event_type not in {"impression", "click", "add_to_cart"}:
+        return jsonify({"error": "Recommendation feedback does not match the presented slate."}), 400
+    event_id = str(payload.get("event_id") or f"evt_market_{uuid4()}")
+    if len(event_id) > 128:
+        return jsonify({"error": "event_id is too long."}), 400
+    _repository().record_recommendation_interaction(
+        event_id=event_id,
+        session_key=session_key,
+        decision_id=decision_id,
+        product_id=product_id,
+        position=position,
+        event_type=event_type,
+    )
+    response = jsonify({"recorded": True, "event_id": event_id, "terminal": False})
+    return _attach_market_session(response, session_key)
+
+
 @market_blueprint.patch("/api/market/cart/items/<cart_item_id>")
 def api_update_cart_item(cart_item_id: str):
     if not _csrf_valid():
@@ -270,6 +380,57 @@ def api_remove_cart_item(cart_item_id: str):
     cart = _repository().remove_cart_item(session_key=session_key, cart_item_id=cart_item_id)
     response = jsonify({"cart": _cart_payload(cart)})
     return _attach_market_session(response, session_key)
+
+
+@market_blueprint.post("/api/market/checkouts")
+def api_start_checkout():
+    if not _csrf_valid():
+        return _csrf_error()
+    user_id, auth_error = _api_user_id()
+    if auth_error is not None:
+        return auth_error
+    idempotency_key = request.headers.get("Idempotency-Key", "").strip()
+    if not idempotency_key or len(idempotency_key) > 180:
+        return jsonify({"error": "A valid Idempotency-Key header is required."}), 400
+    session_key = _market_session_key()
+    try:
+        checkout = _repository().start_checkout(
+            session_key=session_key,
+            user_id=str(user_id),
+            idempotency_key=idempotency_key,
+        )
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    response = jsonify({"checkout": asdict(checkout)})
+    return _attach_market_session(response, session_key)
+
+
+@market_blueprint.post("/api/market/orders")
+def api_create_order():
+    if not _csrf_valid():
+        return _csrf_error()
+    user_id, auth_error = _api_user_id()
+    if auth_error is not None:
+        return auth_error
+    payload = request.get_json(silent=True) or {}
+    checkout_id = str(payload.get("checkout_id", "")).strip()
+    if not checkout_id:
+        return jsonify({"error": "checkout_id is required."}), 400
+    try:
+        order = _repository().create_order(checkout_id=checkout_id, user_id=str(user_id))
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 400
+    return jsonify({"order": asdict(order)})
+
+
+@market_blueprint.get("/api/market/orders")
+def api_list_orders():
+    user_id, auth_error = _api_user_id()
+    if auth_error is not None:
+        return auth_error
+    return jsonify(
+        {"orders": [asdict(order) for order in _repository().list_orders(user_id=str(user_id))]}
+    )
 
 
 @market_blueprint.get("/api/market/categories")

@@ -6,9 +6,9 @@
 |:---|:---|:---|
 | ECloe Market product surface | Implemented | Shared Flask demo route, public `/market` surface, filters, sort controls, product grid, product detail page, and synthetic-data notices. |
 | Catalog APIs | Implemented | Local normalized catalog, categories, product listing, product detail APIs, product variants, current prices, stock, and deterministic seed script. |
-| Cart, checkout, and order APIs | Planned for demo | Target API surface for marketplace behavior and transaction state. |
+| Cart, checkout, and order APIs | Implemented | Local Flask APIs persist cart, checkout, and pending-order state through the repository contract. |
 | Azure SQL catalog model | Implemented | `ecloe_market` schema, catalog/price/stock tables, idempotent seed command, and runtime repository behind `ECLOE_MARKET_DATABASE_MODE=azure_sql`. |
-| Azure SQL transaction model | Planned for demo | Future source of truth for carts, checkout, orders, payment references, and outbox records. |
+| Azure SQL transaction model | Implemented | Source of truth for catalog, carts, checkout, pending orders, interactions, and outbox records. |
 | Recommendation integration | Planned for demo | Market/BFF aggregates context, gets eligible offers from upstream services, and calls ECloe Engine. |
 | ECloe Engine API | Implemented | Existing FastAPI service for decisions, likelihood estimates, policy metadata, and reward ingestion. |
 | Real payment processing, fraud, risk, credit, pricing automation, and eligibility decisions | Out of scope | These remain upstream responsibilities and are not performed by ECloe Market or ECloe Engine. |
@@ -68,9 +68,9 @@ ECloe Engine does not price products, approve payments, check inventory, execute
 | Capability | Status | Notes |
 |:---|:---|:---|
 | Product catalog | Implemented | Deterministic local synthetic catalog, Azure SQL seed, category list, filtered product listing API, product detail API, and product screens. |
-| Pricing | Implemented | Current synthetic price lookup in integer cents for public catalog and product detail. Historical order snapshots remain planned. |
-| Inventory | Implemented | Available and reserved synthetic quantities in the catalog repository. Checkout reservation and concurrency protection remain planned. |
-| Cart | Implemented | Public demo cart in memory mode with item add/remove and quantity update. Azure SQL cart persistence remains planned. |
+| Pricing | Implemented | Current price lookup uses integer cents; order items preserve price and title snapshots. |
+| Inventory | Implemented | Checkout and order creation revalidate available quantity under repository or SQL locking. Reservation remains Future. |
+| Cart | Implemented | Public cart supports memory and Azure SQL persistence with add, remove, and quantity update. |
 | Checkout | Planned for demo | Cart snapshot, price revalidation, stock reservation, idempotency, and correlation ID. |
 | Orders | Planned for demo | Order creation, order item snapshots, status changes, cancellation, and payment confirmation link. |
 | Marketplace events | Planned for demo | Product and checkout events written through outbox for reliable async delivery. |
@@ -91,7 +91,7 @@ ECloe Market must not:
 
 ## Persistence Decision
 
-The recommended primary database for ECloe Market is **Azure SQL Database** with a low-consumption serverless or small service tier. The current implementation already provides the PR 2 catalog schema and runtime repository for `ECLOE_MARKET_DATABASE_MODE=azure_sql`; transaction tables for cart, checkout, orders, payment references, and outbox remain planned.
+The primary database for ECloe Market is **Azure SQL Database** with a low-consumption serverless or small service tier. The schema and runtime repository cover catalog, cart, checkout, pending orders, recommendation interactions, and outbox writes when `ECLOE_MARKET_DATABASE_MODE=azure_sql`. Payment confirmation and inventory reservation remain Future.
 
 To initialize the PR 2 catalog schema and seed the local synthetic catalog into Azure SQL:
 
@@ -214,7 +214,7 @@ Idempotency-Key: <unique-operation-id>
 X-Correlation-Id: <uuid>
 ```
 
-The API surface is planned and is not implemented in the current repository.
+The versioned external API surface below remains Planned for demo. The integrated Flask demo already provides local cart, checkout, pending-order, catalog, and recommendation-feedback endpoints under `/api/market/`.
 
 ## Core Data Model
 
@@ -352,7 +352,7 @@ inventory:read
 inventory:write
 ```
 
-Market should derive `customer_id` from the authenticated subject. A client must not be allowed to submit another customer's identifier directly.
+Market derives `user_id` and the pseudonymous recommendation subject from the authenticated session. A client cannot submit another user's identifier directly.
 
 Public catalog browsing does not require authentication. Authentication begins at checkout and for account-specific order views, using the same shared demo session as ECloe Pay.
 
@@ -446,3 +446,16 @@ ECloe Market is ready for the planned demo when:
 - [`ecloe-market-checkout-flow.svg`](ecloe-market-checkout-flow.svg) - ECloe Market checkout and order flow diagram.
 - [`ecloe-market-file-flow.svg`](ecloe-market-file-flow.svg) - ECloe Market file and data flow diagram.
 - [`ecloe-market-class-diagram.svg`](ecloe-market-class-diagram.svg) - ECloe Market domain class diagram.
+- [`recommendation-system.md`](recommendation-system.md) - Implemented product ranking, feedback, privacy, evaluation, and Azure seed plan.
+
+## Recommendation Integration
+
+| Area | Status | Current behavior |
+|:---|:---|:---|
+| Product recommendation shelf | Implemented | `/market` ranks up to six active, priced, in-stock products. |
+| Intermediate telemetry | Implemented | Presented product and position are validated before `impression`, `click`, or `add_to_cart` persistence. |
+| Cart, checkout, and pending order repositories | Implemented | Memory and Azure SQL implementations share the same contract. |
+| Purchase attribution | Planned for demo | A trusted paid-order event will submit `purchase` or `expired` to Engine v2. |
+| Full slate bandit | Out of scope | Early adaptive experiments affect position one only. |
+
+Gender-coded catalog labels are normalized to the neutral `apparel` parent before they can become model input. They never create or imply a user gender affinity. See [`recommendation-system.md`](recommendation-system.md) for the exact feature and reward contracts.

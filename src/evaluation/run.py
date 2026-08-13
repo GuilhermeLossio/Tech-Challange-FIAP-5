@@ -11,6 +11,8 @@ import pandas as pd
 
 from src.bandits import ACTIONS, UCB1, DeterministicBaseline, EpsilonGreedy, ThompsonSampling
 from src.bandits.policies import BanditPolicy
+from src.data.legacy_hillstrom import normalize_legacy_action
+from src.data.schemas import BLOCKED_COLUMNS
 from src.engine.artifacts import ARTIFACT_STATUS_ACTIVE, SELECTED_POLICY_SCHEMA
 from src.engine.likelihood import train_likelihood_model
 
@@ -32,6 +34,10 @@ def prepare_dataset() -> Path:
 
 
 def _validate_processed_dataset(df: pd.DataFrame) -> None:
+    blocked_columns = sorted(set(BLOCKED_COLUMNS).intersection(df.columns))
+    if blocked_columns:
+        raise ValueError(f"Blocked columns in processed dataset: {blocked_columns}")
+
     required_columns = {"row_id", "action", "reward"}
     missing = required_columns - set(df.columns)
     if missing:
@@ -261,6 +267,10 @@ def run_evaluation(
         if max_rows < 2:
             raise ValueError("--max-rows must be at least 2")
         dataframe = dataframe.head(max_rows).copy()
+    if "action" in dataframe.columns:
+        dataframe["action"] = dataframe["action"].map(
+            lambda value: normalize_legacy_action(str(value)) if pd.notna(value) else value
+        )
     _validate_processed_dataset(dataframe)
 
     train_df, evaluation_df = split_dataset(dataframe)

@@ -876,6 +876,72 @@
     justify-content: center;
   }
 
+  .recommendation-band {
+    border-bottom: 1px solid var(--color-line);
+    border-top: 1px solid var(--color-line);
+    padding: 24px 0;
+  }
+
+  .recommendation-band > header {
+    align-items: end;
+    display: flex;
+    gap: 16px;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .recommendation-band h2,
+  .recommendation-item h3 {
+    margin: 0;
+  }
+
+  .recommendation-policy {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-sm);
+    color: var(--color-ink);
+    font-size: 0.78rem;
+    padding: 7px 9px;
+  }
+
+  .recommendation-grid {
+    display: grid;
+    gap: 12px;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+
+  .recommendation-item {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-sm);
+    display: grid;
+    gap: 10px;
+    grid-template-rows: 126px minmax(88px, 1fr) auto;
+    min-width: 0;
+    padding: 10px;
+  }
+
+  .recommendation-item img {
+    height: 126px;
+    object-fit: contain;
+    width: 100%;
+  }
+
+  .recommendation-item h3 {
+    font-size: 0.92rem;
+    line-height: 1.25;
+  }
+
+  .recommendation-item span,
+  .recommendation-note {
+    color: var(--color-muted);
+    font-size: 0.78rem;
+  }
+
+  .recommendation-note {
+    margin: 12px 0 0;
+  }
+
   .planned-card {
     padding: 28px;
   }
@@ -934,9 +1000,29 @@
     .journey-rail {
       grid-template-columns: 1fr;
     }
+
+    .recommendation-grid {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
   }
 
   @media (max-width: 640px) {
+    .marketplace-body {
+      overflow-x: hidden;
+    }
+
+    .marketplace-header-main,
+    .marketplace-page,
+    .marketplace-page > *,
+    .marketplace-actions,
+    .marketplace-subnav,
+    .marketplace-search,
+    .marketplace-search input {
+      max-width: 100%;
+      min-width: 0;
+      width: 100%;
+    }
+
     .marketplace-search {
       grid-template-columns: 1fr;
     }
@@ -950,6 +1036,11 @@
       grid-template-columns: 1fr;
     }
 
+    .marketplace-hero h1,
+    .marketplace-hero p {
+      overflow-wrap: anywhere;
+    }
+
     .marketplace-hero .cloe-image {
       display: none;
     }
@@ -958,6 +1049,23 @@
     .marketplace-actions,
     .marketplace-subnav {
       align-items: flex-start;
+    }
+
+    .marketplace-actions {
+      display: grid;
+      gap: 8px 12px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .marketplace-actions a,
+    .marketplace-actions .identity-chip {
+      justify-content: flex-start;
+      overflow-wrap: anywhere;
+      white-space: normal;
+    }
+
+    .marketplace-subnav {
+      flex-wrap: nowrap;
     }
 
     .results-header {
@@ -976,14 +1084,34 @@
       grid-template-columns: 1fr;
     }
 
+    .marketplace-quick-cats {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .marketplace-deal-strip {
+      grid-template-columns: 1fr;
+    }
+
     .mobile-cart-bar {
       display: flex;
+      min-width: 0;
+    }
+
+    .mobile-cart-bar .primary-link {
+      max-width: 62%;
+      min-width: 0;
+      text-align: center;
+      white-space: normal;
     }
 
     .cart-toast {
       bottom: 76px;
       left: 14px;
       right: 14px;
+    }
+
+    .recommendation-grid {
+      grid-template-columns: 1fr;
     }
   }
 }

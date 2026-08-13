@@ -19,6 +19,7 @@ ECLOE_MARKET_IMAGE_BACKENDS = {"zimage-local", "space", "local", "hunyuan-local"
 ECLOE_MARKET_IMAGE_OFFLOAD_MODES = {"model", "sequential", "none"}
 ECLOE_PAY_SQL_AUTH_MODES = {"entra_interactive", "azure_cli", "managed_identity"}
 CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
+RECOMMENDATION_ACTIVE_POLICIES = {"deterministic_baseline", "likelihood_ranker"}
 
 
 def _load_env_file(path: Path) -> None:
@@ -127,6 +128,8 @@ class Settings:
     ecloe_market_image_width: int
     ecloe_market_image_steps: int
     ecloe_market_image_offload_mode: str
+    recommendation_market_policy: str
+    recommendation_pay_policy: str
 
     @property
     def raw_file(self) -> Path:
@@ -247,9 +250,16 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         ecloe_market_image_width=int(_env("ECLOE_MARKET_IMAGE_WIDTH", "1024")),
         ecloe_market_image_steps=int(_env("ECLOE_MARKET_IMAGE_STEPS", "9")),
         ecloe_market_image_offload_mode=_env("ECLOE_MARKET_IMAGE_OFFLOAD_MODE", "model").lower(),
+        recommendation_market_policy=_env(
+            "RECOMMENDATION_MARKET_POLICY", "deterministic_baseline"
+        ).lower(),
+        recommendation_pay_policy=_env(
+            "RECOMMENDATION_PAY_POLICY", "deterministic_baseline"
+        ).lower(),
     )
     _validate_ecloe_pay_settings(settings)
     _validate_ecloe_market_settings(settings)
+    _validate_recommendation_settings(settings)
     return settings
 
 
@@ -311,6 +321,15 @@ def _validate_ecloe_market_settings(settings: Settings) -> None:
         and settings.ecloe_pay_sql_auth_mode != "managed_identity"
     ):
         raise ValueError("Cloud ECloe Market Azure SQL must use managed_identity.")
+
+
+def _validate_recommendation_settings(settings: Settings) -> None:
+    for name, value in (
+        ("RECOMMENDATION_MARKET_POLICY", settings.recommendation_market_policy),
+        ("RECOMMENDATION_PAY_POLICY", settings.recommendation_pay_policy),
+    ):
+        if value not in RECOMMENDATION_ACTIVE_POLICIES:
+            raise ValueError(f"Unsupported {name}: {value}")
 
 
 settings = load_settings(use_env_file=False)

@@ -49,6 +49,26 @@
     return body.cart;
   }
 
+  async function recordRecommendation(button, eventType) {
+    if (!button.dataset.recommendationDecision) {
+      return;
+    }
+    try {
+      await fetch("/api/market/recommendations/feedback", {
+        method: "POST",
+        headers: csrfHeaders(),
+        body: JSON.stringify({
+          decision_id: button.dataset.recommendationDecision,
+          product_id: button.dataset.addProduct,
+          position: Number(button.dataset.recommendationPosition || 0),
+          event_type: eventType,
+        }),
+      });
+    } catch (_error) {
+      // Cart updates remain usable when optional recommendation telemetry is unavailable.
+    }
+  }
+
   document.querySelectorAll("[data-add-product]").forEach((button) => {
     button.addEventListener("click", async () => {
       button.disabled = true;
@@ -60,6 +80,7 @@
             quantity: 1,
           }),
         });
+        await recordRecommendation(button, "add_to_cart");
         showCartToast();
       } finally {
         button.disabled = false;

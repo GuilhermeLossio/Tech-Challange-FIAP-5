@@ -362,6 +362,43 @@ class AzureSqlPayRepository(PayRepository):
             ).mappings().first()
         return _session_from_row(row) if row else None
 
+    def set_recommendation(
+        self,
+        session_id: str,
+        decision_id: str,
+        offer_id: str,
+    ) -> DemoSession:
+        from sqlalchemy import text
+
+        with self.engine.connect() as connection:
+            transaction = connection.begin()
+            try:
+                result = connection.execute(
+                    text(
+                        """
+                        UPDATE ecloe_pay.demo_sessions
+                        SET selected_decision_id = :decision_id,
+                            selected_offer_id = :offer_id
+                        WHERE session_id = :session_id
+                        """
+                    ),
+                    {
+                        "session_id": session_id,
+                        "decision_id": decision_id,
+                        "offer_id": offer_id,
+                    },
+                )
+                if result.rowcount != 1:
+                    raise KeyError(session_id)
+                transaction.commit()
+            except Exception:
+                transaction.rollback()
+                raise
+        session = self.get_demo_session(session_id)
+        if session is None:
+            raise KeyError(session_id)
+        return session
+
     def wallet_snapshot(self, session_id: str) -> WalletSnapshot:
         from sqlalchemy import text
 

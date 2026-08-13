@@ -291,6 +291,28 @@ BEGIN
 END;
 GO
 
+IF OBJECT_ID(N'ecloe_market.recommendation_interactions', N'U') IS NULL
+BEGIN
+    CREATE TABLE ecloe_market.recommendation_interactions (
+        interaction_id NVARCHAR(100) NOT NULL CONSTRAINT pk_market_recommendation_interactions PRIMARY KEY,
+        event_id NVARCHAR(128) NOT NULL,
+        session_key_hash NVARCHAR(128) NOT NULL,
+        decision_id NVARCHAR(80) NOT NULL,
+        product_id NVARCHAR(64) NOT NULL,
+        position INT NOT NULL,
+        event_type NVARCHAR(24) NOT NULL,
+        is_demo BIT NOT NULL CONSTRAINT df_market_recommendation_interactions_is_demo DEFAULT 1,
+        occurred_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_market_recommendation_interactions_occurred_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+        CONSTRAINT fk_market_recommendation_interactions_product
+            FOREIGN KEY (product_id) REFERENCES ecloe_market.products(product_id),
+        CONSTRAINT uq_market_recommendation_interactions_event UNIQUE (event_id),
+        CONSTRAINT ck_market_recommendation_interactions_position CHECK (position BETWEEN 1 AND 20),
+        CONSTRAINT ck_market_recommendation_interactions_event_type CHECK (event_type IN (N'impression', N'click', N'add_to_cart', N'purchase', N'expired')),
+        CONSTRAINT ck_market_recommendation_interactions_is_demo CHECK (is_demo = 1)
+    );
+END;
+GO
+
 IF NOT EXISTS (
     SELECT 1 FROM sys.indexes WHERE name = N'ix_market_products_category' AND object_id = OBJECT_ID(N'ecloe_market.products')
 )
@@ -364,5 +386,14 @@ IF NOT EXISTS (
 BEGIN
     INSERT INTO ecloe_market.schema_migrations (migration_id)
     VALUES (N'20260803_ecloe_market_platform_classes');
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM ecloe_market.schema_migrations WHERE migration_id = N'20260811_ecloe_market_recommendations'
+)
+BEGIN
+    INSERT INTO ecloe_market.schema_migrations (migration_id)
+    VALUES (N'20260811_ecloe_market_recommendations');
 END;
 GO

@@ -9,6 +9,7 @@ from src.demo.ecloe_market.blueprint import market_blueprint
 from src.demo.ecloe_pay.app import create_app as create_pay_app
 from src.demo.ecloe_pay.repositories import PayRepository
 from src.market.repositories import MarketRepository, create_market_repository
+from src.recommendation import RecommendationService
 
 
 def create_app(
@@ -16,9 +17,14 @@ def create_app(
     *,
     pay_repository: PayRepository | None = None,
     market_repository: MarketRepository | None = None,
+    recommendation_service: RecommendationService | None = None,
 ) -> Flask:
     settings = settings or load_settings(use_env_file=False)
-    app = create_pay_app(settings=settings, repository=pay_repository)
+    app = create_pay_app(
+        settings=settings,
+        repository=pay_repository,
+        recommendation_service=recommendation_service,
+    )
     app.market_repository = market_repository or create_market_repository(settings)  # type: ignore[attr-defined]
     app.register_blueprint(market_blueprint)
     return app

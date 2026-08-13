@@ -4,20 +4,20 @@
 
 | Area | Status | Notes |
 |:---|:---|:---|
-| ECloe Pay product surface | Planned for demo | Simulated wallet experience inside the ECloe Demo application. |
+| ECloe Pay product surface | Implemented | Simulated wallet experience inside the ECloe Demo application. |
 | Wallet summary and benefits UI | Implemented | First static demo slice in `src/demo/ecloe_pay/` shows demo balance, cashback, goals, benefits, and accepted-offer status. |
 | Offer interaction flow | Implemented | First static demo slice opens, accepts, dismisses, and records deterministic reward-event evidence. |
 | Terms of service and demo disclaimer | Implemented | The static demo requires explicit acceptance that no real money is processed and no real user is created. |
 | Simulated authentication | Implemented | Azure SQL mode protects the Pay wallet and APIs with a demo persona, HttpOnly token cookie, CSRF checks, logout revocation, and login attempt limits. |
 | Azure SQL Pay schema | Implemented | `src/demo/ecloe_pay/schema.sql` defines Pay-owned Azure SQL tables under the `ecloe_pay` schema. |
 | Real-ready Azure SQL account model | Planned for demo | Next implementation step separates identity, wallet, payments, rewards, audit, and integration schemas inside `ecloe_validation`. |
-| Reward registration | Implemented | Uses the existing `POST /v1/rewards` endpoint after a verified demo interaction. |
+| Reward registration | Implemented | Maps demo actions to the v2 feedback vocabulary and exposes `/v2/feedback` as the Engine contract. |
 | Real payment account integration | Future | Requires governed upstream wallet, identity, security, compliance, and consent controls. |
 | Credit, fraud, risk, compliance, and eligibility decisions | Out of scope | These decisions remain upstream and are not performed by ECloe Pay or ECloe Engine. |
 
 ## Purpose
 
-ECloe Pay is the planned digital wallet surface for the ECloe demo. It turns the recommendation returned by ECloe Engine into a customer-facing wallet benefit, then records the customer interaction as an append-only reward event.
+ECloe Pay is the implemented digital wallet surface for the ECloe demo. It obtains a recommendation from ECloe Engine, turns it into a customer-facing wallet benefit, and records the interaction as an append-only event.
 
 In the MVP, ECloe Pay is not a real wallet, bank account, credit product, payment processor, or risk system. It is a simulated experience that demonstrates how wallet context and marketplace behavior can support responsible next-best-action personalization after upstream systems have already decided which offers are eligible.
 
@@ -62,11 +62,11 @@ ECloe Pay receives the selected eligible offer from the demo session, presents i
 
 | Responsibility | Owner | Status | Notes |
 |:---|:---|:---|:---|
-| Wallet UI presentation | ECloe Pay | Planned for demo | Displays simulated wallet balance, benefits, goals, and accepted-offer state. |
-| Session state | Demo Backend-for-Frontend | Planned for demo | Keeps persona, cart, decision, reward, and technical timeline state. |
-| Eligibility calculation | Upstream eligibility simulator | Planned for demo | Produces allowed `eligible_offers` before calling ECloe Engine. |
+| Wallet UI presentation | ECloe Pay | Implemented | Displays simulated wallet balance, benefits, goals, and accepted-offer state. |
+| Session state | Demo Backend-for-Frontend | Implemented | Keeps persona, Engine decision, reward, and technical timeline state. |
+| Eligibility calculation | Upstream eligibility simulator | Implemented | Produces typed eligible benefit candidates before calling ECloe Engine. |
 | Offer ranking | ECloe Engine | Implemented | Selects one action from the eligible offers sent in the request. |
-| Reward ingestion | ECloe Engine | Implemented | Persists append-only reward events through `POST /v1/rewards`. |
+| Reward ingestion | ECloe Engine | Implemented | Persists slate-bound append-only feedback through `POST /v2/feedback`; v1 remains compatible. |
 | Real account, credit, fraud, risk, compliance decisions | Upstream governed systems | Out of scope | Must not be simulated as Engine or Pay responsibilities. |
 
 ## Planned Screens
@@ -355,3 +355,16 @@ Create the dedicated private Azure Blob container:
 - [`ecloe-pay-overview.svg`](ecloe-pay-overview.svg) - ECloe Pay overview diagram.
 - [`ecloe-pay-transfer-flow.svg`](ecloe-pay-transfer-flow.svg) - ECloe Pay transfer flow diagram.
 - [`ecloe-pay-simplified-relationship.svg`](ecloe-pay-simplified-relationship.svg) - ECloe Pay simplified relationship diagram.
+- [`recommendation-system.md`](recommendation-system.md) - Implemented benefit ranking, feedback, privacy, and policy lifecycle.
+
+## Recommendation Integration
+
+| Area | Status | Current behavior |
+|:---|:---|:---|
+| Engine-selected benefit | Implemented | Pay sends three typed eligible benefits and persists the returned decision and selected offer. |
+| Single-benefit presentation | Implemented | Exactly one eligible benefit is returned for `surface=pay`. |
+| Backend outcome mapping | Implemented | `open` is telemetry, `acceptance` maps to 1, and `rejection` maps to 0. |
+| Adaptive online policy | Future | Requires shadow review, minimum evidence, and manual promotion. |
+| Credit, risk, fraud, or eligibility ranking | Out of scope | Pay and Engine do not perform these decisions. |
+
+The demo no longer uses a fixed decision ID or fixed selected benefit in runtime state. Technical mode receives the current `decision_id`, `offer_id`, and policy from `/api/session`.
