@@ -11,7 +11,9 @@ BEGIN
         email_normalized NVARCHAR(254) MASKED WITH (FUNCTION = 'email()') NOT NULL,
         display_name NVARCHAR(120) NOT NULL,
         persona_label NVARCHAR(120) NOT NULL,
-        password_hash NVARCHAR(512) NOT NULL,
+        password_hash NVARCHAR(512) NULL,
+        auth_provider NVARCHAR(40) NOT NULL CONSTRAINT df_demo_users_auth_provider DEFAULT N'local',
+        provisioning_version INT NOT NULL CONSTRAINT df_demo_users_provisioning_version DEFAULT 1,
         is_active BIT NOT NULL CONSTRAINT df_demo_users_is_active DEFAULT 1,
         is_demo BIT NOT NULL CONSTRAINT df_demo_users_is_demo DEFAULT 1,
         pii_allowed BIT NOT NULL CONSTRAINT df_demo_users_pii_allowed DEFAULT 0,
@@ -123,6 +125,7 @@ BEGIN
         token_hash NVARCHAR(128) NOT NULL,
         created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_auth_sessions_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
         expires_at DATETIMEOFFSET(7) NOT NULL,
+        idle_expires_at DATETIMEOFFSET(7) NOT NULL,
         revoked_at DATETIMEOFFSET(7) NULL,
         last_seen_at DATETIMEOFFSET(7) NULL,
         CONSTRAINT fk_auth_sessions_demo_users
@@ -294,6 +297,118 @@ BEGIN
 
     INSERT INTO ecloe_pay.schema_migrations (migration_id)
     VALUES (N'20260811_ecloe_pay_recommendation_events_v2');
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM ecloe_pay.schema_migrations
+    WHERE migration_id = N'20260812_ecloe_external_identity_v1'
+)
+BEGIN
+    IF COL_LENGTH(N'ecloe_pay.demo_users', N'auth_provider') IS NULL
+        ALTER TABLE ecloe_pay.demo_users ADD auth_provider NVARCHAR(40) NOT NULL
+            CONSTRAINT df_demo_users_auth_provider DEFAULT N'local';
+    IF COL_LENGTH(N'ecloe_pay.demo_users', N'provisioning_version') IS NULL
+        ALTER TABLE ecloe_pay.demo_users ADD provisioning_version INT NOT NULL
+            CONSTRAINT df_demo_users_provisioning_version DEFAULT 1;
+    ALTER TABLE ecloe_pay.demo_users ALTER COLUMN password_hash NVARCHAR(512) NULL;
+
+    IF COL_LENGTH(N'ecloe_pay.auth_sessions', N'idle_expires_at') IS NULL
+    BEGIN
+        ALTER TABLE ecloe_pay.auth_sessions ADD idle_expires_at DATETIMEOFFSET(7) NULL;
+        UPDATE ecloe_pay.auth_sessions SET idle_expires_at = expires_at WHERE idle_expires_at IS NULL;
+        ALTER TABLE ecloe_pay.auth_sessions ALTER COLUMN idle_expires_at DATETIMEOFFSET(7) NOT NULL;
+    END;
+
+    IF OBJECT_ID(N'ecloe_pay.external_identities', N'U') IS NULL
+    BEGIN
+        CREATE TABLE ecloe_pay.external_identities (
+            identity_id NVARCHAR(64) NOT NULL CONSTRAINT pk_external_identities PRIMARY KEY,
+            user_id NVARCHAR(64) NOT NULL,
+            provider NVARCHAR(40) NOT NULL,
+            issuer NVARCHAR(300) NOT NULL,
+            subject_key CHAR(64) NOT NULL,
+            created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_external_identities_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+            last_login_at DATETIMEOFFSET(7) NULL,
+            CONSTRAINT fk_external_identities_user FOREIGN KEY (user_id) REFERENCES ecloe_pay.demo_users(user_id),
+            CONSTRAINT uq_external_identities_subject UNIQUE (provider, issuer, subject_key)
+        );
+    END;
+
+    IF OBJECT_ID(N'ecloe_pay.oidc_login_flows', N'U') IS NULL
+    BEGIN
+        CREATE TABLE ecloe_pay.oidc_login_flows (
+            flow_id NVARCHAR(64) NOT NULL CONSTRAINT pk_oidc_login_flows PRIMARY KEY,
+            token_hash CHAR(64) NOT NULL CONSTRAINT uq_oidc_login_flows_token UNIQUE,
+            flow_payload NVARCHAR(MAX) NOT NULL,
+            return_to NVARCHAR(500) NOT NULL,
+            created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_oidc_login_flows_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+            expires_at DATETIMEOFFSET(7) NOT NULL,
+            CONSTRAINT ck_oidc_login_flows_payload CHECK (ISJSON(flow_payload) = 1)
+        );
+    END;
+
+    IF OBJECT_ID(N'ecloe_pay.wallet_accounts', N'U') IS NULL
+    BEGIN
+        CREATE TABLE ecloe_pay.wallet_accounts (
+            wallet_account_id NVARCHAR(64) NOT NULL CONSTRAINT pk_wallet_accounts PRIMARY KEY,
+            user_id NVARCHAR(64) NOT NULL CONSTRAINT uq_wallet_accounts_user UNIQUE,
+            available_balance_cents INT NOT NULL,
+            cashback_cents INT NOT NULL,
+            savings_goal_percent INT NOT NULL,
+            currency CHAR(3) NOT NULL CONSTRAINT df_wallet_accounts_currency DEFAULT 'BRL',
+            status NVARCHAR(40) NOT NULL CONSTRAINT df_wallet_accounts_status DEFAULT N'active',
+            updated_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_wallet_accounts_updated_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+            CONSTRAINT fk_wallet_accounts_user FOREIGN KEY (user_id) REFERENCES ecloe_pay.demo_users(user_id),
+            CONSTRAINT ck_wallet_accounts_balance CHECK (available_balance_cents >= 0),
+            CONSTRAINT ck_wallet_accounts_cashback CHECK (cashback_cents >= 0),
+            CONSTRAINT ck_wallet_accounts_goal CHECK (savings_goal_percent BETWEEN 0 AND 100),
+            CONSTRAINT ck_wallet_accounts_currency CHECK (currency = 'BRL'),
+            CONSTRAINT ck_wallet_accounts_status CHECK (status IN (N'active', N'review', N'inactive'))
+        );
+    END;
+
+    IF OBJECT_ID(N'ecloe_pay.wallet_transactions', N'U') IS NULL
+    BEGIN
+        CREATE TABLE ecloe_pay.wallet_transactions (
+            user_id NVARCHAR(64) NOT NULL,
+            transaction_id NVARCHAR(64) NOT NULL,
+            description NVARCHAR(180) NOT NULL,
+            amount_cents INT NOT NULL,
+            category NVARCHAR(60) NOT NULL,
+            occurred_at DATETIMEOFFSET(7) NOT NULL,
+            CONSTRAINT pk_wallet_transactions PRIMARY KEY (user_id, transaction_id),
+            CONSTRAINT fk_wallet_transactions_user FOREIGN KEY (user_id) REFERENCES ecloe_pay.demo_users(user_id)
+        );
+    END;
+
+    IF OBJECT_ID(N'ecloe_pay.consent_acceptances', N'U') IS NULL
+    BEGIN
+        CREATE TABLE ecloe_pay.consent_acceptances (
+            acceptance_id NVARCHAR(64) NOT NULL CONSTRAINT pk_consent_acceptances PRIMARY KEY,
+            user_id NVARCHAR(64) NOT NULL,
+            document_type NVARCHAR(40) NOT NULL,
+            document_version NVARCHAR(40) NOT NULL,
+            accepted_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_consent_acceptances_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+            CONSTRAINT fk_consent_acceptances_user FOREIGN KEY (user_id) REFERENCES ecloe_pay.demo_users(user_id),
+            CONSTRAINT uq_consent_acceptances UNIQUE (user_id, document_type, document_version)
+        );
+    END;
+
+    IF OBJECT_ID(N'ecloe_pay.security_audit_events', N'U') IS NULL
+    BEGIN
+        CREATE TABLE ecloe_pay.security_audit_events (
+            audit_event_id NVARCHAR(64) NOT NULL CONSTRAINT pk_security_audit_events PRIMARY KEY,
+            user_id NVARCHAR(64) NULL,
+            event_type NVARCHAR(60) NOT NULL,
+            result NVARCHAR(40) NOT NULL,
+            occurred_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_security_audit_events_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+            CONSTRAINT fk_security_audit_events_user FOREIGN KEY (user_id) REFERENCES ecloe_pay.demo_users(user_id)
+        );
+    END;
+
+    INSERT INTO ecloe_pay.schema_migrations (migration_id)
+    VALUES (N'20260812_ecloe_external_identity_v1');
 END;
 GO
 

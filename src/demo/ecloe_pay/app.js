@@ -313,7 +313,9 @@ document.querySelector("#resetButton").addEventListener("click", () => {
 
 logoutButton.addEventListener("click", () => {
   postJson("/api/auth/logout", {})
-    .then(() => window.location.assign(`/pay/login?lang=${encodeURIComponent(pageLocale)}`))
+    .then((body) => window.location.assign(
+      body.logout_url || `/pay/login?lang=${encodeURIComponent(pageLocale)}`,
+    ))
     .catch(() => window.location.assign(`/pay/login?lang=${encodeURIComponent(pageLocale)}`));
 });
 

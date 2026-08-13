@@ -138,6 +138,8 @@ The detailed model-by-model generation flow is described in [`docs/choice-model-
 
 The API runtime now has an explicit operational perimeter. Business routes validate Microsoft Entra ID bearer tokens and route scopes in cloud environments, while local disabled authentication is limited to loopback execution. The middleware applies trusted host checks, explicit CORS origins, payload limits, request rate limits, and concurrency limits before the route handler executes.
 
+The customer-facing Flask BFF uses a separate Microsoft Entra External ID registration. It completes Authorization Code with PKCE server-side, maps `(issuer, sub)` to an HMAC identity key, and issues only an opaque application session. First login transactionally provisions a deterministic synthetic profile, wallet account, and transaction history in Azure SQL; no token, password, real e-mail address, or real financial identifier is stored. Setup and operations are documented in [`docs/azure-customer-authentication.md`](docs/azure-customer-authentication.md).
+
 Every request emits structured telemetry with `request_id`, `trace_id`, route, status, latency, and safe decision metadata such as `decision_id` and `policy_version` when available. Full `customer_context` payloads are intentionally excluded from access logs. OpenTelemetry instrumentation can export traces to Application Insights when the optional observability dependencies and connection string are configured.
 
 Continuous assurance is enforced through CI gates for Ruff, pytest with coverage, dependency audit, OpenAPI compatibility, CodeQL, and secret scanning.

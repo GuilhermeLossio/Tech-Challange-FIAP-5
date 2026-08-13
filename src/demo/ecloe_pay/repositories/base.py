@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
@@ -24,6 +24,7 @@ class DemoUser:
     email: str
     display_name: str
     persona_label: str
+    auth_provider: str = "local"
 
 
 @dataclass
@@ -32,10 +33,53 @@ class AuthSession:
     user_id: str
     expires_at: datetime
     revoked_at: datetime | None = None
+    idle_expires_at: datetime | None = None
 
     @property
     def active(self) -> bool:
-        return self.revoked_at is None and self.expires_at > datetime.now(UTC)
+        now = datetime.now(UTC)
+        return (
+            self.revoked_at is None
+            and self.expires_at > now
+            and (self.idle_expires_at is None or self.idle_expires_at > now)
+        )
+
+
+@dataclass
+class OidcLoginFlow:
+    flow_id: str
+    payload: dict[str, Any]
+    return_to: str
+    expires_at: datetime
+
+
+@dataclass(frozen=True)
+class SyntheticProfile:
+    full_name: str
+    city: str
+    state_region: str
+    preferred_language: str
+    market_segment: str
+    wallet_status: str = "active"
+
+
+@dataclass(frozen=True)
+class WalletTransaction:
+    transaction_id: str
+    description: str
+    amount_cents: int
+    category: str
+    occurred_at: str
+
+
+@dataclass(frozen=True)
+class SyntheticAccount:
+    available_balance_cents: int
+    cashback_cents: int
+    savings_goal_percent: int
+    currency: str = "BRL"
+    status: str = "active"
+    transactions: tuple[WalletTransaction, ...] = field(default_factory=tuple)
 
 
 @dataclass
@@ -95,6 +139,24 @@ class PayRepository(Protocol):
         ...
 
     def get_user(self, user_id: str) -> DemoUser | None:
+        ...
+
+    def store_oidc_flow(self, flow: OidcLoginFlow) -> None:
+        ...
+
+    def consume_oidc_flow(self, flow_id: str) -> OidcLoginFlow | None:
+        ...
+
+    def provision_external_user(self, issuer: str, subject_key: str) -> DemoUser | None:
+        ...
+
+    def synthetic_profile(self, user_id: str) -> SyntheticProfile | None:
+        ...
+
+    def synthetic_account(self, user_id: str) -> SyntheticAccount | None:
+        ...
+
+    def record_audit_event(self, user_id: str | None, event_type: str, result: str) -> None:
         ...
 
     def get_or_create_demo_session(self, user_id: str) -> DemoSession:

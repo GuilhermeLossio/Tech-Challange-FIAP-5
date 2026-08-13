@@ -158,7 +158,7 @@ The script does not read or write `.env`. It requires an active Azure CLI login 
 
 ECloe Pay can persist its simulated banking state in Azure SQL. The default local mode remains `memory`; Azure SQL is opt-in and stores only personas and synthetic wallet/session/payment evidence.
 
-For the browser demo, use Azure SQL mode so `/pay/login` validates the synthetic demo persona against `ecloe_pay.demo_users`. Memory mode remains useful for CI and local automated tests, but the wallet route and Pay APIs still start unauthenticated and require an explicit login session.
+For the deployed browser demo, use Azure SQL mode and Microsoft Entra External ID. External ID validates customer credentials; ECloe stores only a pseudonymized identity mapping and synthetic account state. Memory mode and the local credential form remain available only for local development and CI.
 
 Confirmed database:
 
@@ -187,6 +187,13 @@ ECLOE_PAY_SQL_DRIVER=ODBC Driver 18 for SQL Server
 ECLOE_PAY_DATABASE_MODE=azure_sql
 ECLOE_PAY_SQL_AUTH_MODE=managed_identity
 ECLOE_PAY_COOKIE_SECURE=true
+ECLOE_MARKET_DATABASE_MODE=azure_sql
+ECLOE_WEB_AUTH_MODE=entra_external
+ECLOE_WEB_ENTRA_AUTHORITY=https://<tenant-subdomain>.ciamlogin.com
+ECLOE_WEB_ENTRA_CLIENT_ID=<client-id>
+ECLOE_WEB_ENTRA_CLIENT_SECRET=<Key-Vault-backed-secret>
+ECLOE_WEB_ENTRA_REDIRECT_URI=https://<demo-host>/auth/callback
+ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI=https://<demo-host>/
 ```
 
 Open local firewall access only for the current client IP:
@@ -201,7 +208,7 @@ If `publicNetworkAccess` is currently `Disabled`, the script stops unless `-Enab
 .\scripts\allow_current_sql_client_ip.ps1 -EnablePublicNetworkAccess
 ```
 
-This script validates that the detected public IP is a single IPv4 or IPv6 value, creates or updates only the `AllowCurrentClientIp` rule with the same start and end IP, does not create a `0.0.0.0` rule, and does not enable broad "Allow Azure Services" access.
+This script queries an IPv4-only endpoint because Azure SQL firewall rules accept IPv4 addresses, creates or updates only the `AllowCurrentClientIp` rule with the same start and end IP, does not create a `0.0.0.0` rule, and does not enable broad "Allow Azure Services" access.
 
 Remove the local development firewall rule after use:
 

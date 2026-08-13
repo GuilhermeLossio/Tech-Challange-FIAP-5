@@ -4,6 +4,7 @@ import json
 import secrets
 import struct
 import uuid
+from contextlib import contextmanager
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -11,6 +12,7 @@ from typing import Any
 from werkzeug.security import check_password_hash
 
 from src.core.config import Settings
+from src.demo.ecloe_pay.personas import external_user_id, persona_for_subject
 from src.demo.ecloe_pay.repositories.base import (
     DEMO_CONFIRMATION_CODE,
     DEMO_USER_DISPLAY_NAME,
@@ -19,9 +21,13 @@ from src.demo.ecloe_pay.repositories.base import (
     AuthSession,
     DemoSession,
     DemoUser,
+    OidcLoginFlow,
     PaymentOrder,
     PayRepository,
+    SyntheticAccount,
+    SyntheticProfile,
     WalletSnapshot,
+    WalletTransaction,
     aware_utc,
     initial_session,
     normalize_email,
@@ -70,7 +76,28 @@ class AzureSqlPayRepository(PayRepository):
             database=self.settings.ecloe_pay_sql_database,
             query=query,
         )
-        return create_engine(url, connect_args=connect_args, pool_pre_ping=True)
+        engine = create_engine(url, connect_args=connect_args, pool_pre_ping=True)
+        if "attrs_before" in connect_args:
+            from sqlalchemy import event
+
+            @event.listens_for(engine, "do_connect")
+            def _remove_sqlalchemy_trusted_connection(dialect, connection_record, cargs, cparams):
+                if cargs:
+                    cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
+
+        return engine
+
+    @contextmanager
+    def _transaction(self):
+        with self.engine.connect() as connection:
+            transaction = connection.begin()
+            try:
+                yield connection
+            except Exception:
+                transaction.rollback()
+                raise
+            else:
+                transaction.commit()
 
     def get_user_by_email(self, email: str) -> DemoUser | None:
         from sqlalchemy import text
@@ -178,10 +205,12 @@ class AzureSqlPayRepository(PayRepository):
         from sqlalchemy import text
 
         raw_token = f"paytok_{secrets.token_urlsafe(32)}"
+        now = datetime.now(UTC)
         auth_session = AuthSession(
             auth_session_id=raw_token,
             user_id=user_id,
-            expires_at=datetime.now(UTC) + timedelta(seconds=self.settings.ecloe_pay_session_ttl_seconds),
+            expires_at=now + timedelta(seconds=self.settings.ecloe_pay_session_ttl_seconds),
+            idle_expires_at=now + timedelta(seconds=self.settings.ecloe_web_session_idle_seconds),
         )
         with self.engine.connect() as connection:
             transaction = connection.begin()
@@ -190,10 +219,10 @@ class AzureSqlPayRepository(PayRepository):
                     text(
                         """
                         INSERT INTO ecloe_pay.auth_sessions (
-                            auth_session_id, user_id, token_hash, expires_at
+                            auth_session_id, user_id, token_hash, expires_at, idle_expires_at
                         )
                         VALUES (
-                            :auth_session_id, :user_id, :token_hash, :expires_at
+                            :auth_session_id, :user_id, :token_hash, :expires_at, :idle_expires_at
                         )
                         """
                     ),
@@ -202,6 +231,7 @@ class AzureSqlPayRepository(PayRepository):
                         "user_id": user_id,
                         "token_hash": token_hash(raw_token),
                         "expires_at": auth_session.expires_at,
+                        "idle_expires_at": auth_session.idle_expires_at,
                     },
                 )
             except Exception:
@@ -220,23 +250,29 @@ class AzureSqlPayRepository(PayRepository):
                 row = connection.execute(
                     text(
                         """
-                        SELECT auth_session_id, user_id, expires_at, revoked_at
+                        SELECT auth_session_id, user_id, expires_at, revoked_at, idle_expires_at
                         FROM ecloe_pay.auth_sessions
                         WHERE token_hash = :token_hash
                         """
                     ),
                     {"token_hash": token_hash(auth_session_id)},
                 ).mappings().first()
-                if row is not None:
+                now = datetime.now(UTC)
+                if row is not None and row["revoked_at"] is None and aware_utc(row["expires_at"]) > now and aware_utc(row["idle_expires_at"]) > now:
                     connection.execute(
                         text(
                             """
                             UPDATE ecloe_pay.auth_sessions
-                            SET last_seen_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                            SET last_seen_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00'),
+                                idle_expires_at = :idle_expires_at
                             WHERE auth_session_id = :auth_session_id
                             """
                         ),
-                        {"auth_session_id": row["auth_session_id"]},
+                        {
+                            "auth_session_id": row["auth_session_id"],
+                            "idle_expires_at": now
+                            + timedelta(seconds=self.settings.ecloe_web_session_idle_seconds),
+                        },
                     )
             except Exception:
                 transaction.rollback()
@@ -250,6 +286,7 @@ class AzureSqlPayRepository(PayRepository):
             user_id=row["user_id"],
             expires_at=aware_utc(row["expires_at"]),
             revoked_at=aware_utc(row["revoked_at"]) if row["revoked_at"] else None,
+            idle_expires_at=aware_utc(row["idle_expires_at"]),
         )
         return auth_session if auth_session.active else None
 
@@ -284,12 +321,201 @@ class AzureSqlPayRepository(PayRepository):
                     """
                     SELECT user_id, email_normalized AS email, display_name, persona_label
                     FROM ecloe_pay.demo_users
-                    WHERE user_id = :user_id
+                    WHERE user_id = :user_id AND is_active = 1
                     """
                 ),
                 {"user_id": user_id},
             ).mappings().first()
         return DemoUser(**dict(row)) if row else None
+
+    def store_oidc_flow(self, flow: OidcLoginFlow) -> None:
+        from sqlalchemy import text
+
+        with self._transaction() as connection:
+            connection.execute(
+                text(
+                    """
+                    DELETE FROM ecloe_pay.oidc_login_flows WHERE expires_at <= TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00');
+                    INSERT INTO ecloe_pay.oidc_login_flows (
+                        flow_id, token_hash, flow_payload, return_to, expires_at
+                    ) VALUES (:flow_id, :token_hash, :flow_payload, :return_to, :expires_at)
+                    """
+                ),
+                {
+                    "flow_id": f"flow_{uuid.uuid4().hex}",
+                    "token_hash": token_hash(flow.flow_id),
+                    "flow_payload": json.dumps(flow.payload),
+                    "return_to": flow.return_to,
+                    "expires_at": flow.expires_at,
+                },
+            )
+
+    def consume_oidc_flow(self, flow_id: str) -> OidcLoginFlow | None:
+        from sqlalchemy import text
+
+        with self._transaction() as connection:
+            row = connection.execute(
+                text(
+                    """
+                    SELECT flow_id, flow_payload, return_to, expires_at
+                    FROM ecloe_pay.oidc_login_flows WITH (UPDLOCK, ROWLOCK)
+                    WHERE token_hash = :token_hash
+                    """
+                ),
+                {"token_hash": token_hash(flow_id)},
+            ).mappings().first()
+            if row is not None:
+                connection.execute(
+                    text("DELETE FROM ecloe_pay.oidc_login_flows WHERE flow_id = :flow_id"),
+                    {"flow_id": row["flow_id"]},
+                )
+        if row is None or aware_utc(row["expires_at"]) <= datetime.now(UTC):
+            return None
+        return OidcLoginFlow(
+            flow_id=flow_id,
+            payload=json.loads(row["flow_payload"]),
+            return_to=row["return_to"],
+            expires_at=aware_utc(row["expires_at"]),
+        )
+
+    def provision_external_user(self, issuer: str, subject_key: str) -> DemoUser | None:
+        from sqlalchemy import text
+
+        persona = persona_for_subject(subject_key)
+        user_id = external_user_id(subject_key)
+        synthetic_email = f"{persona.persona_id}.{user_id[-8:]}@demo.ecloe.local"
+        user = DemoUser(user_id, synthetic_email, persona.display_name, persona.label, "entra_external")
+        with self._transaction() as connection:
+            existing = connection.execute(
+                text(
+                    """
+                    SELECT u.user_id, u.email_normalized AS email, u.display_name,
+                        u.persona_label, u.auth_provider, u.is_active
+                    FROM ecloe_pay.external_identities i
+                    JOIN ecloe_pay.demo_users u ON u.user_id = i.user_id
+                    WHERE i.provider = N'entra_external' AND i.issuer = :issuer
+                        AND i.subject_key = :subject_key
+                    """
+                ),
+                {"issuer": issuer, "subject_key": subject_key},
+            ).mappings().first()
+            if existing is not None:
+                connection.execute(
+                    text(
+                        "UPDATE ecloe_pay.external_identities SET last_login_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00') WHERE provider = N'entra_external' AND issuer = :issuer AND subject_key = :subject_key"
+                    ),
+                    {"issuer": issuer, "subject_key": subject_key},
+                )
+                if not existing["is_active"]:
+                    return None
+                return DemoUser(
+                    existing["user_id"], existing["email"], existing["display_name"],
+                    existing["persona_label"], existing["auth_provider"],
+                )
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO ecloe_pay.demo_users (
+                        user_id, email_normalized, display_name, persona_label, password_hash,
+                        auth_provider, is_active, is_demo, pii_allowed, provisioning_version
+                    ) VALUES (
+                        :user_id, :email, :display_name, :persona_label, NULL,
+                        N'entra_external', 1, 1, 0, 1
+                    );
+                    INSERT INTO ecloe_pay.external_identities (
+                        identity_id, user_id, provider, issuer, subject_key, last_login_at
+                    ) VALUES (
+                        :identity_id, :user_id, N'entra_external', :issuer, :subject_key,
+                        TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                    );
+                    INSERT INTO ecloe_pay.demo_user_profiles (
+                        user_id, full_name, address_line1, city, state_region, postal_code,
+                        country, phone, preferred_language, market_segment, wallet_status
+                    ) VALUES (
+                        :user_id, :full_name, N'SYNTHETIC-NOT-COLLECTED', :city, :state_region,
+                        N'DEMO', N'Brazil', N'DEMO', :preferred_language, :market_segment, :wallet_status
+                    );
+                    INSERT INTO ecloe_pay.wallet_accounts (
+                        wallet_account_id, user_id, available_balance_cents, cashback_cents,
+                        savings_goal_percent, currency, status
+                    ) VALUES (
+                        :wallet_account_id, :user_id, :available_balance_cents, :cashback_cents,
+                        :savings_goal_percent, :currency, :wallet_status
+                    )
+                    """
+                ),
+                {
+                    **asdict(user),
+                    **asdict(persona.profile),
+                    "issuer": issuer,
+                    "subject_key": subject_key,
+                    "identity_id": f"identity_{uuid.uuid4().hex}",
+                    "wallet_account_id": f"wallet_{uuid.uuid4().hex}",
+                    "available_balance_cents": persona.account.available_balance_cents,
+                    "cashback_cents": persona.account.cashback_cents,
+                    "savings_goal_percent": persona.account.savings_goal_percent,
+                    "currency": persona.account.currency,
+                },
+            )
+            for transaction in persona.account.transactions:
+                connection.execute(
+                    text(
+                        """
+                        INSERT INTO ecloe_pay.wallet_transactions (
+                            transaction_id, user_id, description, amount_cents, category, occurred_at
+                        ) VALUES (:transaction_id, :user_id, :description, :amount_cents, :category, :occurred_at)
+                        """
+                    ),
+                    {**asdict(transaction), "user_id": user_id},
+                )
+            self._record_audit(connection, user_id, "account_provisioned", "success")
+        return user
+
+    def synthetic_profile(self, user_id: str) -> SyntheticProfile | None:
+        from sqlalchemy import text
+
+        with self.engine.connect() as connection:
+            row = connection.execute(
+                text(
+                    "SELECT full_name, city, state_region, preferred_language, market_segment, wallet_status FROM ecloe_pay.demo_user_profiles WHERE user_id = :user_id"
+                ),
+                {"user_id": user_id},
+            ).mappings().first()
+        return SyntheticProfile(**dict(row)) if row else None
+
+    def synthetic_account(self, user_id: str) -> SyntheticAccount | None:
+        from sqlalchemy import text
+
+        with self.engine.connect() as connection:
+            account = connection.execute(
+                text(
+                    "SELECT available_balance_cents, cashback_cents, savings_goal_percent, currency, status FROM ecloe_pay.wallet_accounts WHERE user_id = :user_id"
+                ),
+                {"user_id": user_id},
+            ).mappings().first()
+            rows = connection.execute(
+                text(
+                    "SELECT transaction_id, description, amount_cents, category, CONVERT(NVARCHAR(40), occurred_at, 127) AS occurred_at FROM ecloe_pay.wallet_transactions WHERE user_id = :user_id ORDER BY occurred_at DESC"
+                ),
+                {"user_id": user_id},
+            ).mappings().all()
+        if account is None:
+            return None
+        return SyntheticAccount(**dict(account), transactions=tuple(WalletTransaction(**dict(row)) for row in rows))
+
+    def record_audit_event(self, user_id: str | None, event_type: str, result: str) -> None:
+        with self._transaction() as connection:
+            self._record_audit(connection, user_id, event_type, result)
+
+    def _record_audit(self, connection: Any, user_id: str | None, event_type: str, result: str) -> None:
+        from sqlalchemy import text
+
+        connection.execute(
+            text(
+                "INSERT INTO ecloe_pay.security_audit_events (audit_event_id, user_id, event_type, result) VALUES (:audit_event_id, :user_id, :event_type, :result)"
+            ),
+            {"audit_event_id": f"audit_{uuid.uuid4().hex}", "user_id": user_id, "event_type": event_type, "result": result},
+        )
 
     def get_or_create_demo_session(self, user_id: str) -> DemoSession:
         from sqlalchemy import text
@@ -303,6 +529,13 @@ class AzureSqlPayRepository(PayRepository):
                     return _session_from_row(row)
                 session = initial_session(user_id)
                 expires_at = datetime.now(UTC) + timedelta(hours=4)
+                account = connection.execute(
+                    text(
+                        "SELECT available_balance_cents, cashback_cents, savings_goal_percent, currency FROM ecloe_pay.wallet_accounts WHERE user_id = :user_id"
+                    ),
+                    {"user_id": user_id},
+                ).mappings().first()
+                snapshot = dict(account) if account else asdict(WalletSnapshot())
                 connection.execute(
                     text(
                         """
@@ -325,10 +558,22 @@ class AzureSqlPayRepository(PayRepository):
                             snapshot_id, session_id, demo_balance_cents, cashback_cents,
                             savings_goal_percent, currency
                         )
-                        VALUES (:snapshot_id, :session_id, 42870, 1840, 64, 'BRL')
+                        VALUES (
+                            :snapshot_id, :session_id, :demo_balance_cents, :cashback_cents,
+                            :savings_goal_percent, :currency
+                        )
                         """
                     ),
-                    {"snapshot_id": f"snap_{uuid.uuid4().hex}", "session_id": session.session_id},
+                    {
+                        "snapshot_id": f"snap_{uuid.uuid4().hex}",
+                        "session_id": session.session_id,
+                        "demo_balance_cents": snapshot.get(
+                            "demo_balance_cents", snapshot.get("available_balance_cents")
+                        ),
+                        "cashback_cents": snapshot["cashback_cents"],
+                        "savings_goal_percent": snapshot["savings_goal_percent"],
+                        "currency": snapshot["currency"],
+                    },
                 )
                 connection.execute(
                     text(
@@ -425,6 +670,25 @@ class AzureSqlPayRepository(PayRepository):
                 connection.execute(
                     text("UPDATE ecloe_pay.demo_sessions SET terms_accepted = 1 WHERE session_id = :session_id"),
                     {"session_id": session_id},
+                )
+                connection.execute(
+                    text(
+                        """
+                        IF NOT EXISTS (
+                            SELECT 1 FROM ecloe_pay.consent_acceptances ca
+                            JOIN ecloe_pay.demo_sessions ds ON ds.user_id = ca.user_id
+                            WHERE ds.session_id = :session_id
+                                AND ca.document_type = N'demo_terms'
+                                AND ca.document_version = N'2026-08'
+                        )
+                        INSERT INTO ecloe_pay.consent_acceptances (
+                            acceptance_id, user_id, document_type, document_version
+                        )
+                        SELECT :acceptance_id, user_id, N'demo_terms', N'2026-08'
+                        FROM ecloe_pay.demo_sessions WHERE session_id = :session_id
+                        """
+                    ),
+                    {"session_id": session_id, "acceptance_id": f"consent_{uuid.uuid4().hex}"},
                 )
             except Exception:
                 transaction.rollback()
@@ -563,6 +827,50 @@ class AzureSqlPayRepository(PayRepository):
         with self.engine.connect() as connection:
             transaction = connection.begin()
             try:
+                identity = connection.execute(
+                    text(
+                        "SELECT subject_key FROM ecloe_pay.external_identities WHERE user_id = :user_id AND provider = N'entra_external'"
+                    ),
+                    {"user_id": current.user_id},
+                ).mappings().first()
+                if identity is not None:
+                    persona = persona_for_subject(identity["subject_key"])
+                    connection.execute(
+                        text(
+                            """
+                            UPDATE ecloe_pay.demo_user_profiles SET
+                                full_name = :full_name, city = :city, state_region = :state_region,
+                                preferred_language = :preferred_language, market_segment = :market_segment,
+                                wallet_status = :wallet_status,
+                                updated_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                            WHERE user_id = :user_id;
+                            UPDATE ecloe_pay.wallet_accounts SET
+                                available_balance_cents = :available_balance_cents,
+                                cashback_cents = :cashback_cents,
+                                savings_goal_percent = :savings_goal_percent,
+                                currency = :currency, status = :wallet_status,
+                                updated_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                            WHERE user_id = :user_id;
+                            DELETE FROM ecloe_pay.wallet_transactions WHERE user_id = :user_id;
+                            """
+                        ),
+                        {
+                            **asdict(persona.profile),
+                            "user_id": current.user_id,
+                            "available_balance_cents": persona.account.available_balance_cents,
+                            "cashback_cents": persona.account.cashback_cents,
+                            "savings_goal_percent": persona.account.savings_goal_percent,
+                            "currency": persona.account.currency,
+                        },
+                    )
+                    for wallet_transaction in persona.account.transactions:
+                        connection.execute(
+                            text(
+                                "INSERT INTO ecloe_pay.wallet_transactions (user_id, transaction_id, description, amount_cents, category, occurred_at) VALUES (:user_id, :transaction_id, :description, :amount_cents, :category, :occurred_at)"
+                            ),
+                            {**asdict(wallet_transaction), "user_id": current.user_id},
+                        )
+                    self._record_audit(connection, current.user_id, "demo_reset", "success")
                 connection.execute(
                     text(
                         """

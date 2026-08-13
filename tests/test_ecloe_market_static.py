@@ -31,6 +31,7 @@ def test_ecloe_market_static_files_do_not_request_real_financial_data() -> None:
         ROOT / "src" / "demo" / "ecloe_market" / "market_index.html",
         ROOT / "src" / "demo" / "ecloe_market" / "market_product.html",
         ROOT / "src" / "demo" / "ecloe_market" / "market_cart.html",
+        ROOT / "src" / "demo" / "ecloe_market" / "market_checkout.html",
         ROOT / "src" / "demo" / "ecloe_market" / "market_planned.html",
         ROOT / "src" / "demo" / "ecloe_market" / "market_summary.html",
         ROOT / "src" / "demo" / "ecloe_market" / "assets" / "market.css",

@@ -9,6 +9,8 @@ ECloe Engine deploys as a low-cost Azure Container Apps runtime backed by promot
 - Existing resource group `FIAPTechChallange5`.
 - Existing Cosmos DB account `ecloe5cosmos1266cl`, database `ecloe`, and containers `decisions`, `rewards`, `policy_versions`.
 - Existing Azure SQL server `ecloe-sql-1266`, database `ecloe_validation`, for optional ECloe Pay demo persistence.
+- A Microsoft Entra External ID customer tenant, confidential web app registration, and e-mail/password user flow.
+- An Azure Key Vault client secret reference readable by the demo Container App managed identity.
 - A validated and promoted artifact run in the `ecloe-artifacts` Blob container.
 
 ## Infrastructure
@@ -47,11 +49,21 @@ ECLOE_PAY_SQL_DATABASE=ecloe_validation
 ECLOE_PAY_SQL_AUTH_MODE=managed_identity
 ECLOE_PAY_SQL_DRIVER=ODBC Driver 18 for SQL Server
 ECLOE_PAY_COOKIE_SECURE=true
+ECLOE_MARKET_DATABASE_MODE=azure_sql
+ECLOE_WEB_AUTH_MODE=entra_external
+ECLOE_WEB_ENTRA_AUTHORITY=https://<tenant-subdomain>.ciamlogin.com
+ECLOE_WEB_ENTRA_CLIENT_ID=<client-id>
+ECLOE_WEB_ENTRA_CLIENT_SECRET=<Container-Apps-secret-reference>
+ECLOE_WEB_ENTRA_REDIRECT_URI=https://<demo-host>/auth/callback
+ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI=https://<demo-host>/
 ```
 
 Do not configure `AUTH_MODE=disabled`, `AZURE_COSMOS_KEY`, or `AZURE_STORAGE_CONNECTION_STRING` in cloud.
 Do not configure `ECLOE_PAY_SQL_AUTH_MODE=entra_interactive` in cloud.
 For ECloe Pay Azure SQL, grant the Container App managed identity only the minimum database rights needed for the `ecloe_pay` demo schema.
+The demo deployment workflow additionally requires the non-secret GitHub variables `ECLOE_WEB_ENTRA_AUTHORITY`, `ECLOE_WEB_ENTRA_CLIENT_ID`, `ECLOE_WEB_ENTRA_CLIENT_SECRET_URI`, `ECLOE_KEY_VAULT_ID`, `ECLOE_DEMO_WEB_BASE_URL`, `ECLOE_PAY_SQL_SERVER`, and `ECLOE_PAY_SQL_DATABASE`. The client secret value remains in Key Vault. The deployment identity needs permission to create the Container App managed-identity role assignment on the Key Vault scope.
+
+Apply `src/demo/ecloe_pay/schema.sql` with `python -m scripts.init_ecloe_pay_sql` before switching the web revision to External ID. Detailed tenant and rotation steps are in [`azure-customer-authentication.md`](azure-customer-authentication.md).
 
 ## Smoke Tests
 

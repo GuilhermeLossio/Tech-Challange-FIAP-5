@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "personas": [
+    {
+      "persona_id": "new_customer",
+      "display_name": "Marina Demo",
+      "label": "New wallet customer",
+      "profile": {"full_name": "Marina Demo", "city": "Curitiba", "state_region": "PR", "preferred_language": "pt-BR", "market_segment": "new_customer"},
+      "account": {"available_balance_cents": 18640, "cashback_cents": 320, "savings_goal_percent": 18, "currency": "BRL", "status": "active", "transactions": [{"transaction_id": "txn_new_001", "description": "Synthetic salary credit", "amount_cents": 250000, "category": "income", "occurred_at": "2026-07-05T12:00:00+00:00"}, {"transaction_id": "txn_new_002", "description": "Synthetic market purchase", "amount_cents": -12790, "category": "shopping", "occurred_at": "2026-07-08T15:30:00+00:00"}]}
+    },
+    {
+      "persona_id": "recurring_buyer",
+      "display_name": "Rafael Demo",
+      "label": "Recurring marketplace buyer",
+      "profile": {"full_name": "Rafael Demo", "city": "Sao Paulo", "state_region": "SP", "preferred_language": "pt-BR", "market_segment": "recurring_buyer"},
+      "account": {"available_balance_cents": 42870, "cashback_cents": 1840, "savings_goal_percent": 64, "currency": "BRL", "status": "active", "transactions": [{"transaction_id": "txn_rec_001", "description": "Synthetic cashback credit", "amount_cents": 1840, "category": "cashback", "occurred_at": "2026-07-10T10:00:00+00:00"}, {"transaction_id": "txn_rec_002", "description": "Synthetic recurring purchase", "amount_cents": -8990, "category": "shopping", "occurred_at": "2026-07-11T18:00:00+00:00"}]}
+    },
+    {
+      "persona_id": "saver",
+      "display_name": "Camila Demo",
+      "label": "Savings-focused customer",
+      "profile": {"full_name": "Camila Demo", "city": "Belo Horizonte", "state_region": "MG", "preferred_language": "pt-BR", "market_segment": "saver"},
+      "account": {"available_balance_cents": 96350, "cashback_cents": 760, "savings_goal_percent": 82, "currency": "BRL", "status": "active", "transactions": [{"transaction_id": "txn_save_001", "description": "Synthetic savings deposit", "amount_cents": 30000, "category": "savings", "occurred_at": "2026-07-03T09:00:00+00:00"}, {"transaction_id": "txn_save_002", "description": "Synthetic utility payment", "amount_cents": -15420, "category": "utilities", "occurred_at": "2026-07-09T14:00:00+00:00"}]}
+    },
+    {
+      "persona_id": "benefit_seeker",
+      "display_name": "Lucas Demo",
+      "label": "Benefit-oriented customer",
+      "profile": {"full_name": "Lucas Demo", "city": "Recife", "state_region": "PE", "preferred_language": "pt-BR", "market_segment": "benefit_seeker"},
+      "account": {"available_balance_cents": 31420, "cashback_cents": 4260, "savings_goal_percent": 35, "currency": "BRL", "status": "active", "transactions": [{"transaction_id": "txn_ben_001", "description": "Synthetic benefit credit", "amount_cents": 2500, "category": "benefit", "occurred_at": "2026-07-06T11:00:00+00:00"}, {"transaction_id": "txn_ben_002", "description": "Synthetic marketplace purchase", "amount_cents": -6750, "category": "shopping", "occurred_at": "2026-07-12T16:45:00+00:00"}]}
+    }
+  ]
+}

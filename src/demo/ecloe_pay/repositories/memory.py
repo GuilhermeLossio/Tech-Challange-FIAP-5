@@ -9,6 +9,7 @@ from typing import Any
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from src.core.config import Settings
+from src.demo.ecloe_pay.personas import external_user_id, persona_for_subject
 from src.demo.ecloe_pay.repositories.base import (
     DEMO_CONFIRMATION_CODE,
     DEMO_USER_DISPLAY_NAME,
@@ -16,8 +17,11 @@ from src.demo.ecloe_pay.repositories.base import (
     AuthSession,
     DemoSession,
     DemoUser,
+    OidcLoginFlow,
     PaymentOrder,
     PayRepository,
+    SyntheticAccount,
+    SyntheticProfile,
     WalletSnapshot,
     demo_identity_emails,
     initial_session,
@@ -35,6 +39,12 @@ class MemoryPayRepository(PayRepository):
         self.settings = settings
         self.users: dict[str, tuple[DemoUser, str]] = {}
         self.auth_sessions: dict[str, AuthSession] = {}
+        self.oidc_flows: dict[str, OidcLoginFlow] = {}
+        self.external_identities: dict[tuple[str, str], str] = {}
+        self.profiles: dict[str, SyntheticProfile] = {}
+        self.accounts: dict[str, SyntheticAccount] = {}
+        self.audit_events: list[dict[str, Any]] = []
+        self.consent_acceptances: set[tuple[str, str, str]] = set()
         self.demo_sessions: dict[str, DemoSession] = {}
         self.benefit_events: dict[str, list[dict[str, Any]]] = {}
         self.outbox_events: list[dict[str, Any]] = []
@@ -74,17 +84,24 @@ class MemoryPayRepository(PayRepository):
         return user if check_password_hash(password_hash, password) else None
 
     def create_auth_session(self, user_id: str) -> AuthSession:
+        now = datetime.now(UTC)
         auth_session = AuthSession(
             auth_session_id=f"paytok_{secrets.token_urlsafe(32)}",
             user_id=user_id,
-            expires_at=datetime.now(UTC) + timedelta(seconds=self.settings.ecloe_pay_session_ttl_seconds),
+            expires_at=now + timedelta(seconds=self.settings.ecloe_pay_session_ttl_seconds),
+            idle_expires_at=now + timedelta(seconds=self.settings.ecloe_web_session_idle_seconds),
         )
         self.auth_sessions[token_hash(auth_session.auth_session_id)] = auth_session
         return auth_session
 
     def get_auth_session(self, auth_session_id: str) -> AuthSession | None:
         session = self.auth_sessions.get(token_hash(auth_session_id))
-        return session if session and session.active else None
+        if session is None or not session.active:
+            return None
+        session.idle_expires_at = datetime.now(UTC) + timedelta(
+            seconds=self.settings.ecloe_web_session_idle_seconds
+        )
+        return session
 
     def revoke_auth_session(self, auth_session_id: str) -> None:
         stored_session = self.auth_sessions.get(token_hash(auth_session_id))
@@ -94,6 +111,53 @@ class MemoryPayRepository(PayRepository):
     def get_user(self, user_id: str) -> DemoUser | None:
         entry = self.users.get(user_id)
         return entry[0] if entry else None
+
+    def store_oidc_flow(self, flow: OidcLoginFlow) -> None:
+        self.oidc_flows[token_hash(flow.flow_id)] = flow
+
+    def consume_oidc_flow(self, flow_id: str) -> OidcLoginFlow | None:
+        flow = self.oidc_flows.pop(token_hash(flow_id), None)
+        if flow is None or flow.expires_at <= datetime.now(UTC):
+            return None
+        return flow
+
+    def provision_external_user(self, issuer: str, subject_key: str) -> DemoUser | None:
+        identity_key = (issuer, subject_key)
+        existing_user_id = self.external_identities.get(identity_key)
+        if existing_user_id is not None:
+            return self.get_user(existing_user_id)
+        persona = persona_for_subject(subject_key)
+        user_id = external_user_id(subject_key)
+        synthetic_email = f"{persona.persona_id}.{user_id[-8:]}@demo.ecloe.local"
+        user = DemoUser(
+            user_id=user_id,
+            email=synthetic_email,
+            display_name=persona.display_name,
+            persona_label=persona.label,
+            auth_provider="entra_external",
+        )
+        self.users[user_id] = (user, "")
+        self.external_identities[identity_key] = user_id
+        self.profiles[user_id] = persona.profile
+        self.accounts[user_id] = persona.account
+        self.record_audit_event(user_id, "account_provisioned", "success")
+        return user
+
+    def synthetic_profile(self, user_id: str) -> SyntheticProfile | None:
+        return self.profiles.get(user_id)
+
+    def synthetic_account(self, user_id: str) -> SyntheticAccount | None:
+        return self.accounts.get(user_id)
+
+    def record_audit_event(self, user_id: str | None, event_type: str, result: str) -> None:
+        self.audit_events.append(
+            {
+                "user_id": user_id,
+                "event_type": event_type,
+                "result": result,
+                "occurred_at": datetime.now(UTC),
+            }
+        )
 
     def get_or_create_demo_session(self, user_id: str) -> DemoSession:
         for session in self.demo_sessions.values():
@@ -119,11 +183,21 @@ class MemoryPayRepository(PayRepository):
         return session
 
     def wallet_snapshot(self, session_id: str) -> WalletSnapshot:
-        return WalletSnapshot()
+        session = self.demo_sessions.get(session_id)
+        account = self.accounts.get(session.user_id) if session else None
+        if account is None:
+            return WalletSnapshot()
+        return WalletSnapshot(
+            demo_balance_cents=account.available_balance_cents,
+            cashback_cents=account.cashback_cents,
+            savings_goal_percent=account.savings_goal_percent,
+            currency=account.currency,
+        )
 
     def accept_terms(self, session_id: str) -> DemoSession:
         session = self.demo_sessions[session_id]
         session.terms_accepted = True
+        self.consent_acceptances.add((session.user_id, "demo_terms", "2026-08"))
         return session
 
     def record_benefit_interaction(self, session_id: str, event_type: str, reward: float) -> dict[str, Any]:
@@ -181,6 +255,13 @@ class MemoryPayRepository(PayRepository):
 
     def reset_demo_state(self, session_id: str) -> DemoSession:
         current = self.demo_sessions[session_id]
+        for (_issuer, subject_key), user_id in self.external_identities.items():
+            if user_id == current.user_id:
+                persona = persona_for_subject(subject_key)
+                self.profiles[user_id] = persona.profile
+                self.accounts[user_id] = persona.account
+                self.record_audit_event(user_id, "demo_reset", "success")
+                break
         session = initial_session(current.user_id)
         self.demo_sessions[session.session_id] = session
         self.benefit_events[session.session_id] = []

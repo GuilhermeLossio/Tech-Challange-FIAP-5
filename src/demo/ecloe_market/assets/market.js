@@ -107,6 +107,42 @@
     });
   });
 
+  const checkoutButton = document.querySelector("[data-start-checkout]");
+  const checkoutStatus = document.querySelector("[data-checkout-status]");
+  if (checkoutButton && checkoutStatus) {
+    checkoutButton.addEventListener("click", async () => {
+      checkoutButton.disabled = true;
+      checkoutStatus.textContent = "";
+      try {
+        const checkoutResponse = await fetch("/api/market/checkouts", {
+          method: "POST",
+          headers: {
+            ...csrfHeaders(),
+            "Idempotency-Key": `checkout-${crypto.randomUUID()}`,
+          },
+        });
+        const checkoutBody = await checkoutResponse.json();
+        if (!checkoutResponse.ok) {
+          throw new Error(checkoutBody.error || "Checkout could not be started.");
+        }
+        const orderResponse = await fetch("/api/market/orders", {
+          method: "POST",
+          headers: csrfHeaders(),
+          body: JSON.stringify({ checkout_id: checkoutBody.checkout.checkout_id }),
+        });
+        const orderBody = await orderResponse.json();
+        if (!orderResponse.ok) {
+          throw new Error(orderBody.error || "Order could not be created.");
+        }
+        checkoutStatus.textContent = `${orderBody.order.order_id} - ${orderBody.order.status}`;
+        checkoutButton.hidden = true;
+      } catch (error) {
+        checkoutStatus.textContent = error.message;
+        checkoutButton.disabled = false;
+      }
+    });
+  }
+
   const galleryMain = document.querySelector("[data-product-gallery-main]");
   document.querySelectorAll("[data-gallery-image]").forEach((button) => {
     button.addEventListener("click", () => {

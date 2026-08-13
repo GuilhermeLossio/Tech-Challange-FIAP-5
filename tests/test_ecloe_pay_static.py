@@ -147,6 +147,7 @@ def test_pay_repositories_expose_shared_contract_and_hide_sqlalchemy_from_routes
 def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
     app_source = (PAY_DEMO / "app.py").read_text(encoding="utf-8")
     script = (PAY_DEMO / "app.js").read_text(encoding="utf-8")
+    login_script = (PAY_DEMO / "login.js").read_text(encoding="utf-8")
     login = (PAY_DEMO / "login.html").read_text(encoding="utf-8")
     azure_source = (PAY_DEMO / "repositories" / "azure_sql.py").read_text(encoding="utf-8")
 
@@ -166,7 +167,8 @@ def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
     assert "make_response" in app_source
     assert "session[" not in app_source
     assert "X-CSRF-Token" in script
-    assert "X-CSRF-Token" in login
+    assert "X-CSRF-Token" in login_script
+    assert 'src="../login.js"' in login
     assert "token_hash(raw_token)" in azure_source
     logger_lines = [line.lower() for line in app_source.splitlines() if "LOGGER.info" in line]
     assert logger_lines
@@ -214,6 +216,7 @@ def test_pay_login_page_matches_demo_identity_and_csrf_flow() -> None:
     login = (PAY_DEMO / "login.html").read_text(encoding="utf-8")
     core_styles = (PAY_DEMO / "core.css").read_text(encoding="utf-8")
     login_styles = (PAY_DEMO / "login.css").read_text(encoding="utf-8")
+    login_script = (PAY_DEMO / "login.js").read_text(encoding="utf-8")
     pt = i18n_messages("pt-BR")
 
     assert 't("login.badge")' in login
@@ -222,7 +225,7 @@ def test_pay_login_page_matches_demo_identity_and_csrf_flow() -> None:
     assert pt["login"]["eyebrow"] == "Carteira 100% simulada"
     assert "Azure SQL" in pt["login"]["copy"]
     assert 'href="../login.css"' in login
-    assert "X-CSRF-Token" in login
+    assert "X-CSRF-Token" in login_script
     assert 'id="loginForm"' in login
     assert 'id="email"' in login
     assert 'id="password"' in login
@@ -321,6 +324,7 @@ def test_pay_sql_firewall_scripts_keep_local_ip_rule_narrow() -> None:
     assert "Type ENABLE" in allow_script
     assert "--enable-public-network" in allow_script
     assert '$ip -eq "0.0.0.0"' in allow_script
+    assert "https://api.ipify.org?format=text" in allow_script
     assert "--start-ip-address" in allow_script
     assert "--end-ip-address" in allow_script
     assert ".\\scripts\\remove_current_sql_client_ip.ps1" in allow_script

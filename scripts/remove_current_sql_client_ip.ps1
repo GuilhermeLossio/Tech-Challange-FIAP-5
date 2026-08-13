@@ -95,8 +95,7 @@ Invoke-AzNone -Arguments @(
     "--server",
     $ServerName,
     "--name",
-    $RuleName,
-    "--yes"
+    $RuleName
 )
 
 Write-Output "Azure SQL firewall rule removed."

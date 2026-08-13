@@ -6,9 +6,13 @@ from src.demo.ecloe_pay.repositories.base import (
     AuthSession,
     DemoSession,
     DemoUser,
+    OidcLoginFlow,
     PaymentOrder,
     PayRepository,
+    SyntheticAccount,
+    SyntheticProfile,
     WalletSnapshot,
+    WalletTransaction,
 )
 from src.demo.ecloe_pay.repositories.factory import create_pay_repository
 from src.demo.ecloe_pay.repositories.memory import MemoryPayRepository
@@ -22,8 +26,12 @@ __all__ = [
     "DemoSession",
     "DemoUser",
     "MemoryPayRepository",
+    "OidcLoginFlow",
     "PayRepository",
     "PaymentOrder",
+    "SyntheticAccount",
+    "SyntheticProfile",
     "WalletSnapshot",
+    "WalletTransaction",
     "create_pay_repository",
 ]

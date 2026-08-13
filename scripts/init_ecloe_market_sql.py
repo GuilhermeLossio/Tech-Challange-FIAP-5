@@ -83,7 +83,7 @@ def _entra_access_token(auth_mode: str) -> str:
 
 def _engine_with_entra_token(settings: Any, access_token: str, driver_name: str) -> Any:
     try:
-        from sqlalchemy import URL, create_engine
+        from sqlalchemy import URL, create_engine, event
     except ModuleNotFoundError as error:
         raise RuntimeError("SQLAlchemy is required. Install the azure-sql extra first.") from error
 
@@ -100,7 +100,14 @@ def _engine_with_entra_token(settings: Any, access_token: str, driver_name: str)
             "Connection Timeout": "30",
         },
     )
-    return create_engine(url, connect_args={"attrs_before": attrs_before}, pool_pre_ping=True)
+    engine = create_engine(url, connect_args={"attrs_before": attrs_before}, pool_pre_ping=True)
+
+    @event.listens_for(engine, "do_connect")
+    def _remove_sqlalchemy_trusted_connection(dialect, connection_record, cargs, cparams):
+        if cargs:
+            cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
+
+    return engine
 
 
 def _schema_migration_applied(connection: Any) -> bool:

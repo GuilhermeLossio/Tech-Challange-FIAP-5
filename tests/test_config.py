@@ -40,6 +40,14 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "ECLOE_PAY_COOKIE_SECURE",
         "ECLOE_PAY_DEMO_USER_EMAIL",
         "ECLOE_PAY_DEMO_USER_PASSWORD",
+        "ECLOE_WEB_AUTH_MODE",
+        "ECLOE_WEB_ENTRA_AUTHORITY",
+        "ECLOE_WEB_ENTRA_CLIENT_ID",
+        "ECLOE_WEB_ENTRA_CLIENT_SECRET",
+        "ECLOE_WEB_ENTRA_REDIRECT_URI",
+        "ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI",
+        "ECLOE_WEB_SESSION_IDLE_SECONDS",
+        "ECLOE_WEB_OIDC_FLOW_TTL_SECONDS",
     ]:
         monkeypatch.delenv(name, raising=False)
 
@@ -72,12 +80,33 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.ecloe_pay_cookie_secure is False
     assert settings.ecloe_pay_demo_user_email == "demo.market@ecloe.local"
     assert settings.ecloe_pay_demo_user_password == "change-this-demo-password"
+    assert settings.ecloe_pay_session_ttl_seconds == 28800
+    assert settings.ecloe_web_auth_mode == "local"
+    assert settings.ecloe_web_session_idle_seconds == 1800
+    assert settings.ecloe_web_oidc_flow_ttl_seconds == 600
 
 
 def test_config_rejects_unknown_ecloe_pay_database_mode(monkeypatch) -> None:
     monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "postgres")
 
     with pytest.raises(ValueError, match="Unsupported ECLOE_PAY_DATABASE_MODE"):
+        load_settings(use_env_file=False)
+
+
+def test_config_rejects_unknown_web_auth_mode(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "password")
+
+    with pytest.raises(ValueError, match="Unsupported ECLOE_WEB_AUTH_MODE"):
+        load_settings(use_env_file=False)
+
+
+def test_config_requires_external_id_settings(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "entra_external")
+    monkeypatch.setenv("ECLOE_WEB_ENTRA_AUTHORITY", "")
+    monkeypatch.setenv("ECLOE_WEB_ENTRA_CLIENT_ID", "")
+    monkeypatch.setenv("ECLOE_WEB_ENTRA_CLIENT_SECRET", "")
+
+    with pytest.raises(ValueError, match="Missing ECloe web External ID settings"):
         load_settings(use_env_file=False)
 
 

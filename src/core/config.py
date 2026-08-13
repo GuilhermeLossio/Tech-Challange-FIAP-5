@@ -18,6 +18,7 @@ ECLOE_MARKET_DATABASE_MODES = {"memory", "azure_sql"}
 ECLOE_MARKET_IMAGE_BACKENDS = {"zimage-local", "space", "local", "hunyuan-local", "catalog"}
 ECLOE_MARKET_IMAGE_OFFLOAD_MODES = {"model", "sequential", "none"}
 ECLOE_PAY_SQL_AUTH_MODES = {"entra_interactive", "azure_cli", "managed_identity"}
+ECLOE_WEB_AUTH_MODES = {"local", "entra_external"}
 CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
 RECOMMENDATION_ACTIVE_POLICIES = {"deterministic_baseline", "likelihood_ranker"}
 
@@ -112,6 +113,14 @@ class Settings:
     ecloe_pay_cookie_secure: bool
     ecloe_pay_demo_user_email: str
     ecloe_pay_demo_user_password: str
+    ecloe_web_auth_mode: str
+    ecloe_web_entra_authority: str
+    ecloe_web_entra_client_id: str
+    ecloe_web_entra_client_secret: str
+    ecloe_web_entra_redirect_uri: str
+    ecloe_web_entra_post_logout_redirect_uri: str
+    ecloe_web_session_idle_seconds: int
+    ecloe_web_oidc_flow_ttl_seconds: int
     ecloe_market_database_mode: str
     ecloe_market_catalog_path: Path
     ecloe_market_catalog_seed: int
@@ -209,7 +218,7 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         ecloe_pay_sql_database=_env("ECLOE_PAY_SQL_DATABASE", "ecloe_validation"),
         ecloe_pay_sql_auth_mode=_env("ECLOE_PAY_SQL_AUTH_MODE", "entra_interactive").lower(),
         ecloe_pay_sql_driver=_env("ECLOE_PAY_SQL_DRIVER", "ODBC Driver 18 for SQL Server"),
-        ecloe_pay_session_ttl_seconds=int(_env("ECLOE_PAY_SESSION_TTL_SECONDS", "3600")),
+        ecloe_pay_session_ttl_seconds=int(_env("ECLOE_PAY_SESSION_TTL_SECONDS", "28800")),
         ecloe_pay_cookie_secure=_bool_env("ECLOE_PAY_COOKIE_SECURE", False),
         ecloe_pay_demo_user_email=_env(
             "ECLOE_PAY_DEMO_USER_EMAIL",
@@ -219,6 +228,18 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
             "ECLOE_PAY_DEMO_USER_PASSWORD",
             _env("ECLOE_DEMO_USER_PASSWORD", "change-this-demo-password"),
         ),
+        ecloe_web_auth_mode=_env("ECLOE_WEB_AUTH_MODE", "local").lower(),
+        ecloe_web_entra_authority=_env("ECLOE_WEB_ENTRA_AUTHORITY").rstrip("/"),
+        ecloe_web_entra_client_id=_env("ECLOE_WEB_ENTRA_CLIENT_ID"),
+        ecloe_web_entra_client_secret=_env("ECLOE_WEB_ENTRA_CLIENT_SECRET"),
+        ecloe_web_entra_redirect_uri=_env(
+            "ECLOE_WEB_ENTRA_REDIRECT_URI", "http://localhost:5000/auth/callback"
+        ),
+        ecloe_web_entra_post_logout_redirect_uri=_env(
+            "ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI", "http://localhost:5000/"
+        ),
+        ecloe_web_session_idle_seconds=int(_env("ECLOE_WEB_SESSION_IDLE_SECONDS", "1800")),
+        ecloe_web_oidc_flow_ttl_seconds=int(_env("ECLOE_WEB_OIDC_FLOW_TTL_SECONDS", "600")),
         ecloe_market_database_mode=_env("ECLOE_MARKET_DATABASE_MODE", "memory").lower(),
         ecloe_market_catalog_path=ROOT_DIR
         / _env("ECLOE_MARKET_CATALOG_PATH", "data/demo/ecloe_market_catalog.json"),
@@ -270,6 +291,33 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
         raise ValueError(f"Unsupported ECLOE_PAY_SQL_AUTH_MODE: {settings.ecloe_pay_sql_auth_mode}")
     if settings.ecloe_pay_session_ttl_seconds <= 0:
         raise ValueError("ECLOE_PAY_SESSION_TTL_SECONDS must be greater than zero.")
+    if settings.ecloe_web_auth_mode not in ECLOE_WEB_AUTH_MODES:
+        raise ValueError(f"Unsupported ECLOE_WEB_AUTH_MODE: {settings.ecloe_web_auth_mode}")
+    if settings.ecloe_web_session_idle_seconds <= 0:
+        raise ValueError("ECLOE_WEB_SESSION_IDLE_SECONDS must be greater than zero.")
+    if settings.ecloe_web_session_idle_seconds > settings.ecloe_pay_session_ttl_seconds:
+        raise ValueError("ECLOE_WEB_SESSION_IDLE_SECONDS cannot exceed the session TTL.")
+    if settings.ecloe_web_oidc_flow_ttl_seconds <= 0:
+        raise ValueError("ECLOE_WEB_OIDC_FLOW_TTL_SECONDS must be greater than zero.")
+    if settings.ecloe_web_auth_mode == "entra_external":
+        missing = [
+            name
+            for name, value in (
+                ("ECLOE_WEB_ENTRA_AUTHORITY", settings.ecloe_web_entra_authority),
+                ("ECLOE_WEB_ENTRA_CLIENT_ID", settings.ecloe_web_entra_client_id),
+                ("ECLOE_WEB_ENTRA_CLIENT_SECRET", settings.ecloe_web_entra_client_secret),
+                ("ECLOE_WEB_ENTRA_REDIRECT_URI", settings.ecloe_web_entra_redirect_uri),
+                (
+                    "ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI",
+                    settings.ecloe_web_entra_post_logout_redirect_uri,
+                ),
+            )
+            if not value
+        ]
+        if missing:
+            raise ValueError(f"Missing ECloe web External ID settings: {missing}")
+        if not settings.ecloe_web_entra_authority.startswith("https://"):
+            raise ValueError("ECLOE_WEB_ENTRA_AUTHORITY must use HTTPS.")
 
     if settings.ecloe_pay_database_mode == "azure_sql":
         missing = []

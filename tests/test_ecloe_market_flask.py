@@ -47,7 +47,29 @@ def test_integrated_demo_market_checkout_requires_shared_login() -> None:
     response = client.get("/market/checkout")
 
     assert response.status_code == 302
-    assert response.headers["Location"] == "/pay/login?lang=en-US"
+    assert response.headers["Location"] == "/pay/login?lang=en-US&return_to=%2Fmarket%2Fcheckout"
+
+
+def test_market_login_return_path_preserves_local_query_string() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/market/checkout?lang=pt-BR")
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == (
+        "/pay/login?lang=pt-BR&return_to=%2Fmarket%2Fcheckout%3Flang%3Dpt-BR"
+    )
+
+
+def test_login_return_path_rejects_external_urls() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/pay/login?return_to=https://attacker.example")
+
+    assert response.status_code == 200
+    assert 'data-return-to="/pay"' in response.get_data(as_text=True)
 
 
 def test_integrated_demo_market_renders_after_pay_login() -> None:
@@ -61,6 +83,36 @@ def test_integrated_demo_market_renders_after_pay_login() -> None:
     assert "ECloe Market" in body
     assert "No real money is processed" in body
     assert "/pay" in body
+
+
+def test_integrated_demo_market_checkout_renders_cart_after_login() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+    client.get("/market")
+    add = client.post(
+        "/api/market/cart/items",
+        json={"product_id": "prd_demo_0001", "quantity": 1},
+        headers=csrf_headers(client),
+    )
+    assert add.status_code == 200
+
+    response = client.get("/market/checkout")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "Review checkout" in body
+    assert "Glow balm 01" in body
+    assert "Flow under construction" not in body
+
+
+def test_integrated_demo_market_empty_checkout_returns_to_cart() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+
+    response = client.get("/market/checkout")
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/market/cart"
 
 
 def test_integrated_demo_market_product_page_is_public() -> None:

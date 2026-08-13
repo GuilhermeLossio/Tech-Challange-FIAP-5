@@ -539,6 +539,7 @@ Cloud deployment assets are present in `Dockerfile`, `.github/workflows/deploy.y
 ## Related Docs
 
 - [`Architecture.md`](./Architecture.md) - Architecture, components, pipeline, and trade-offs.
+- [`docs/azure-customer-authentication.md`](./docs/azure-customer-authentication.md) - Entra External ID customer login, synthetic account provisioning, and operational controls.
 - [`docs/recommendation-system.md`](./docs/recommendation-system.md) - Recommendation architecture, algorithms, contracts, privacy, training, promotion, and Azure seed runbook.
 - [`docs/choice-model-generation.md`](./docs/choice-model-generation.md) - How each choice model is generated, evaluated, selected, and constrained.
 - [`docs/recommendation-system-overview.svg`](./docs/recommendation-system-overview.svg) - Recommendation system overview.

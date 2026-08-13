@@ -63,7 +63,16 @@ class AzureSqlMarketRepository(MarketRepository):
             database=self.settings.ecloe_pay_sql_database,
             query=query,
         )
-        return create_engine(url, connect_args=connect_args, pool_pre_ping=True)
+        engine = create_engine(url, connect_args=connect_args, pool_pre_ping=True)
+        if "attrs_before" in connect_args:
+            from sqlalchemy import event
+
+            @event.listens_for(engine, "do_connect")
+            def _remove_sqlalchemy_trusted_connection(dialect, connection_record, cargs, cparams):
+                if cargs:
+                    cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
+
+        return engine
 
     def list_categories(self) -> list[Category]:
         from sqlalchemy import text

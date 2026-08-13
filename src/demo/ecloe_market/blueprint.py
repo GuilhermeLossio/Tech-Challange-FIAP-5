@@ -3,11 +3,13 @@ from __future__ import annotations
 import secrets
 from dataclasses import asdict
 from pathlib import Path
+from urllib.parse import urlencode
 from uuid import uuid4
 
 from flask import Blueprint, current_app, jsonify, make_response, redirect, render_template, request
 
 from src.demo.ecloe_pay.app import CSRF_COOKIE_NAME, CSRF_HEADER_NAME
+from src.demo.ecloe_pay.identity import safe_return_to
 from src.demo.shared.auth import current_user
 from src.demo.shared.i18n import load_messages, resolve_locale, translate
 from src.market.repositories import MarketRepository
@@ -89,7 +91,14 @@ def _attach_market_session(response, session_key: str):
 def _require_login():
     user, user_id = current_user(current_app, request)
     if user_id is None:
-        return None, None, redirect(f"/pay/login?lang={resolve_locale(request, cookie_name=LOCALE_COOKIE_NAME)}")
+        return_to = safe_return_to(request.full_path.rstrip("?"))
+        login_query = urlencode(
+            {
+                "lang": resolve_locale(request, cookie_name=LOCALE_COOKIE_NAME),
+                "return_to": return_to,
+            }
+        )
+        return None, None, redirect(f"/pay/login?{login_query}")
     return user, user_id, None
 
 
@@ -275,8 +284,24 @@ def market_cart():
 
 
 @market_blueprint.get("/market/checkout")
+def market_checkout():
+    user, _, login_response = _require_login()
+    if login_response is not None:
+        return login_response
+    session_key = _market_session_key()
+    cart = _repository().get_cart(session_key)
+    if cart.empty:
+        return redirect("/market/cart")
+    response = _render_market_template(
+        "market_checkout.html",
+        user=user,
+        cart=cart,
+    )
+    return _attach_market_session(response, session_key)
+
+
 @market_blueprint.get("/market/orders")
-def planned_market_page():
+def planned_market_orders():
     user, _, login_response = _require_login()
     if login_response is not None:
         return login_response

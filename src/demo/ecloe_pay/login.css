@@ -114,11 +114,19 @@
     padding: 0 14px;
   }
 
-  .login-form button {
+  .login-form button,
+  .login-submit {
     background: var(--color-rose);
     border-radius: 16px;
     box-shadow: 0 10px 24px -8px rgba(255, 127, 171, 0.6);
     margin-top: 4px;
+  }
+
+  .login-submit {
+    align-items: center;
+    display: flex;
+    justify-content: center;
+    text-decoration: none;
   }
 
   #loginStatus {
