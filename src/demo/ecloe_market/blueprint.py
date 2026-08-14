@@ -424,7 +424,8 @@ def api_start_checkout():
             idempotency_key=idempotency_key,
         )
     except ValueError as error:
-        return jsonify({"error": str(error)}), 400
+        current_app.logger.warning("Checkout start failed due to invalid request.", exc_info=error)
+        return jsonify({"error": "Invalid checkout request."}), 400
     response = jsonify({"checkout": asdict(checkout)})
     return _attach_market_session(response, session_key)
 
