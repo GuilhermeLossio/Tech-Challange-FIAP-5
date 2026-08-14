@@ -129,7 +129,20 @@
     text-decoration: none;
   }
 
-  #loginStatus {
+  .login-secondary {
+    align-items: center;
+    border: 2px solid var(--color-line);
+    border-radius: 16px;
+    color: #243947;
+    display: flex;
+    font-weight: 900;
+    justify-content: center;
+    min-height: 48px;
+    text-decoration: none;
+  }
+
+  #loginStatus,
+  #registerStatus {
     color: #c23a63;
     font-weight: 800;
     margin: 0;

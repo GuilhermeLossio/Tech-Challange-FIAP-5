@@ -18,7 +18,7 @@ ECLOE_MARKET_DATABASE_MODES = {"memory", "azure_sql"}
 ECLOE_MARKET_IMAGE_BACKENDS = {"zimage-local", "space", "local", "hunyuan-local", "catalog"}
 ECLOE_MARKET_IMAGE_OFFLOAD_MODES = {"model", "sequential", "none"}
 ECLOE_PAY_SQL_AUTH_MODES = {"entra_interactive", "azure_cli", "managed_identity"}
-ECLOE_WEB_AUTH_MODES = {"local", "entra_external"}
+ECLOE_WEB_AUTH_MODES = {"local", "local_signup", "entra_external"}
 CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
 RECOMMENDATION_ACTIVE_POLICIES = {"deterministic_baseline", "likelihood_ranker"}
 PLACEHOLDER_MARKERS = ("<", ">", "seu-", "your-", "tenant-subdomain")
@@ -111,6 +111,7 @@ class Settings:
     ecloe_pay_sql_auth_mode: str
     ecloe_pay_sql_driver: str
     ecloe_pay_session_ttl_seconds: int
+    ecloe_pay_initial_balance_cents: int
     ecloe_pay_cookie_secure: bool
     ecloe_pay_demo_user_email: str
     ecloe_pay_demo_user_password: str
@@ -122,6 +123,8 @@ class Settings:
     ecloe_web_entra_post_logout_redirect_uri: str
     ecloe_web_session_idle_seconds: int
     ecloe_web_oidc_flow_ttl_seconds: int
+    ecloe_signup_max_accounts_per_ip: int
+    ecloe_signup_admin_ip_allowlist: tuple[str, ...]
     ecloe_market_database_mode: str
     ecloe_market_catalog_path: Path
     ecloe_market_catalog_seed: int
@@ -220,6 +223,7 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         ecloe_pay_sql_auth_mode=_env("ECLOE_PAY_SQL_AUTH_MODE", "entra_interactive").lower(),
         ecloe_pay_sql_driver=_env("ECLOE_PAY_SQL_DRIVER", "ODBC Driver 18 for SQL Server"),
         ecloe_pay_session_ttl_seconds=int(_env("ECLOE_PAY_SESSION_TTL_SECONDS", "28800")),
+        ecloe_pay_initial_balance_cents=int(_env("ECLOE_PAY_INITIAL_BALANCE_CENTS", "50000")),
         ecloe_pay_cookie_secure=_bool_env("ECLOE_PAY_COOKIE_SECURE", False),
         ecloe_pay_demo_user_email=_env(
             "ECLOE_PAY_DEMO_USER_EMAIL",
@@ -241,6 +245,8 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         ),
         ecloe_web_session_idle_seconds=int(_env("ECLOE_WEB_SESSION_IDLE_SECONDS", "1800")),
         ecloe_web_oidc_flow_ttl_seconds=int(_env("ECLOE_WEB_OIDC_FLOW_TTL_SECONDS", "600")),
+        ecloe_signup_max_accounts_per_ip=int(_env("ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP", "1")),
+        ecloe_signup_admin_ip_allowlist=_split_csv(_env("ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST")),
         ecloe_market_database_mode=_env("ECLOE_MARKET_DATABASE_MODE", "memory").lower(),
         ecloe_market_catalog_path=ROOT_DIR
         / _env("ECLOE_MARKET_CATALOG_PATH", "data/demo/ecloe_market_catalog.json"),
@@ -292,6 +298,8 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
         raise ValueError(f"Unsupported ECLOE_PAY_SQL_AUTH_MODE: {settings.ecloe_pay_sql_auth_mode}")
     if settings.ecloe_pay_session_ttl_seconds <= 0:
         raise ValueError("ECLOE_PAY_SESSION_TTL_SECONDS must be greater than zero.")
+    if settings.ecloe_pay_initial_balance_cents < 0:
+        raise ValueError("ECLOE_PAY_INITIAL_BALANCE_CENTS must be zero or greater.")
     if settings.ecloe_web_auth_mode not in ECLOE_WEB_AUTH_MODES:
         raise ValueError(f"Unsupported ECLOE_WEB_AUTH_MODE: {settings.ecloe_web_auth_mode}")
     if settings.ecloe_web_session_idle_seconds <= 0:
@@ -300,6 +308,14 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
         raise ValueError("ECLOE_WEB_SESSION_IDLE_SECONDS cannot exceed the session TTL.")
     if settings.ecloe_web_oidc_flow_ttl_seconds <= 0:
         raise ValueError("ECLOE_WEB_OIDC_FLOW_TTL_SECONDS must be greater than zero.")
+    if settings.ecloe_signup_max_accounts_per_ip <= 0:
+        raise ValueError("ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP must be greater than zero.")
+    if (
+        settings.ecloe_web_auth_mode == "local_signup"
+        and settings.app_environment in CLOUD_ENVIRONMENTS
+        and settings.ecloe_pay_database_mode != "azure_sql"
+    ):
+        raise ValueError("Cloud ECLOE_WEB_AUTH_MODE=local_signup requires ECLOE_PAY_DATABASE_MODE=azure_sql.")
     if settings.ecloe_web_auth_mode == "entra_external":
         missing = [
             name
@@ -347,6 +363,8 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
             raise ValueError(f"Missing ECloe Pay Azure SQL settings: {missing}")
 
     if settings.app_environment in CLOUD_ENVIRONMENTS:
+        if settings.ecloe_web_auth_mode == "local":
+            raise ValueError("Cloud demo web must not use ECLOE_WEB_AUTH_MODE=local.")
         if settings.ecloe_pay_sql_auth_mode == "entra_interactive":
             raise ValueError("ECLOE_PAY_SQL_AUTH_MODE=entra_interactive is local-only.")
         if (

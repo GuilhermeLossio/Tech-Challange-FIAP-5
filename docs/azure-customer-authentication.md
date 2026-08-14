@@ -1,12 +1,20 @@
 # Azure Customer Authentication
 
-ECloe Market and ECloe Pay use Microsoft Entra External ID for customer sign-up and sign-in in Azure. ECloe Engine keeps its separate bearer-token and scope boundary. Local development may use the existing synthetic credentials, but the cloud web runtime rejects local authentication and in-memory persistence.
+ECloe Market and ECloe Pay can use a lightweight ECloe-managed customer sign-up flow backed by Azure SQL when Microsoft Entra External ID is not available. Microsoft Entra External ID remains supported as a future stronger identity provider. ECloe Engine keeps its separate bearer-token and scope boundary.
 
 ## Security Model
 
-The Flask application is a confidential backend-for-frontend. It starts an OpenID Connect Authorization Code flow with PKCE and stores the short-lived flow state in the Pay repository. The browser receives only an opaque flow cookie and, after callback validation, an opaque application-session cookie. Access tokens, ID tokens, passwords, real e-mail addresses, names, and raw Entra subjects are not persisted.
+The Flask application is a backend-for-frontend. In `local_signup` mode, it collects only e-mail and password, stores the password as a strong hash, and issues an opaque application-session cookie. In `entra_external` mode, it starts an OpenID Connect Authorization Code flow with PKCE and stores the short-lived flow state in the Pay repository.
 
 The local identity key is an HMAC of the normalized token issuer and `sub` claim. It selects a deterministic synthetic persona and links subsequent sign-ins to the same local user. The application stores the pseudonymized key in `ecloe_pay.external_identities`.
+
+For the lightweight mode, use:
+
+```text
+ECLOE_WEB_AUTH_MODE=local_signup
+ECLOE_PAY_DATABASE_MODE=azure_sql
+ECLOE_PAY_SQL_AUTH_MODE=managed_identity
+```
 
 ## External Tenant Setup
 
@@ -26,6 +34,8 @@ Required application settings are documented in `.env.example`. Production uses 
 | Step | Behavior |
 |:---|:---|
 | `GET /auth/login` | Validates the local return path, creates a ten-minute single-use OIDC flow, and redirects to External ID. |
+| `GET /auth/signup` | Starts the same External ID user flow with a sign-up prompt when the tenant supports it; otherwise the combined sign-up/sign-in flow still handles registration. |
+| `GET /pay/register` | Visual registration shortcut used by the ECloe Pay UI; redirects to `/auth/signup` only when cloud External ID authentication is enabled. |
 | `GET /auth/callback` | Consumes the flow, lets MSAL validate the response, pseudonymizes the identity, and provisions or loads the synthetic account. |
 | Application session | Stores only a random token in an `HttpOnly`, `Secure`, `SameSite=Lax` cookie; Azure SQL stores its hash. |
 | `POST /api/auth/logout` | Requires CSRF, revokes the local session, clears cookies, and returns the External ID logout URL. |
@@ -34,7 +44,17 @@ The absolute session lifetime is eight hours, the idle timeout is thirty minutes
 
 ## Synthetic Account Provisioning
 
-`data/demo/ecloe_user_personas.json` contains versioned demo personas for a new customer, recurring buyer, saver, and benefit-oriented customer. First login creates the synthetic user, profile, wallet account, transaction history, and audit evidence transactionally. `/api/reset` restores the same deterministic persona.
+`data/demo/ecloe_user_personas.json` contains versioned demo personas for a new customer, recurring buyer, saver, and benefit-oriented customer. First login creates the synthetic user, profile, wallet account, transaction history, and audit evidence transactionally. Every new synthetic account starts with `ECLOE_PAY_INITIAL_BALANCE_CENTS`, which defaults to `50000` cents, displayed as R$ 500,00. `/api/reset` restores the same deterministic persona and reapplies that configured opening balance.
+
+The account mapping is one ECloe account per external person. Azure SQL enforces that through `ecloe_pay.external_identities` on `(provider, issuer, subject_key)`, where `subject_key` is a local HMAC pseudonym derived from issuer plus `sub`.
+
+New account creation also has an IP abuse guard:
+
+- `ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP=1` is the default runtime limit.
+- `ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST` accepts comma-separated IP addresses allowed to create multiple demo accounts for administration and testing.
+- ECloe reads the real client IP from `X-Forwarded-For` behind the cloud proxy, normalizes it, and stores only an HMAC hash in `ecloe_pay.signup_registrations`.
+- Raw IP addresses, real claims, tokens, real e-mail addresses, and real names are not stored.
+- A second new subject from a non-allowlisted IP receives `403` and the OIDC flow cookie is cleared.
 
 All displayed balances, cashback, transactions, names, locations, and segments are fictional. ECloe does not create realistic CPF, card, branch, or bank-account numbers and does not connect to Open Finance.
 
@@ -42,6 +62,7 @@ All displayed balances, cashback, transactions, names, locations, and segments a
 
 - Run `python -m scripts.init_ecloe_pay_sql` with a migration identity before deploying a revision that requires the new schema.
 - Keep Pay and Market on Azure SQL with Managed Identity in cloud; memory mode is local-only.
+- Configure `ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST` with the current administrator IP only when repeated demo account creation from that IP is required.
 - Monitor result codes and pseudonymized user IDs only. Never log claims, authorization responses, cookies, or profile payloads.
 - Disable a compromised customer by setting `ecloe_pay.demo_users.is_active` to `0`, then revoke their rows in `auth_sessions`.
 - Delete expired `oidc_login_flows` regularly; writes also remove expired rows opportunistically.

@@ -14,7 +14,12 @@ ALLOWED_RETURN_PATHS = ("/", "/pay", "/market", "/demo/summary")
 
 
 class OAuthClient(Protocol):
-    def initiate_auth_code_flow(self, scopes: list[str], redirect_uri: str) -> dict[str, Any]: ...
+    def initiate_auth_code_flow(
+        self,
+        scopes: list[str],
+        redirect_uri: str,
+        prompt: str | None = None,
+    ) -> dict[str, Any]: ...
 
     def acquire_token_by_auth_code_flow(
         self, auth_code_flow: dict[str, Any], auth_response: dict[str, str]
@@ -59,10 +64,12 @@ class EntraExternalIdentity:
             client_credential=self.settings.ecloe_web_entra_client_secret,
         )
 
-    def begin(self, repository: PayRepository, flow_id: str, return_to: str) -> str:
+    def begin(self, repository: PayRepository, flow_id: str, return_to: str, *, intent: str = "login") -> str:
+        prompt = "create" if intent == "signup" else None
         payload = self.client.initiate_auth_code_flow(
             scopes=[],
             redirect_uri=self.settings.ecloe_web_entra_redirect_uri,
+            prompt=prompt,
         )
         auth_uri = payload.get("auth_uri")
         if not isinstance(auth_uri, str) or not auth_uri:
@@ -74,6 +81,7 @@ class EntraExternalIdentity:
                 return_to=safe_return_to(return_to),
                 expires_at=datetime.now(UTC)
                 + timedelta(seconds=self.settings.ecloe_web_oidc_flow_ttl_seconds),
+                intent=intent,
             )
         )
         return auth_uri

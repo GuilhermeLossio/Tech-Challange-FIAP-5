@@ -70,7 +70,7 @@
         <section class="card balance-panel hero-balance-card" aria-label="{{ t("wallet.balanceAria") }}">
           <div>
             <p class="balance-label">{{ t("wallet.demoBalance") }} <span aria-hidden="true">{{ t("wallet.view") }}</span></p>
-            <strong>R$ 428,70</strong>
+            <strong id="balanceAmount">--</strong>
             <span class="funds-copy">{{ t("wallet.noRealValue") }}</span>
             <button id="viewDetailsButton" class="details-button" type="button">{{ t("wallet.details") }}</button>
           </div>
@@ -84,7 +84,7 @@
             <span class="metric-icon sprite-icon sprite-cashback" aria-hidden="true"><span class="sr-only">{{ t("wallet.cashback") }}</span></span>
             <p>{{ t("wallet.cashback") }}</p>
           </div>
-          <strong>R$ 18,40</strong>
+          <strong id="cashbackAmount">--</strong>
           <span>{{ t("wallet.available") }}</span>
         </div>
 
@@ -94,17 +94,28 @@
               <span class="metric-icon rose sprite-icon sprite-monthly-goal" aria-hidden="true"><span class="sr-only">{{ t("wallet.monthlyGoal") }}</span></span>
               <p>{{ t("wallet.monthlyGoal") }}</p>
             </div>
-            <strong>64%</strong>
-            <span>R$ 640,00 de R$ 1.000,00</span>
+            <strong id="goalPercent">--</strong>
+            <span id="goalDetail">--</span>
           </div>
           <span
+            id="goalProgress"
             class="progress-ring"
             role="progressbar"
             aria-label="{{ t("wallet.goalProgressAria") }}"
-            aria-valuenow="64"
+            aria-valuenow="0"
             aria-valuemin="0"
             aria-valuemax="100"
           ></span>
+        </div>
+
+        <div class="card metric-panel metric-card loan-card" aria-label="{{ t("wallet.loanRequestsAria") }}">
+          <div class="metric-card-heading">
+            <span class="metric-icon loan sprite-icon sprite-payment-card" aria-hidden="true"><span class="sr-only">{{ t("wallet.loanRequests") }}</span></span>
+            <p>{{ t("wallet.loanRequests") }}</p>
+          </div>
+          <strong id="loanAmount">--</strong>
+          <span id="loanStatus">{{ t("wallet.noLoanRequests") }}</span>
+          <small id="loanRequestedAt">--</small>
         </div>
       </section>
 
@@ -156,8 +167,8 @@
           <div class="payment-strip" aria-label="{{ t("wallet.paymentOrderAria") }}">
             <div class="payment-card">
               <p class="eyebrow">{{ t("wallet.recurringPayment") }}</p>
-              <strong>R$ 127,90</strong>
-              <span>{{ t("wallet.dueDate") }}</span>
+              <strong id="paymentAmount">--</strong>
+              <span id="paymentStatus">{{ t("wallet.dueDate") }}</span>
             </div>
 
             <form id="transactionForm" class="transaction-form inline-transaction-form">
@@ -232,7 +243,7 @@
               </div>
               <div>
                 <dt>bucket</dt>
-                <dd>ecloe-pay-demo-artifacts</dd>
+                <dd id="bucketValue">pending</dd>
               </div>
             </dl>
           </div>

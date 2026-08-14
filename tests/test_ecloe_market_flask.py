@@ -151,6 +151,7 @@ def test_integrated_demo_market_pays_order_from_ecloe_pay_wallet_once() -> None:
     assert payment.get_json() == repeated.get_json()
     assert payment.get_json()["order"]["status"] == "paid"
     assert payment.get_json()["wallet"]["available_balance_cents"] == before - 1990
+    assert client.get("/api/session").get_json()["wallet"]["demo_balance_cents"] == before - 1990
 
 
 def test_integrated_demo_market_rejects_insufficient_wallet_balance() -> None:

@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -11,6 +12,11 @@ from src.demo.ecloe_pay.repositories import (
     SHARED_DEMO_USER_EMAIL,
     MemoryPayRepository,
 )
+
+
+def local_signup_settings(**overrides):
+    settings = replace(load_settings(use_env_file=False), ecloe_web_auth_mode="local_signup")
+    return replace(settings, **overrides) if overrides else settings
 
 
 def csrf_headers(client) -> dict[str, str]:
@@ -30,6 +36,165 @@ def authenticated_client(app=None):
     )
     assert response.status_code == 200
     return client
+
+
+def test_local_signup_login_page_exposes_register_link() -> None:
+    app = create_app(settings=local_signup_settings())
+    client = app.test_client()
+
+    response = client.get("/pay/login?return_to=/pay&lang=pt-BR")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "Criar conta" in body
+    assert "/pay/register?return_to=/pay" in body
+
+
+def test_local_mode_hides_register_link() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    response = client.get("/pay/login?return_to=/pay&lang=pt-BR")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "/pay/register" not in body
+
+
+def test_local_signup_register_creates_user_session_and_initial_balance() -> None:
+    settings = local_signup_settings()
+    repository = MemoryPayRepository(settings)
+    app = create_app(settings=settings, repository=repository)
+    client = app.test_client()
+    client.get("/pay/register")
+
+    response = client.post(
+        "/api/auth/register",
+        json={
+            "email": "new.user@example.com",
+            "password": "strong-pass",
+            "password_confirm": "strong-pass",
+        },
+        headers=csrf_headers(client),
+    )
+
+    assert response.status_code == 200
+    body = response.get_json()
+    assert body["authenticated"] is True
+    assert body["user"]["auth_provider"] == "local_signup"
+    auth_cookie = client.get_cookie(AUTH_COOKIE_NAME)
+    assert auth_cookie is not None and auth_cookie.http_only
+    account = repository.synthetic_account(body["user"]["user_id"])
+    assert account is not None
+    assert account.available_balance_cents == 50000
+    assert account.transactions[0].amount_cents == 50000
+    persisted = repr(repository.users) + repr(repository.signup_registrations)
+    assert "strong-pass" not in persisted
+
+
+def test_local_signup_duplicate_email_returns_conflict() -> None:
+    settings = local_signup_settings()
+    repository = MemoryPayRepository(settings)
+    app = create_app(settings=settings, repository=repository)
+    first = app.test_client()
+    first.get("/pay/register")
+    payload = {
+        "email": "duplicate@example.com",
+        "password": "strong-pass",
+        "password_confirm": "strong-pass",
+    }
+    assert first.post("/api/auth/register", json=payload, headers=csrf_headers(first)).status_code == 200
+    second = app.test_client()
+    second.get("/pay/register")
+
+    response = second.post("/api/auth/register", json=payload, headers=csrf_headers(second))
+
+    assert response.status_code == 409
+    assert any(item["event_type"] == "signup_duplicate_email" for item in repository.audit_events)
+
+
+def test_local_signup_blocks_second_new_user_from_same_ip_without_raw_ip_persistence() -> None:
+    settings = local_signup_settings()
+    repository = MemoryPayRepository(settings)
+    app = create_app(settings=settings, repository=repository)
+    first = app.test_client()
+    first.get("/pay/register", headers={"X-Forwarded-For": "198.51.100.7"})
+    assert first.post(
+        "/api/auth/register",
+        json={
+            "email": "first@example.com",
+            "password": "strong-pass",
+            "password_confirm": "strong-pass",
+        },
+        headers={**csrf_headers(first), "X-Forwarded-For": "198.51.100.7"},
+    ).status_code == 200
+    second = app.test_client()
+    second.get("/pay/register", headers={"X-Forwarded-For": "198.51.100.7"})
+
+    response = second.post(
+        "/api/auth/register",
+        json={
+            "email": "second@example.com",
+            "password": "strong-pass",
+            "password_confirm": "strong-pass",
+        },
+        headers={**csrf_headers(second), "X-Forwarded-For": "198.51.100.7"},
+    )
+
+    assert response.status_code == 403
+    persisted = repr(repository.signup_registrations) + repr(repository.audit_events)
+    assert "198.51.100.7" not in persisted
+    assert "blocked_ip_limit" in persisted
+
+
+def test_local_signup_allowlisted_ip_can_create_multiple_users() -> None:
+    settings = local_signup_settings(ecloe_signup_admin_ip_allowlist=("198.51.100.7",))
+    repository = MemoryPayRepository(settings)
+    app = create_app(settings=settings, repository=repository)
+
+    for email in ("first@example.com", "second@example.com"):
+        client = app.test_client()
+        client.get("/pay/register", headers={"X-Forwarded-For": "198.51.100.7"})
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "email": email,
+                "password": "strong-pass",
+                "password_confirm": "strong-pass",
+            },
+            headers={**csrf_headers(client), "X-Forwarded-For": "198.51.100.7"},
+        )
+        assert response.status_code == 200
+
+    registered = [
+        item for item in repository.signup_registrations if item["provider"] == "local_signup"
+    ]
+    assert len(registered) == 2
+
+
+def test_local_signup_users_get_distinct_demo_payment_orders() -> None:
+    settings = local_signup_settings(ecloe_signup_admin_ip_allowlist=("198.51.100.7",))
+    repository = MemoryPayRepository(settings)
+    app = create_app(settings=settings, repository=repository)
+    order_ids = []
+
+    for email in ("first@example.com", "second@example.com"):
+        client = app.test_client()
+        client.get("/pay/register", headers={"X-Forwarded-For": "198.51.100.7"})
+        response = client.post(
+            "/api/auth/register",
+            json={
+                "email": email,
+                "password": "strong-pass",
+                "password_confirm": "strong-pass",
+            },
+            headers={**csrf_headers(client), "X-Forwarded-For": "198.51.100.7"},
+        )
+        assert response.status_code == 200
+        user_id = response.get_json()["user"]["user_id"]
+        order_ids.append(repository.get_or_create_demo_session(user_id).payment_order_id)
+
+    assert len(set(order_ids)) == 2
 
 
 def test_pay_flask_landing_page_exposes_demo_boundaries() -> None:
@@ -137,6 +302,18 @@ def test_pay_flask_session_exposes_demo_boundaries_after_login() -> None:
     assert body["recommendation"]["policy"] == "deterministic_baseline"
     assert body["benefit"]["offer_id"] == "cashback_recurring_purchase"
     assert body["session"]["selected_decision_id"] == body["recommendation"]["decision_id"]
+    assert body["session"]["payment_amount_cents"] == 12790
+    assert body["session"]["payment_order_id"] == "pay_order_demo_7841"
+    assert body["wallet"]["demo_balance_cents"] == 50000
+    assert body["wallet"]["cashback_cents"] == 0
+    assert body["wallet"]["currency"] == "BRL"
+    assert body["loan_requests"]
+    loan_request = body["loan_requests"][0]
+    assert loan_request["loan_request_id"].startswith("loan_req_")
+    assert loan_request["requested_amount_cents"] > 0
+    assert loan_request["currency"] == "BRL"
+    assert loan_request["status"] in {"requested", "under_review", "cancelled"}
+    assert "credit decision" in loan_request["synthetic_notice"]
 
 
 def test_pay_flask_requires_terms_before_interaction() -> None:

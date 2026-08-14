@@ -56,6 +56,31 @@ Use `ECLOE_WEB_AUTH_MODE=entra_external` only after replacing the placeholder
 client ID, and client secret. Placeholder values such as
 `https://seu-tenant.ciamlogin.com` are rejected during startup.
 
+Use `ECLOE_WEB_AUTH_MODE=local_signup` when Microsoft Entra is not available and
+the demo should provide its own lightweight e-mail/password registration backed
+by Azure SQL. This mode is allowed in cloud only with Azure SQL persistence.
+
+In External ID mode the login screen shows both `Entrar` and `Criar conta`.
+Both actions redirect to Microsoft Entra External ID; ECloe never collects or
+stores customer passwords. After the callback, ECloe creates the synthetic Pay
+account only if that external subject has not already been linked.
+
+New accounts start with the configured synthetic balance:
+
+```text
+ECLOE_PAY_INITIAL_BALANCE_CENTS=50000
+```
+
+Signup abuse control is IP based, but raw IP addresses are never stored. The app
+normalizes the client IP from `X-Forwarded-For`, stores only an HMAC hash, and
+blocks a second new subject from the same IP unless the IP is explicitly
+allowlisted:
+
+```text
+ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP=1
+ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST=<administrator-ip-if-needed>
+```
+
 Azure SQL persistence is the intended mode for validating the browser login
 flow against the configured demo persona:
 

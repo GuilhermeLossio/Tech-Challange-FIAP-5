@@ -26,6 +26,19 @@ const databaseSchema = document.querySelector("#databaseSchema");
 const recommendationDecision = document.querySelector("#recommendationDecision");
 const recommendationOffer = document.querySelector("#recommendationOffer");
 const recommendationPolicy = document.querySelector("#recommendationPolicy");
+const balanceAmount = document.querySelector("#balanceAmount");
+const cashbackAmount = document.querySelector("#cashbackAmount");
+const goalPercent = document.querySelector("#goalPercent");
+const goalDetail = document.querySelector("#goalDetail");
+const goalProgress = document.querySelector("#goalProgress");
+const paymentAmount = document.querySelector("#paymentAmount");
+const paymentStatus = document.querySelector("#paymentStatus");
+const loanAmount = document.querySelector("#loanAmount");
+const loanStatus = document.querySelector("#loanStatus");
+const loanRequestedAt = document.querySelector("#loanRequestedAt");
+const benefitTitle = document.querySelector("#benefitTitle");
+const benefitMessage = document.querySelector("#benefitMessage");
+const bucketValue = document.querySelector("#bucketValue");
 const viewDetailsButton = document.querySelector("#viewDetailsButton");
 const quickActionButtons = document.querySelectorAll(".quick-action[data-target]");
 const pageLocale = document.documentElement.lang || "en-US";
@@ -35,6 +48,7 @@ let termsAccepted = false;
 let transactionLocked = false;
 let flaskAvailable = false;
 let backendRequiresAuth = false;
+let runtimeState = { ...DEMO_STATE };
 
 async function getJson(url) {
   const response = await fetch(url);
@@ -79,6 +93,84 @@ function appendTimeline(message, evidence = "") {
   timeline.prepend(item);
 }
 
+function formatMoney(cents, currency = "BRL") {
+  const amount = Number.isFinite(Number(cents)) ? Number(cents) / 100 : 0;
+  return new Intl.NumberFormat(pageLocale, {
+    style: "currency",
+    currency,
+    currencyDisplay: "symbol",
+  }).format(amount);
+}
+
+function formatPercent(value) {
+  return `${Math.max(0, Math.min(100, Number(value) || 0))}%`;
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "--";
+  }
+  return new Intl.DateTimeFormat(pageLocale, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function loanStatusLabel(status) {
+  return {
+    requested: pageLocale === "pt-BR" ? "Solicitado" : "Requested",
+    under_review: pageLocale === "pt-BR" ? "Em analise" : "Under review",
+    cancelled: pageLocale === "pt-BR" ? "Cancelado" : "Cancelled",
+  }[status] || status || "--";
+}
+
+function renderSession(body) {
+  const session = body.session;
+  const wallet = body.wallet;
+  const currency = wallet.currency || "BRL";
+  const goal = Math.max(0, Math.min(100, Number(wallet.savings_goal_percent) || 0));
+  const goalTargetCents = 100000;
+  const goalCurrentCents = Math.round((goalTargetCents * goal) / 100);
+  const loanRequest = body.loan_requests?.[0];
+
+  runtimeState = {
+    ...runtimeState,
+    sessionId: session.session_id,
+    decisionId: body.recommendation.decision_id,
+    idempotencyKey: session.idempotency_key,
+    bucketName: body.security.bucket_name,
+    paymentOrderId: session.payment_order_id,
+  };
+
+  sessionId.textContent = session.session_id;
+  balanceAmount.textContent = formatMoney(wallet.demo_balance_cents, currency);
+  cashbackAmount.textContent = formatMoney(wallet.cashback_cents, currency);
+  goalPercent.textContent = formatPercent(goal);
+  goalDetail.textContent = `${formatMoney(goalCurrentCents, currency)} / ${formatMoney(goalTargetCents, currency)}`;
+  goalProgress.style.setProperty("--goal-progress", `${goal}%`);
+  goalProgress.setAttribute("aria-valuenow", String(goal));
+  paymentAmount.textContent = formatMoney(session.payment_amount_cents, currency);
+  paymentStatus.textContent = `${session.payment_order_id} - ${session.payment_status}`;
+  benefitTitle.textContent = body.benefit.title;
+  benefitMessage.textContent = body.benefit.message;
+  recommendationDecision.textContent = body.recommendation.decision_id;
+  recommendationOffer.textContent = body.benefit.offer_id;
+  recommendationPolicy.textContent = body.recommendation.policy;
+  bucketValue.textContent = body.security.bucket_name;
+
+  if (loanRequest) {
+    loanAmount.textContent = formatMoney(loanRequest.requested_amount_cents, loanRequest.currency || currency);
+    loanStatus.textContent = loanStatusLabel(loanRequest.status);
+    loanRequestedAt.textContent = formatDate(loanRequest.requested_at);
+  } else {
+    loanAmount.textContent = "--";
+    loanStatus.textContent = pageLocale === "pt-BR" ? "Nenhuma solicitacao sintetica" : "No synthetic request";
+    loanRequestedAt.textContent = "--";
+  }
+}
+
 function setBenefitState(label, variant = "default") {
   benefitState.textContent = label;
   benefitState.classList.toggle("success", variant === "success");
@@ -111,6 +203,7 @@ function setPresentationMode() {
   runtimeMode.textContent = "Modo apresentacao - os dados nao sao persistidos.";
   databaseProvider.textContent = "apresentacao";
   databaseSchema.textContent = "nao persistido";
+  bucketValue.textContent = DEMO_STATE.bucketName;
 }
 
 function setAuthenticatedMode(auth, security) {
@@ -244,7 +337,7 @@ transactionForm.addEventListener("submit", (event) => {
   }
 
   if (flaskAvailable) {
-    postJson(`/api/payment-orders/${DEMO_STATE.paymentOrderId}/simulate`, {
+    postJson(`/api/payment-orders/${runtimeState.paymentOrderId}/simulate`, {
       confirmation_code: normalizedCode,
     })
       .then((body) => {
@@ -252,6 +345,7 @@ transactionForm.addEventListener("submit", (event) => {
         securityState.textContent = "Verificado";
         securityState.classList.add("success");
         setBenefitState("Pagamento simulado aceito", "success");
+        getJson("/api/session").then(renderSession);
         appendTimeline(
           "A API Flask verificou o pagamento simulado e preparou o evento de recompensa.",
           `${body.reward_event.event_id}, provider=${body.database_provider}, schema=${body.database_schema}, bucket=${body.bucket_name}`,
@@ -303,7 +397,11 @@ document.querySelector("#resetButton").addEventListener("click", () => {
   }
 
   postJson("/api/reset", {})
-    .then(finish)
+    .then(() => getJson("/api/session"))
+    .then((body) => {
+      renderSession(body);
+      finish({ session_id: body.session.session_id });
+    })
     .catch((error) => {
       if (!redirectToLoginWhenNeeded(error)) {
         appendTimeline(`Reinicio rejeitado pela API Flask: ${error.message}`);
@@ -326,10 +424,7 @@ async function bootstrap() {
     backendRequiresAuth = Boolean(auth.requires_authentication);
     const body = await getJson("/api/session");
     setAuthenticatedMode(auth, body.security);
-    sessionId.textContent = body.session.session_id;
-    recommendationDecision.textContent = body.recommendation.decision_id;
-    recommendationOffer.textContent = body.benefit.offer_id;
-    recommendationPolicy.textContent = body.recommendation.policy;
+    renderSession(body);
     termsAccepted = Boolean(body.session.terms_accepted);
     appendTimeline(
       "API Flask da ECloe Pay conectada com dados sinteticos de carteira.",

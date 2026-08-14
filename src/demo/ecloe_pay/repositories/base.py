@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from datetime import UTC, datetime
 from typing import Any, Protocol
 
@@ -51,6 +51,7 @@ class OidcLoginFlow:
     payload: dict[str, Any]
     return_to: str
     expires_at: datetime
+    intent: str = "login"
 
 
 @dataclass(frozen=True)
@@ -110,6 +111,19 @@ class PaymentOrder:
 
 
 @dataclass(frozen=True)
+class LoanRequest:
+    loan_request_id: str
+    user_id: str
+    requested_amount_cents: int
+    currency: str
+    status: str
+    requested_at: str
+    synthetic_notice: str = (
+        "Synthetic ECloe Pay demo loan request. No credit decision, limit, score, or real loan is processed."
+    )
+
+
+@dataclass(frozen=True)
 class WalletPayment:
     payment_id: str
     user_id: str
@@ -122,10 +136,18 @@ class WalletPayment:
 
 @dataclass
 class WalletSnapshot:
-    demo_balance_cents: int = 42870
-    cashback_cents: int = 1840
-    savings_goal_percent: int = 64
+    demo_balance_cents: int = 50000
+    cashback_cents: int = 0
+    savings_goal_percent: int = 0
     currency: str = "BRL"
+
+
+class SignupIpLimitExceeded(ValueError):
+    pass
+
+
+class SignupEmailAlreadyExists(ValueError):
+    pass
 
 
 class PayRepository(Protocol):
@@ -138,6 +160,16 @@ class PayRepository(Protocol):
         ...
 
     def authenticate(self, email: str, password: str) -> DemoUser | None:
+        ...
+
+    def register_local_user(
+        self,
+        email: str,
+        password_hash: str,
+        *,
+        signup_ip_hash: str,
+        allow_ip_reuse: bool = False,
+    ) -> DemoUser:
         ...
 
     def create_auth_session(self, user_id: str) -> AuthSession:
@@ -158,7 +190,14 @@ class PayRepository(Protocol):
     def consume_oidc_flow(self, flow_id: str) -> OidcLoginFlow | None:
         ...
 
-    def provision_external_user(self, issuer: str, subject_key: str) -> DemoUser | None:
+    def provision_external_user(
+        self,
+        issuer: str,
+        subject_key: str,
+        *,
+        signup_ip_hash: str | None = None,
+        allow_ip_reuse: bool = False,
+    ) -> DemoUser | None:
         ...
 
     def synthetic_profile(self, user_id: str) -> SyntheticProfile | None:
@@ -194,6 +233,9 @@ class PayRepository(Protocol):
         ...
 
     def get_payment_order(self, payment_order_id: str) -> PaymentOrder | None:
+        ...
+
+    def loan_requests(self, user_id: str) -> tuple[LoanRequest, ...]:
         ...
 
     def simulate_payment(self, session_id: str, confirmation_code: str) -> tuple[str, dict[str, Any] | None]:
@@ -251,18 +293,61 @@ def token_hash(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
+def account_with_initial_balance(account: SyntheticAccount, initial_balance_cents: int) -> SyntheticAccount:
+    return replace(
+        account,
+        available_balance_cents=initial_balance_cents,
+        cashback_cents=0,
+        savings_goal_percent=0,
+        transactions=(
+            WalletTransaction(
+                transaction_id="txn_opening_balance",
+                description="Synthetic opening ECloe Pay balance",
+                amount_cents=initial_balance_cents,
+                category="opening_balance",
+                occurred_at="2026-08-01T00:00:00+00:00",
+            ),
+        ),
+    )
+
+
 def initial_session(user_id: str) -> DemoSession:
+    demo_suffix = user_id[-6:]
+    if user_id == user_id_for_email(SHARED_DEMO_USER_EMAIL):
+        market_order_id = "order_demo_7841"
+        payment_order_id = "pay_order_demo_7841"
+        idempotency_key = "pay-demo:order_demo_7841:0426"
+    else:
+        market_order_id = f"order_demo_7841_{demo_suffix}"
+        payment_order_id = f"pay_order_demo_7841_{demo_suffix}"
+        idempotency_key = f"pay-demo:{market_order_id}:0426"
     return DemoSession(
-        session_id=f"sess_pay_demo_{user_id[-6:]}",
+        session_id=f"sess_pay_demo_{demo_suffix}",
         user_id=user_id,
-        demo_subject_key=f"demo-subject-pay-{user_id[-6:]}",
+        demo_subject_key=f"demo-subject-pay-{demo_suffix}",
         selected_decision_id="",
         selected_offer_id="",
-        idempotency_key="pay-demo:order_demo_7841:0426",
+        idempotency_key=idempotency_key,
         bucket_name=DEMO_BUCKET_NAME,
-        payment_order_id="pay_order_demo_7841",
-        market_order_id="order_demo_7841",
+        payment_order_id=payment_order_id,
+        market_order_id=market_order_id,
         payment_amount_cents=12790,
+    )
+
+
+def initial_loan_requests(user_id: str) -> tuple[LoanRequest, ...]:
+    digest = hashlib.sha256(f"loan-request\x00{user_id}".encode("utf-8")).hexdigest()
+    amount_cents = 25000 + (int(digest[:4], 16) % 12) * 5000
+    status = ("requested", "under_review", "cancelled")[int(digest[4:6], 16) % 3]
+    return (
+        LoanRequest(
+            loan_request_id=f"loan_req_{digest[:16]}",
+            user_id=user_id,
+            requested_amount_cents=amount_cents,
+            currency="BRL",
+            status=status,
+            requested_at="2026-08-01T12:00:00+00:00",
+        ),
     )
 
 

@@ -24,12 +24,17 @@ from src.demo.ecloe_pay.repositories.base import (
     OidcLoginFlow,
     PaymentOrder,
     PayRepository,
+    SignupEmailAlreadyExists,
+    SignupIpLimitExceeded,
+    LoanRequest,
     SyntheticAccount,
     SyntheticProfile,
     WalletPayment,
     WalletSnapshot,
     WalletTransaction,
+    account_with_initial_balance,
     aware_utc,
+    initial_loan_requests,
     initial_session,
     normalize_email,
     reward_payload,
@@ -107,7 +112,7 @@ class AzureSqlPayRepository(PayRepository):
             row = connection.execute(
                 text(
                     """
-                    SELECT user_id, email_normalized AS email, display_name, persona_label
+                    SELECT user_id, email_normalized AS email, display_name, persona_label, auth_provider
                     FROM ecloe_pay.demo_users
                     WHERE email_normalized = :email_normalized
                         AND is_active = 1
@@ -181,7 +186,8 @@ class AzureSqlPayRepository(PayRepository):
                         email_normalized AS email,
                         password_hash,
                         display_name,
-                        persona_label
+                        persona_label,
+                        auth_provider
                     FROM ecloe_pay.demo_users
                     WHERE email_normalized = :email_normalized
                         AND is_active = 1
@@ -191,7 +197,7 @@ class AzureSqlPayRepository(PayRepository):
                 ),
                 {"email_normalized": normalize_email(email)},
             ).mappings().first()
-        if row is None or not check_password_hash(row["password_hash"], password):
+        if row is None or not row["password_hash"] or not check_password_hash(row["password_hash"], password):
             if row is None:
                 check_password_hash(DUMMY_PASSWORD_HASH, password)
             return None
@@ -200,7 +206,181 @@ class AzureSqlPayRepository(PayRepository):
             email=row["email"],
             display_name=row["display_name"],
             persona_label=row["persona_label"],
+            auth_provider=row["auth_provider"],
         )
+
+    def register_local_user(
+        self,
+        email: str,
+        password_hash: str,
+        *,
+        signup_ip_hash: str,
+        allow_ip_reuse: bool = False,
+    ) -> DemoUser:
+        from sqlalchemy import text
+
+        email_normalized = normalize_email(email)
+        user_id = user_id_for_email(email_normalized)
+        user = DemoUser(
+            user_id=user_id,
+            email=email_normalized,
+            display_name=DEMO_USER_DISPLAY_NAME,
+            persona_label=DEMO_USER_PERSONA_LABEL,
+            auth_provider="local_signup",
+        )
+        persona = persona_for_subject(user_id)
+        account = account_with_initial_balance(
+            persona.account,
+            self.settings.ecloe_pay_initial_balance_cents,
+        )
+        with self._transaction() as connection:
+            existing = connection.execute(
+                text(
+                    """
+                    SELECT 1
+                    FROM ecloe_pay.demo_users WITH (UPDLOCK, HOLDLOCK)
+                    WHERE email_normalized = :email_normalized
+                    """
+                ),
+                {"email_normalized": email_normalized},
+            ).first()
+            if existing is not None:
+                self._record_audit(connection, None, "signup_duplicate_email", "blocked")
+                raise SignupEmailAlreadyExists("An account already exists for this e-mail.")
+            if not allow_ip_reuse:
+                connection.execute(
+                    text(
+                        """
+                        DECLARE @lock_result INT;
+                        EXEC @lock_result = sp_getapplock
+                            @Resource = :lock_resource,
+                            @LockMode = 'Exclusive',
+                            @LockOwner = 'Transaction',
+                            @LockTimeout = 10000;
+                        IF @lock_result < 0
+                            THROW 51000, 'Could not acquire signup IP lock.', 1;
+                        """
+                    ),
+                    {"lock_resource": f"ecloe_signup_ip:{signup_ip_hash}"},
+                )
+                successful_from_ip = connection.execute(
+                    text(
+                        """
+                        SELECT COUNT_BIG(1)
+                        FROM ecloe_pay.signup_registrations WITH (UPDLOCK, HOLDLOCK)
+                        WHERE ip_hash = :ip_hash
+                            AND result = N'success'
+                        """
+                    ),
+                    {"ip_hash": signup_ip_hash},
+                ).scalar_one()
+                if int(successful_from_ip) >= self.settings.ecloe_signup_max_accounts_per_ip:
+                    connection.execute(
+                        text(
+                            """
+                            INSERT INTO ecloe_pay.signup_registrations (
+                                registration_id, ip_hash, user_id, provider, issuer, subject_key, result
+                            )
+                            VALUES (
+                                :registration_id, :ip_hash, NULL, N'local_signup',
+                                N'ecloe.local', :subject_key, N'blocked_ip_limit'
+                            )
+                            """
+                        ),
+                        {
+                            "registration_id": f"signup_{uuid.uuid4().hex}",
+                            "ip_hash": signup_ip_hash,
+                            "subject_key": user_id,
+                        },
+                    )
+                    self._record_audit(connection, None, "signup_blocked_ip_limit", "blocked")
+                    raise SignupIpLimitExceeded("Signup limit reached for this IP address.")
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO ecloe_pay.demo_users (
+                        user_id, email_normalized, display_name, persona_label, password_hash,
+                        auth_provider, is_active, is_demo, pii_allowed
+                    )
+                    VALUES (
+                        :user_id, :email_normalized, :display_name, :persona_label,
+                        :password_hash, N'local_signup', 1, 1, 0
+                    )
+                    """
+                ),
+                {
+                    **asdict(user),
+                    "email_normalized": email_normalized,
+                    "password_hash": password_hash,
+                },
+            )
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO ecloe_pay.demo_user_profiles (
+                        user_id, full_name, address_line1, city, state_region, postal_code, country,
+                        phone, preferred_language, market_segment, wallet_status
+                    )
+                    VALUES (
+                        :user_id, :full_name, N'SYNTHETIC-NOT-COLLECTED', :city, :state_region,
+                        N'DEMO', N'Brazil', N'DEMO', :preferred_language, :market_segment,
+                        :wallet_status
+                    )
+                    """
+                ),
+                {**asdict(persona.profile), "user_id": user_id},
+            )
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO ecloe_pay.wallet_accounts (
+                        wallet_account_id, user_id, available_balance_cents, cashback_cents,
+                        savings_goal_percent, currency, status
+                    )
+                    VALUES (
+                        :wallet_account_id, :user_id, :available_balance_cents, :cashback_cents,
+                        :savings_goal_percent, :currency, :status
+                    )
+                    """
+                ),
+                {**asdict(account), "wallet_account_id": f"wallet_{uuid.uuid4().hex}", "user_id": user_id},
+            )
+            for wallet_transaction in account.transactions:
+                connection.execute(
+                    text(
+                        """
+                        INSERT INTO ecloe_pay.wallet_transactions (
+                            user_id, transaction_id, description, amount_cents, category, occurred_at
+                        )
+                        VALUES (
+                            :user_id, :transaction_id, :description, :amount_cents, :category, :occurred_at
+                        )
+                        """
+                    ),
+                    {**asdict(wallet_transaction), "user_id": user_id},
+                )
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO ecloe_pay.signup_registrations (
+                        registration_id, ip_hash, user_id, provider, issuer, subject_key, result
+                    )
+                    VALUES (
+                        :registration_id, :ip_hash, :user_id, N'local_signup',
+                        N'ecloe.local', :subject_key, N'success'
+                    )
+                    """
+                ),
+                {
+                    "registration_id": f"signup_{uuid.uuid4().hex}",
+                    "ip_hash": signup_ip_hash,
+                    "user_id": user_id,
+                    "subject_key": user_id,
+                },
+            )
+            self._record_audit(connection, user_id, "signup_allowed", "success")
+            self._record_audit(connection, user_id, "account_provisioned", "success")
+        return user
 
     def create_auth_session(self, user_id: str) -> AuthSession:
         from sqlalchemy import text
@@ -320,7 +500,7 @@ class AzureSqlPayRepository(PayRepository):
             row = connection.execute(
                 text(
                     """
-                    SELECT user_id, email_normalized AS email, display_name, persona_label
+                    SELECT user_id, email_normalized AS email, display_name, persona_label, auth_provider
                     FROM ecloe_pay.demo_users
                     WHERE user_id = :user_id AND is_active = 1
                     """
@@ -338,8 +518,8 @@ class AzureSqlPayRepository(PayRepository):
                     """
                     DELETE FROM ecloe_pay.oidc_login_flows WHERE expires_at <= TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00');
                     INSERT INTO ecloe_pay.oidc_login_flows (
-                        flow_id, token_hash, flow_payload, return_to, expires_at
-                    ) VALUES (:flow_id, :token_hash, :flow_payload, :return_to, :expires_at)
+                        flow_id, token_hash, flow_payload, return_to, intent, expires_at
+                    ) VALUES (:flow_id, :token_hash, :flow_payload, :return_to, :intent, :expires_at)
                     """
                 ),
                 {
@@ -347,6 +527,7 @@ class AzureSqlPayRepository(PayRepository):
                     "token_hash": token_hash(flow.flow_id),
                     "flow_payload": json.dumps(flow.payload),
                     "return_to": flow.return_to,
+                    "intent": flow.intent,
                     "expires_at": flow.expires_at,
                 },
             )
@@ -358,7 +539,7 @@ class AzureSqlPayRepository(PayRepository):
             row = connection.execute(
                 text(
                     """
-                    SELECT flow_id, flow_payload, return_to, expires_at
+                    SELECT flow_id, flow_payload, return_to, intent, expires_at
                     FROM ecloe_pay.oidc_login_flows WITH (UPDLOCK, ROWLOCK)
                     WHERE token_hash = :token_hash
                     """
@@ -377,12 +558,24 @@ class AzureSqlPayRepository(PayRepository):
             payload=json.loads(row["flow_payload"]),
             return_to=row["return_to"],
             expires_at=aware_utc(row["expires_at"]),
+            intent=row.get("intent") or "login",
         )
 
-    def provision_external_user(self, issuer: str, subject_key: str) -> DemoUser | None:
+    def provision_external_user(
+        self,
+        issuer: str,
+        subject_key: str,
+        *,
+        signup_ip_hash: str | None = None,
+        allow_ip_reuse: bool = False,
+    ) -> DemoUser | None:
         from sqlalchemy import text
 
         persona = persona_for_subject(subject_key)
+        account = account_with_initial_balance(
+            persona.account,
+            self.settings.ecloe_pay_initial_balance_cents,
+        )
         user_id = external_user_id(subject_key)
         synthetic_email = f"{persona.persona_id}.{user_id[-8:]}@demo.ecloe.local"
         user = DemoUser(user_id, synthetic_email, persona.display_name, persona.label, "entra_external")
@@ -409,10 +602,58 @@ class AzureSqlPayRepository(PayRepository):
                 )
                 if not existing["is_active"]:
                     return None
+                self._record_audit(connection, existing["user_id"], "signup_existing_identity", "success")
                 return DemoUser(
                     existing["user_id"], existing["email"], existing["display_name"],
                     existing["persona_label"], existing["auth_provider"],
                 )
+            if signup_ip_hash and not allow_ip_reuse:
+                connection.execute(
+                    text(
+                        """
+                        DECLARE @lock_result INT;
+                        EXEC @lock_result = sp_getapplock
+                            @Resource = :lock_resource,
+                            @LockMode = 'Exclusive',
+                            @LockOwner = 'Transaction',
+                            @LockTimeout = 10000;
+                        IF @lock_result < 0
+                            THROW 51000, 'Could not acquire signup IP lock.', 1;
+                        """
+                    ),
+                    {"lock_resource": f"ecloe_signup_ip:{signup_ip_hash}"},
+                )
+                successful_from_ip = connection.execute(
+                    text(
+                        """
+                        SELECT COUNT_BIG(1)
+                        FROM ecloe_pay.signup_registrations WITH (UPDLOCK, HOLDLOCK)
+                        WHERE ip_hash = :ip_hash AND result = N'success'
+                        """
+                    ),
+                    {"ip_hash": signup_ip_hash},
+                ).scalar_one()
+                if int(successful_from_ip) >= self.settings.ecloe_signup_max_accounts_per_ip:
+                    connection.execute(
+                        text(
+                            """
+                            INSERT INTO ecloe_pay.signup_registrations (
+                                registration_id, ip_hash, user_id, provider, issuer, subject_key, result
+                            ) VALUES (
+                                :registration_id, :ip_hash, NULL, N'entra_external', :issuer,
+                                :subject_key, N'blocked_ip_limit'
+                            )
+                            """
+                        ),
+                        {
+                            "registration_id": f"signup_{uuid.uuid4().hex}",
+                            "ip_hash": signup_ip_hash,
+                            "issuer": issuer,
+                            "subject_key": subject_key,
+                        },
+                    )
+                    self._record_audit(connection, None, "signup_blocked_ip_limit", "blocked")
+                    raise SignupIpLimitExceeded("Signup limit reached for this IP address.")
             connection.execute(
                 text(
                     """
@@ -452,13 +693,33 @@ class AzureSqlPayRepository(PayRepository):
                     "subject_key": subject_key,
                     "identity_id": f"identity_{uuid.uuid4().hex}",
                     "wallet_account_id": f"wallet_{uuid.uuid4().hex}",
-                    "available_balance_cents": persona.account.available_balance_cents,
-                    "cashback_cents": persona.account.cashback_cents,
-                    "savings_goal_percent": persona.account.savings_goal_percent,
-                    "currency": persona.account.currency,
+                    "available_balance_cents": account.available_balance_cents,
+                    "cashback_cents": account.cashback_cents,
+                    "savings_goal_percent": account.savings_goal_percent,
+                    "currency": account.currency,
                 },
             )
-            for transaction in persona.account.transactions:
+            if signup_ip_hash:
+                connection.execute(
+                    text(
+                        """
+                        INSERT INTO ecloe_pay.signup_registrations (
+                            registration_id, ip_hash, user_id, provider, issuer, subject_key, result
+                        ) VALUES (
+                            :registration_id, :ip_hash, :user_id, N'entra_external', :issuer,
+                            :subject_key, N'success'
+                        )
+                        """
+                    ),
+                    {
+                        "registration_id": f"signup_{uuid.uuid4().hex}",
+                        "ip_hash": signup_ip_hash,
+                        "user_id": user_id,
+                        "issuer": issuer,
+                        "subject_key": subject_key,
+                    },
+                )
+            for transaction in account.transactions:
                 connection.execute(
                     text(
                         """
@@ -469,6 +730,7 @@ class AzureSqlPayRepository(PayRepository):
                     ),
                     {**asdict(transaction), "user_id": user_id},
                 )
+            self._record_audit(connection, user_id, "signup_allowed", "success")
             self._record_audit(connection, user_id, "account_provisioned", "success")
         return user
 
@@ -524,6 +786,7 @@ class AzureSqlPayRepository(PayRepository):
         with self.engine.connect() as connection:
             transaction = connection.begin()
             try:
+                self._ensure_user_loan_requests(connection, user_id)
                 row = self._get_latest_session_row(connection, user_id)
                 if row:
                     transaction.commit()
@@ -652,14 +915,27 @@ class AzureSqlPayRepository(PayRepository):
             row = connection.execute(
                 text(
                     """
-                    SELECT TOP 1 demo_balance_cents, cashback_cents, savings_goal_percent, currency
-                    FROM ecloe_pay.wallet_snapshots
-                    WHERE session_id = :session_id
-                    ORDER BY created_at DESC
+                    SELECT wa.available_balance_cents AS demo_balance_cents,
+                        wa.cashback_cents, wa.savings_goal_percent, wa.currency
+                    FROM ecloe_pay.demo_sessions ds
+                    JOIN ecloe_pay.wallet_accounts wa ON wa.user_id = ds.user_id
+                    WHERE ds.session_id = :session_id
                     """
                 ),
                 {"session_id": session_id},
             ).mappings().first()
+            if row is None:
+                row = connection.execute(
+                    text(
+                        """
+                        SELECT TOP 1 demo_balance_cents, cashback_cents, savings_goal_percent, currency
+                        FROM ecloe_pay.wallet_snapshots
+                        WHERE session_id = :session_id
+                        ORDER BY created_at DESC
+                        """
+                    ),
+                    {"session_id": session_id},
+                ).mappings().first()
         return WalletSnapshot(**dict(row)) if row else WalletSnapshot()
 
     def accept_terms(self, session_id: str) -> DemoSession:
@@ -729,6 +1005,26 @@ class AzureSqlPayRepository(PayRepository):
                 {"payment_order_id": payment_order_id},
             ).mappings().first()
         return PaymentOrder(**dict(row)) if row else None
+
+    def loan_requests(self, user_id: str) -> tuple[LoanRequest, ...]:
+        from sqlalchemy import text
+
+        with self._transaction() as connection:
+            self._ensure_user_loan_requests(connection, user_id)
+            rows = connection.execute(
+                text(
+                    """
+                    SELECT loan_request_id, user_id, requested_amount_cents, currency,
+                        status, CONVERT(NVARCHAR(40), requested_at, 127) AS requested_at,
+                        synthetic_notice
+                    FROM ecloe_pay.loan_requests
+                    WHERE user_id = :user_id
+                    ORDER BY requested_at DESC, loan_request_id
+                    """
+                ),
+                {"user_id": user_id},
+            ).mappings().all()
+        return tuple(LoanRequest(**dict(row)) for row in rows)
 
     def simulate_payment(self, session_id: str, confirmation_code: str) -> tuple[str, dict[str, Any] | None]:
         from sqlalchemy import text
@@ -948,6 +1244,10 @@ class AzureSqlPayRepository(PayRepository):
                 ).mappings().first()
                 if identity is not None:
                     persona = persona_for_subject(identity["subject_key"])
+                    account = account_with_initial_balance(
+                        persona.account,
+                        self.settings.ecloe_pay_initial_balance_cents,
+                    )
                     connection.execute(
                         text(
                             """
@@ -970,13 +1270,13 @@ class AzureSqlPayRepository(PayRepository):
                         {
                             **asdict(persona.profile),
                             "user_id": current.user_id,
-                            "available_balance_cents": persona.account.available_balance_cents,
-                            "cashback_cents": persona.account.cashback_cents,
-                            "savings_goal_percent": persona.account.savings_goal_percent,
-                            "currency": persona.account.currency,
+                            "available_balance_cents": account.available_balance_cents,
+                            "cashback_cents": account.cashback_cents,
+                            "savings_goal_percent": account.savings_goal_percent,
+                            "currency": account.currency,
                         },
                     )
-                    for wallet_transaction in persona.account.transactions:
+                    for wallet_transaction in account.transactions:
                         connection.execute(
                             text(
                                 "INSERT INTO ecloe_pay.wallet_transactions (user_id, transaction_id, description, amount_cents, category, occurred_at) VALUES (:user_id, :transaction_id, :description, :amount_cents, :category, :occurred_at)"
@@ -1069,6 +1369,30 @@ class AzureSqlPayRepository(PayRepository):
         )
         self._insert_outbox(connection, event_id, "benefit_interaction", event_id, event_type, payload)
         return payload
+
+    def _ensure_user_loan_requests(self, connection: Any, user_id: str) -> None:
+        from sqlalchemy import text
+
+        for loan_request in initial_loan_requests(user_id):
+            connection.execute(
+                text(
+                    """
+                    IF NOT EXISTS (
+                        SELECT 1 FROM ecloe_pay.loan_requests
+                        WHERE loan_request_id = :loan_request_id
+                    )
+                    INSERT INTO ecloe_pay.loan_requests (
+                        loan_request_id, user_id, requested_amount_cents, currency,
+                        status, requested_at, synthetic_notice
+                    )
+                    VALUES (
+                        :loan_request_id, :user_id, :requested_amount_cents, :currency,
+                        :status, :requested_at, :synthetic_notice
+                    )
+                    """
+                ),
+                asdict(loan_request),
+            )
 
     def _insert_outbox(
         self,

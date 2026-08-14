@@ -37,6 +37,7 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "ECLOE_PAY_SQL_AUTH_MODE",
         "ECLOE_PAY_SQL_DRIVER",
         "ECLOE_PAY_SESSION_TTL_SECONDS",
+        "ECLOE_PAY_INITIAL_BALANCE_CENTS",
         "ECLOE_PAY_COOKIE_SECURE",
         "ECLOE_PAY_DEMO_USER_EMAIL",
         "ECLOE_PAY_DEMO_USER_PASSWORD",
@@ -48,6 +49,8 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI",
         "ECLOE_WEB_SESSION_IDLE_SECONDS",
         "ECLOE_WEB_OIDC_FLOW_TTL_SECONDS",
+        "ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP",
+        "ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST",
     ]:
         monkeypatch.delenv(name, raising=False)
 
@@ -81,9 +84,12 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.ecloe_pay_demo_user_email == "demo.market@ecloe.local"
     assert settings.ecloe_pay_demo_user_password == "change-this-demo-password"
     assert settings.ecloe_pay_session_ttl_seconds == 28800
+    assert settings.ecloe_pay_initial_balance_cents == 50000
     assert settings.ecloe_web_auth_mode == "local"
     assert settings.ecloe_web_session_idle_seconds == 1800
     assert settings.ecloe_web_oidc_flow_ttl_seconds == 600
+    assert settings.ecloe_signup_max_accounts_per_ip == 1
+    assert settings.ecloe_signup_admin_ip_allowlist == ()
 
 
 def test_config_rejects_unknown_ecloe_pay_database_mode(monkeypatch) -> None:
@@ -98,6 +104,34 @@ def test_config_rejects_unknown_web_auth_mode(monkeypatch) -> None:
 
     with pytest.raises(ValueError, match="Unsupported ECLOE_WEB_AUTH_MODE"):
         load_settings(use_env_file=False)
+
+
+def test_config_accepts_local_signup_web_auth_mode(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "local_signup")
+
+    settings = load_settings(use_env_file=False)
+
+    assert settings.ecloe_web_auth_mode == "local_signup"
+
+
+def test_config_rejects_cloud_local_signup_without_azure_sql(monkeypatch) -> None:
+    monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
+    monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "local_signup")
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "memory")
+
+    with pytest.raises(ValueError, match="local_signup requires ECLOE_PAY_DATABASE_MODE=azure_sql"):
+        load_settings(use_env_file=False)
+
+
+def test_config_accepts_cloud_local_signup_with_azure_sql(monkeypatch) -> None:
+    monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
+    monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "local_signup")
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
+    monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "managed_identity")
+
+    settings = load_settings(use_env_file=False)
+
+    assert settings.ecloe_web_auth_mode == "local_signup"
 
 
 def test_config_requires_external_id_settings(monkeypatch) -> None:
@@ -134,6 +168,20 @@ def test_config_rejects_non_positive_ecloe_pay_session_ttl(monkeypatch) -> None:
         load_settings(use_env_file=False)
 
 
+def test_config_rejects_negative_initial_balance(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_PAY_INITIAL_BALANCE_CENTS", "-1")
+
+    with pytest.raises(ValueError, match="ECLOE_PAY_INITIAL_BALANCE_CENTS"):
+        load_settings(use_env_file=False)
+
+
+def test_config_rejects_non_positive_signup_ip_limit(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP", "0")
+
+    with pytest.raises(ValueError, match="ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP"):
+        load_settings(use_env_file=False)
+
+
 def test_config_rejects_missing_azure_sql_settings_when_sql_mode_is_enabled(monkeypatch) -> None:
     monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
     monkeypatch.setenv("ECLOE_PAY_SQL_SERVER", "")
@@ -152,7 +200,8 @@ def test_config_rejects_missing_azure_sql_settings_when_sql_mode_is_enabled(monk
 
 def test_config_rejects_entra_interactive_in_cloud(monkeypatch) -> None:
     monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
-    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "memory")
+    monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "local_signup")
+    monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
     monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "entra_interactive")
 
     with pytest.raises(ValueError, match="entra_interactive is local-only"):
@@ -161,6 +210,7 @@ def test_config_rejects_entra_interactive_in_cloud(monkeypatch) -> None:
 
 def test_config_requires_managed_identity_for_pay_sql_in_cloud(monkeypatch) -> None:
     monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
+    monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "local_signup")
     monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
     monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "azure_cli")
 

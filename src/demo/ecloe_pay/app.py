@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hmac
+import ipaddress
 import logging
 import os
 import secrets
@@ -19,6 +20,7 @@ from flask import (
     send_from_directory,
 )
 from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.security import generate_password_hash
 
 from src.core.config import Settings, load_settings
 from src.demo.ecloe_pay.i18n import (
@@ -30,6 +32,8 @@ from src.demo.ecloe_pay.i18n import (
 from src.demo.ecloe_pay.identity import EntraExternalIdentity, OAuthClient, safe_return_to
 from src.demo.ecloe_pay.repositories import (
     PayRepository,
+    SignupEmailAlreadyExists,
+    SignupIpLimitExceeded,
     create_pay_repository,
 )
 from src.recommendation import (
@@ -161,6 +165,34 @@ def _rate_limit_key(email: str) -> str:
     return f"{ip_address}:{email}"
 
 
+def _client_ip() -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    candidate = forwarded.split(",", 1)[0].strip() or request.remote_addr or "unknown"
+    try:
+        return str(ipaddress.ip_address(candidate))
+    except ValueError:
+        return "unknown"
+
+
+def _signup_ip_hash(settings: Settings) -> str:
+    return hmac.new(
+        settings.subject_key_salt.encode("utf-8"),
+        f"signup-ip\x00{_client_ip()}".encode(),
+        "sha256",
+    ).hexdigest()
+
+
+def _signup_ip_allowlisted(settings: Settings) -> bool:
+    client_ip = _client_ip()
+    normalized_allowlist = set()
+    for value in settings.ecloe_signup_admin_ip_allowlist:
+        try:
+            normalized_allowlist.add(str(ipaddress.ip_address(value)))
+        except ValueError:
+            continue
+    return client_ip in normalized_allowlist
+
+
 def _login_rate_limited(app: Flask, email: str) -> bool:
     now = time.monotonic()
     attempts: dict[str, list[float]] = app.pay_login_attempts  # type: ignore[attr-defined]
@@ -264,8 +296,10 @@ def create_app(
     )
     app.config["JSON_SORT_KEYS"] = False
     if settings.app_environment in {"cloud", "prod", "production", "azure"}:
-        if settings.ecloe_web_auth_mode != "entra_external":
-            raise ValueError("Cloud demo web must use ECLOE_WEB_AUTH_MODE=entra_external.")
+        if settings.ecloe_web_auth_mode not in {"entra_external", "local_signup"}:
+            raise ValueError(
+                "Cloud demo web must use ECLOE_WEB_AUTH_MODE=entra_external or local_signup."
+            )
         if settings.ecloe_pay_database_mode != "azure_sql" or settings.ecloe_market_database_mode != "azure_sql":
             raise ValueError("Cloud demo web must persist Pay and Market state in Azure SQL.")
     if settings.app_environment in {"cloud", "prod", "production", "azure"}:
@@ -292,6 +326,7 @@ def create_app(
             response.headers["Cache-Control"] = "no-store"
         if request.method == "GET" and request.path in {
             "/pay/login",
+            "/pay/register",
             "/pay",
             "/market",
             "/market/cart",
@@ -340,13 +375,16 @@ def create_app(
         repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
         user, _ = _current_user(app)
         return_to = safe_return_to(request.args.get("return_to"))
-        if user is not None and settings.ecloe_web_auth_mode == "entra_external":
+        if user is not None and settings.ecloe_web_auth_mode in {"entra_external", "local_signup"}:
             return redirect(return_to)
-        if settings.ecloe_web_auth_mode == "local":
+        if settings.ecloe_web_auth_mode in {"local", "local_signup"}:
             auth_session_id = request.cookies.get(AUTH_COOKIE_NAME)
             if isinstance(auth_session_id, str):
                 repository.revoke_auth_session(auth_session_id)
         external_login_url = "/auth/login?" + urlencode(
+            {"return_to": return_to}
+        )
+        external_signup_url = "/auth/signup?" + urlencode(
             {"return_to": return_to}
         )
         response = _render_demo_template(
@@ -354,13 +392,38 @@ def create_app(
             settings,
             return_to=return_to,
             external_login_url=external_login_url,
+            external_signup_url=external_signup_url,
         )
-        if settings.ecloe_web_auth_mode == "local":
+        if settings.ecloe_web_auth_mode in {"local", "local_signup"}:
             _clear_auth_cookie(response, settings)
         return response
 
     @app.get("/auth/login")
     def external_login():
+        return _begin_external_auth("login")
+
+    @app.get("/auth/signup")
+    def external_signup():
+        return _begin_external_auth("signup")
+
+    @app.get("/pay/register")
+    def register_page():
+        if settings.ecloe_web_auth_mode == "local_signup":
+            user, _ = _current_user(app)
+            return_to = safe_return_to(request.args.get("return_to"))
+            if user is not None:
+                return redirect(return_to)
+            return _render_demo_template("register.html", settings, return_to=return_to)
+        if settings.ecloe_web_auth_mode != "entra_external":
+            return redirect(
+                _localized_login_url(
+                    resolve_locale(request),
+                    safe_return_to(request.args.get("return_to")),
+                )
+            )
+        return redirect("/auth/signup?" + urlencode({"return_to": safe_return_to(request.args.get("return_to"))}))
+
+    def _begin_external_auth(intent: str):
         if settings.ecloe_web_auth_mode != "entra_external":
             return _auth_json({"error": "External authentication is not enabled."}, 404)
         flow_id = secrets.token_urlsafe(32)
@@ -369,6 +432,7 @@ def create_app(
             app.pay_repository,  # type: ignore[attr-defined]
             flow_id,
             safe_return_to(request.args.get("return_to")),
+            intent=intent,
         )
         response = redirect(auth_uri)
         response.set_cookie(
@@ -396,7 +460,20 @@ def create_app(
             return response
         external, return_to = completed
         repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
-        user = repository.provision_external_user(external.issuer, external.subject_key)
+        try:
+            user = repository.provision_external_user(
+                external.issuer,
+                external.subject_key,
+                signup_ip_hash=_signup_ip_hash(settings),
+                allow_ip_reuse=_signup_ip_allowlisted(settings),
+            )
+        except SignupIpLimitExceeded:
+            response = _auth_json(
+                {"error": "This IP address has already created an ECloe account."},
+                403,
+            )
+            response.delete_cookie(OIDC_FLOW_COOKIE_NAME, path="/auth/callback")
+            return response
         if user is None:
             repository.record_audit_event(None, "login", "disabled")
             response = _auth_json({"error": "This account is not active."}, 403)
@@ -416,7 +493,7 @@ def create_app(
 
     @app.post("/api/auth/login")
     def login():
-        if settings.ecloe_web_auth_mode != "local":
+        if settings.ecloe_web_auth_mode not in {"local", "local_signup"}:
             return _auth_json({"error": "Local credentials are disabled."}, 404)
         if not _csrf_valid():
             return _csrf_error()
@@ -438,6 +515,49 @@ def create_app(
         _set_auth_cookie(response, auth_session.auth_session_id, settings)
         _set_csrf_cookie(response, settings)
         LOGGER.info("ecloe_pay_login user_id=%s result=success", user.user_id)
+        return response
+
+    @app.post("/api/auth/register")
+    def register():
+        if settings.ecloe_web_auth_mode != "local_signup":
+            return _auth_json({"error": "Local signup is disabled."}, 404)
+        if not _csrf_valid():
+            return _csrf_error()
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        payload = request.get_json(silent=True) or {}
+        email = str(payload.get("email", "")).strip().lower()
+        password = str(payload.get("password", ""))
+        password_confirm = str(payload.get("password_confirm", ""))
+        if "@" not in email or "." not in email.rsplit("@", 1)[-1]:
+            return _auth_json({"error": "Informe um e-mail valido."}, 400)
+        if len(password) < 8:
+            return _auth_json({"error": "A senha deve ter pelo menos 8 caracteres."}, 400)
+        if password != password_confirm:
+            return _auth_json({"error": "A confirmacao de senha nao confere."}, 400)
+        if _login_rate_limited(app, email):
+            LOGGER.info("ecloe_pay_register result=rate_limited")
+            return _auth_json({"error": "Too many registration attempts. Try again later."}, 429)
+        try:
+            user = repository.register_local_user(
+                email,
+                generate_password_hash(password),
+                signup_ip_hash=_signup_ip_hash(settings),
+                allow_ip_reuse=_signup_ip_allowlisted(settings),
+            )
+        except SignupEmailAlreadyExists:
+            return _auth_json({"error": "Ja existe uma conta com este e-mail."}, 409)
+        except SignupIpLimitExceeded:
+            return _auth_json(
+                {"error": "Este endereco de IP ja criou uma conta ECloe."},
+                403,
+            )
+        auth_session = repository.create_auth_session(user.user_id)
+        repository.get_or_create_demo_session(user.user_id)
+        _clear_login_attempts(app, email)
+        response = _auth_json({"authenticated": True, "user": asdict(user)})
+        _set_auth_cookie(response, auth_session.auth_session_id, settings)
+        _set_csrf_cookie(response, settings)
+        LOGGER.info("ecloe_pay_register user_id=%s result=success", user.user_id)
         return response
 
     @app.post("/api/auth/logout")
@@ -483,6 +603,7 @@ def create_app(
         wallet = repository.wallet_snapshot(demo_session.session_id)
         profile = repository.synthetic_profile(demo_session.user_id)
         account = repository.synthetic_account(demo_session.user_id)
+        loan_requests = repository.loan_requests(demo_session.user_id)
         benefit_title, benefit_message = PAY_BENEFITS[demo_session.selected_offer_id]
         decision = app.recommendation_decisions.get(demo_session.selected_decision_id, {})  # type: ignore[attr-defined]
         return jsonify(
@@ -491,6 +612,7 @@ def create_app(
                 "wallet": asdict(wallet),
                 "profile": asdict(profile) if profile else None,
                 "account": asdict(account) if account else None,
+                "loan_requests": [asdict(item) for item in loan_requests],
                 "benefit": {
                     "title": benefit_title,
                     "message": benefit_message,

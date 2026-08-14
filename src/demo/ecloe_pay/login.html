@@ -22,6 +22,7 @@
         {% if web_auth_mode == "entra_external" %}
         <div class="login-form">
           <a class="login-submit" href="{{ external_login_url }}">{{ t("login.submit") }}</a>
+          <a class="login-secondary" href="{{ external_signup_url }}">{{ t("login.createAccount") }}</a>
           <p id="loginStatus" role="status"></p>
         </div>
         {% else %}
@@ -45,6 +46,9 @@
           />
 
           <button type="submit">{{ t("login.submit") }}</button>
+          {% if web_auth_mode == "local_signup" %}
+          <a class="login-secondary" href="/pay/register?return_to={{ return_to | urlencode }}&lang={{ locale }}">{{ t("login.createAccount") }}</a>
+          {% endif %}
           <p id="loginStatus" role="status"></p>
         </form>
         {% endif %}
@@ -59,6 +63,6 @@
       </section>
     </main>
 
-    {% if web_auth_mode == "local" %}<script type="module" src="../login.js"></script>{% endif %}
+    {% if web_auth_mode in ["local", "local_signup"] %}<script type="module" src="../login.js"></script>{% endif %}
   </body>
 </html>

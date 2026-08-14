@@ -14,6 +14,7 @@ from src.core.config import load_settings
 from src.demo.ecloe_pay.repositories.base import (
     DEMO_USER_DISPLAY_NAME,
     DEMO_USER_PERSONA_LABEL,
+    initial_loan_requests,
     demo_identity_emails,
     initial_session,
     normalize_email,
@@ -22,7 +23,7 @@ from src.demo.ecloe_pay.repositories.base import (
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_FILE = ROOT / "src" / "demo" / "ecloe_pay" / "schema.sql"
-MIGRATION_ID = "20260812_ecloe_external_identity_v1"
+MIGRATION_ID = "20260814_ecloe_pay_loan_requests_v1"
 PLACEHOLDER_PASSWORD = "change-this-demo-password"
 SQL_TOKEN_SCOPE = "https://database.windows.net/.default"
 REQUIRED_ODBC_DRIVER_FAMILY = "ODBC Driver 18"
@@ -225,6 +226,28 @@ def _seed_deterministic_demo_state(connection: Any, user_id: str) -> None:
         ),
         session.__dict__,
     )
+    for loan_request in initial_loan_requests(user_id):
+        connection.execute(
+            text(
+                """
+                IF NOT EXISTS (
+                    SELECT 1 FROM ecloe_pay.loan_requests
+                    WHERE loan_request_id = :loan_request_id
+                )
+                BEGIN
+                    INSERT INTO ecloe_pay.loan_requests (
+                        loan_request_id, user_id, requested_amount_cents,
+                        currency, status, requested_at, synthetic_notice
+                    )
+                    VALUES (
+                        :loan_request_id, :user_id, :requested_amount_cents,
+                        :currency, :status, :requested_at, :synthetic_notice
+                    )
+                END
+                """
+            ),
+            loan_request.__dict__,
+        )
     connection.execute(
         text(
             """
@@ -286,12 +309,26 @@ def _validate_seed(connection: Any, email: str) -> bool:
                 (SELECT COUNT(*) FROM ecloe_pay.wallet_snapshots
                  WHERE snapshot_id = N'snap_pay_demo_7841' AND currency = 'BRL') AS wallets_count,
                 (SELECT COUNT(*) FROM ecloe_pay.payment_orders
-                 WHERE payment_order_id = N'pay_order_demo_7841' AND currency = 'BRL') AS orders_count
+                 WHERE payment_order_id = N'pay_order_demo_7841' AND currency = 'BRL') AS orders_count,
+                (SELECT COUNT(*) FROM ecloe_pay.loan_requests lr
+                 JOIN ecloe_pay.demo_users du ON du.user_id = lr.user_id
+                 WHERE du.email_normalized = :email_normalized
+                    AND lr.currency = 'BRL'
+                    AND lr.status IN (N'requested', N'under_review', N'cancelled')) AS loan_requests_count
             """
         ),
         {"email_normalized": email_normalized},
     ).mappings().one()
-    return all(row[key] >= 1 for key in ("users_count", "sessions_count", "wallets_count", "orders_count"))
+    return all(
+        row[key] >= 1
+        for key in (
+            "users_count",
+            "sessions_count",
+            "wallets_count",
+            "orders_count",
+            "loan_requests_count",
+        )
+    )
 
 
 def initialize() -> InitSummary:
@@ -312,8 +349,8 @@ def initialize() -> InitSummary:
         transaction = connection.begin()
         try:
             migrations_applied = _apply_schema(connection)
-            if settings.ecloe_web_auth_mode == "entra_external":
-                persona_status = "external-on-first-login"
+            if settings.ecloe_web_auth_mode in {"entra_external", "local_signup"}:
+                persona_status = f"{settings.ecloe_web_auth_mode}-on-first-signup"
                 seed_validation_ok = True
             elif seed_xlsx:
                 from scripts.seed_ecloe_pay_login_xlsx import (

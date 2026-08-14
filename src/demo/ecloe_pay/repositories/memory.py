@@ -21,12 +21,17 @@ from src.demo.ecloe_pay.repositories.base import (
     OidcLoginFlow,
     PaymentOrder,
     PayRepository,
+    SignupEmailAlreadyExists,
+    SignupIpLimitExceeded,
+    LoanRequest,
     SyntheticAccount,
     SyntheticProfile,
     WalletPayment,
     WalletSnapshot,
     WalletTransaction,
+    account_with_initial_balance,
     demo_identity_emails,
+    initial_loan_requests,
     initial_session,
     normalize_email,
     reward_payload,
@@ -47,11 +52,13 @@ class MemoryPayRepository(PayRepository):
         self.profiles: dict[str, SyntheticProfile] = {}
         self.accounts: dict[str, SyntheticAccount] = {}
         self.audit_events: list[dict[str, Any]] = []
+        self.signup_registrations: list[dict[str, Any]] = []
         self.consent_acceptances: set[tuple[str, str, str]] = set()
         self.demo_sessions: dict[str, DemoSession] = {}
         self.benefit_events: dict[str, list[dict[str, Any]]] = {}
         self.outbox_events: list[dict[str, Any]] = []
         self.wallet_payments: dict[str, WalletPayment] = {}
+        self.loan_request_rows: dict[str, tuple[LoanRequest, ...]] = {}
         self._seed_user()
 
     def _seed_user(self) -> None:
@@ -78,7 +85,11 @@ class MemoryPayRepository(PayRepository):
         if user.user_id not in self.accounts:
             persona = persona_for_subject(user.user_id)
             self.profiles[user.user_id] = persona.profile
-            self.accounts[user.user_id] = persona.account
+            self.accounts[user.user_id] = account_with_initial_balance(
+                persona.account,
+                self.settings.ecloe_pay_initial_balance_cents,
+            )
+        self.loan_request_rows.setdefault(user.user_id, initial_loan_requests(user.user_id))
         return user
 
     def authenticate(self, email: str, password: str) -> DemoUser | None:
@@ -90,6 +101,68 @@ class MemoryPayRepository(PayRepository):
             return None
         _, password_hash = self.users[user.user_id]
         return user if check_password_hash(password_hash, password) else None
+
+    def register_local_user(
+        self,
+        email: str,
+        password_hash: str,
+        *,
+        signup_ip_hash: str,
+        allow_ip_reuse: bool = False,
+    ) -> DemoUser:
+        email_normalized = normalize_email(email)
+        if self.get_user_by_email(email_normalized) is not None:
+            self.record_audit_event(None, "signup_duplicate_email", "blocked")
+            raise SignupEmailAlreadyExists("An account already exists for this e-mail.")
+        if not allow_ip_reuse:
+            successful_from_ip = sum(
+                1
+                for item in self.signup_registrations
+                if item["ip_hash"] == signup_ip_hash and item["result"] == "success"
+            )
+            if successful_from_ip >= self.settings.ecloe_signup_max_accounts_per_ip:
+                self.signup_registrations.append(
+                    {
+                        "ip_hash": signup_ip_hash,
+                        "user_id": None,
+                        "provider": "local_signup",
+                        "issuer": "ecloe.local",
+                        "subject_key": user_id_for_email(email_normalized),
+                        "result": "blocked_ip_limit",
+                        "created_at": datetime.now(UTC),
+                    }
+                )
+                self.record_audit_event(None, "signup_blocked_ip_limit", "blocked")
+                raise SignupIpLimitExceeded("Signup limit reached for this IP address.")
+        user = DemoUser(
+            user_id=user_id_for_email(email_normalized),
+            email=email_normalized,
+            display_name=DEMO_USER_DISPLAY_NAME,
+            persona_label=DEMO_USER_PERSONA_LABEL,
+            auth_provider="local_signup",
+        )
+        self.users[user.user_id] = (user, password_hash)
+        persona = persona_for_subject(user.user_id)
+        self.profiles[user.user_id] = persona.profile
+        self.accounts[user.user_id] = account_with_initial_balance(
+            persona.account,
+            self.settings.ecloe_pay_initial_balance_cents,
+        )
+        self.loan_request_rows[user.user_id] = initial_loan_requests(user.user_id)
+        self.signup_registrations.append(
+            {
+                "ip_hash": signup_ip_hash,
+                "user_id": user.user_id,
+                "provider": "local_signup",
+                "issuer": "ecloe.local",
+                "subject_key": user.user_id,
+                "result": "success",
+                "created_at": datetime.now(UTC),
+            }
+        )
+        self.record_audit_event(user.user_id, "signup_allowed", "success")
+        self.record_audit_event(user.user_id, "account_provisioned", "success")
+        return user
 
     def create_auth_session(self, user_id: str) -> AuthSession:
         now = datetime.now(UTC)
@@ -129,11 +202,39 @@ class MemoryPayRepository(PayRepository):
             return None
         return flow
 
-    def provision_external_user(self, issuer: str, subject_key: str) -> DemoUser | None:
+    def provision_external_user(
+        self,
+        issuer: str,
+        subject_key: str,
+        *,
+        signup_ip_hash: str | None = None,
+        allow_ip_reuse: bool = False,
+    ) -> DemoUser | None:
         identity_key = (issuer, subject_key)
         existing_user_id = self.external_identities.get(identity_key)
         if existing_user_id is not None:
+            self.record_audit_event(existing_user_id, "signup_existing_identity", "success")
             return self.get_user(existing_user_id)
+        if signup_ip_hash and not allow_ip_reuse:
+            successful_from_ip = sum(
+                1
+                for item in self.signup_registrations
+                if item["ip_hash"] == signup_ip_hash and item["result"] == "success"
+            )
+            if successful_from_ip >= self.settings.ecloe_signup_max_accounts_per_ip:
+                self.signup_registrations.append(
+                    {
+                        "ip_hash": signup_ip_hash,
+                        "user_id": None,
+                        "provider": "entra_external",
+                        "issuer": issuer,
+                        "subject_key": subject_key,
+                        "result": "blocked_ip_limit",
+                        "created_at": datetime.now(UTC),
+                    }
+                )
+                self.record_audit_event(None, "signup_blocked_ip_limit", "blocked")
+                raise SignupIpLimitExceeded("Signup limit reached for this IP address.")
         persona = persona_for_subject(subject_key)
         user_id = external_user_id(subject_key)
         synthetic_email = f"{persona.persona_id}.{user_id[-8:]}@demo.ecloe.local"
@@ -147,7 +248,24 @@ class MemoryPayRepository(PayRepository):
         self.users[user_id] = (user, "")
         self.external_identities[identity_key] = user_id
         self.profiles[user_id] = persona.profile
-        self.accounts[user_id] = persona.account
+        self.accounts[user_id] = account_with_initial_balance(
+            persona.account,
+            self.settings.ecloe_pay_initial_balance_cents,
+        )
+        self.loan_request_rows[user_id] = initial_loan_requests(user_id)
+        if signup_ip_hash:
+            self.signup_registrations.append(
+                {
+                    "ip_hash": signup_ip_hash,
+                    "user_id": user_id,
+                    "provider": "entra_external",
+                    "issuer": issuer,
+                    "subject_key": subject_key,
+                    "result": "success",
+                    "created_at": datetime.now(UTC),
+                }
+            )
+        self.record_audit_event(user_id, "signup_allowed", "success")
         self.record_audit_event(user_id, "account_provisioned", "success")
         return user
 
@@ -230,6 +348,9 @@ class MemoryPayRepository(PayRepository):
                     idempotency_key=session.idempotency_key,
                 )
         return None
+
+    def loan_requests(self, user_id: str) -> tuple[LoanRequest, ...]:
+        return self.loan_request_rows.setdefault(user_id, initial_loan_requests(user_id))
 
     def simulate_payment(self, session_id: str, confirmation_code: str) -> tuple[str, dict[str, Any] | None]:
         sessions_before = copy.deepcopy(self.demo_sessions)
@@ -325,7 +446,11 @@ class MemoryPayRepository(PayRepository):
             if user_id == current.user_id:
                 persona = persona_for_subject(subject_key)
                 self.profiles[user_id] = persona.profile
-                self.accounts[user_id] = persona.account
+                self.accounts[user_id] = account_with_initial_balance(
+                    persona.account,
+                    self.settings.ecloe_pay_initial_balance_cents,
+                )
+                self.loan_request_rows[user_id] = initial_loan_requests(user_id)
                 self.record_audit_event(user_id, "demo_reset", "success")
                 break
         session = initial_session(current.user_id)

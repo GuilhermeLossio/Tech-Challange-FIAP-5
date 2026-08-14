@@ -49,7 +49,11 @@ def test_pay_wallet_markup_uses_accessible_semantics() -> None:
     assert '<nav class="quick-actions" aria-label="{{ t("wallet.quickActionsAria") }}">' in html
     assert 'class="nav-link active"' in html
     assert 'role="progressbar"' in html
-    assert 'aria-valuenow="64"' in html
+    assert 'aria-valuenow="0"' in html
+    assert 'id="balanceAmount">--</strong>' in html
+    assert 'id="cashbackAmount">--</strong>' in html
+    assert 'id="paymentAmount">--</strong>' in html
+    assert 'id="loanAmount">--</strong>' in html
     assert 'role="status"' in html
     assert 'aria-live="polite"' in html
     assert 'formmethod="dialog">{{ t("wallet.cancel") }}' in html
@@ -66,6 +70,7 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
 
     assert "CREATE SCHEMA ecloe_pay" in schema
     assert "ecloe_pay.payment_orders" in schema
+    assert "ecloe_pay.loan_requests" in schema
     assert "ecloe_pay.benefit_interactions" in schema
     assert "ecloe_pay.demo_users" in schema
     assert "ecloe_pay.demo_user_profiles" in schema
@@ -94,14 +99,19 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
     assert "ix_demo_user_profiles_country" in schema
     assert "ix_demo_sessions_user" in schema
     assert "ix_payment_orders_session" in schema
+    assert "ix_loan_requests_user" in schema
     assert "ix_benefit_interactions_session" in schema
     assert "ix_outbox_events_unpublished" in schema
+    assert "ix_signup_registrations_success_ip" in schema
+    assert "CREATE UNIQUE INDEX ux_signup_registrations_success_ip" not in schema
     assert "TIMESTAMPTZ" not in schema
     assert "JSONB" not in schema
     assert "ON CONFLICT" not in schema
     assert "CREATE TABLE IF NOT EXISTS" not in schema
     assert "DATETIME2" not in schema
     assert "now()" not in schema_lower
+    assert "ck_loan_requests_status CHECK (status IN (N'requested', N'under_review', N'cancelled'))" in schema
+    assert "loan_requests_status CHECK (status IN (N'approved" not in schema_lower
     for forbidden_column in [
         "cpf",
         "document_number",
@@ -112,6 +122,9 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
         "agency",
         "routing_number",
         "account_number",
+        "credit_score",
+        "income",
+        "wealth",
     ]:
         assert forbidden_column not in schema_lower
 
@@ -132,6 +145,7 @@ def test_pay_repositories_expose_shared_contract_and_hide_sqlalchemy_from_routes
         "accept_terms",
         "record_benefit_interaction",
         "get_payment_order",
+        "loan_requests",
         "simulate_payment",
         "reset_demo_state",
         "health_check",
@@ -207,6 +221,10 @@ def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     assert "database_provider" in script
     assert "database_schema" in script
     assert "Modo apresentacao" in script
+    assert "formatMoney" in script
+    assert "renderSession(body)" in script
+    for fixed_value in ("R$ 428,70", "R$ 18,40", "64%", "R$ 127,90"):
+        assert fixed_value not in index
     assert 't("wallet.presentationMode")' in index
     assert "postgres_schema" not in index
     assert "PostgreSQL" not in index

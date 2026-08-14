@@ -191,7 +191,7 @@
 
   .wallet-grid {
     align-items: stretch;
-    grid-template-columns: minmax(340px, 1.5fr) minmax(190px, 0.58fr) minmax(230px, 0.8fr);
+    grid-template-columns: minmax(300px, 1.35fr) repeat(3, minmax(190px, 0.72fr));
   }
 
   .balance-panel,
@@ -284,6 +284,7 @@
     align-self: end;
     font-size: 2.35rem;
     margin-top: 0;
+    overflow-wrap: anywhere;
   }
 
   .cashback-card > span:last-child {
@@ -298,6 +299,10 @@
 
   .metric-icon.rose {
     background: var(--color-rose-soft);
+  }
+
+  .metric-icon.loan {
+    background: #dff0ff;
   }
 
   .goal-card {
@@ -325,9 +330,10 @@
   }
 
   .progress-ring {
+    --goal-progress: 0%;
     aspect-ratio: 1;
     align-self: center;
-    background: conic-gradient(#79d7af 0 64%, #e8f5ee 64% 100%);
+    background: conic-gradient(#79d7af 0 var(--goal-progress), #e8f5ee var(--goal-progress) 100%);
     border-radius: 50%;
     display: block;
     flex: 0 0 auto;
@@ -335,6 +341,12 @@
     grid-row: 1;
     position: relative;
     width: 96px;
+  }
+
+  .loan-card small {
+    color: var(--color-muted);
+    font-size: 0.82rem;
+    overflow-wrap: anywhere;
   }
 
   .progress-ring::after {

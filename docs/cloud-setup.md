@@ -390,3 +390,16 @@ ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json
 ```
 
 This is deliberate for the first online run. Azure SQL seeding and managed-identity SQL runtime can be enabled in a later deployment after private networking or an explicitly approved temporary SQL access path is ready.
+
+When enabling the cloud customer login flow, configure Microsoft Entra External ID and switch the demo web runtime to:
+
+```text
+ECLOE_PAY_DATABASE_MODE=azure_sql
+ECLOE_PAY_SQL_AUTH_MODE=managed_identity
+ECLOE_PAY_INITIAL_BALANCE_CENTS=50000
+ECLOE_WEB_AUTH_MODE=local_signup
+ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP=1
+ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST=<administrator-ip-if-needed>
+```
+
+The ECloe UI exposes both `Entrar` and `Criar conta`. In the lightweight mode, ECloe stores only password hashes and synthetic wallet state in Azure SQL, stores only an HMAC of the signup IP, and blocks additional new users from the same non-allowlisted IP.
