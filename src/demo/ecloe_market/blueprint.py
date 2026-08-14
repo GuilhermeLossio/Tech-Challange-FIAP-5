@@ -36,19 +36,20 @@ def _repository() -> MarketRepository:
 
 def _render_market_template(template_name: str, **context):
     locale = resolve_locale(request, cookie_name=LOCALE_COOKIE_NAME)
-    messages = load_messages(str(I18N_DIR), locale)
+    effective_locale = locale if locale in ("pt-BR", "en-US") else "en-US"
+    messages = load_messages(str(I18N_DIR), effective_locale)
     response = make_response(
         render_template(
             template_name,
-            lang=locale,
-            locale=locale,
+            lang=effective_locale,
+            locale=effective_locale,
             t=lambda key: translate(messages, key),
             **context,
         )
     )
     response.set_cookie(
         LOCALE_COOKIE_NAME,
-        locale,
+        effective_locale,
         httponly=False,
         secure=current_app.pay_settings.app_environment != "local",  # type: ignore[attr-defined]
         samesite="Lax",
