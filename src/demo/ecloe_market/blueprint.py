@@ -70,9 +70,6 @@ def _csrf_error():
 
 
 def _market_session_key() -> str:
-    session_key = request.cookies.get(MARKET_SESSION_COOKIE_NAME)
-    if isinstance(session_key, str) and session_key.startswith("market_sess_"):
-        return session_key
     return f"market_sess_{secrets.token_urlsafe(24)}"
 
 
