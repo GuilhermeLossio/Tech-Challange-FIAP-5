@@ -336,7 +336,8 @@ def api_add_cart_item():
             quantity=int(payload.get("quantity", 1)),
         )
     except (TypeError, ValueError) as error:
-        return jsonify({"error": str(error)}), 400
+        current_app.logger.warning("Invalid cart item payload", exc_info=error)
+        return jsonify({"error": "Invalid request payload."}), 400
     response = jsonify({"cart": _cart_payload(cart)})
     return _attach_market_session(response, session_key)
 
