@@ -109,6 +109,17 @@ class PaymentOrder:
     idempotency_key: str
 
 
+@dataclass(frozen=True)
+class WalletPayment:
+    payment_id: str
+    user_id: str
+    market_order_id: str
+    amount_cents: int
+    currency: str
+    status: str
+    balance_after_cents: int
+
+
 @dataclass
 class WalletSnapshot:
     demo_balance_cents: int = 42870
@@ -186,6 +197,17 @@ class PayRepository(Protocol):
         ...
 
     def simulate_payment(self, session_id: str, confirmation_code: str) -> tuple[str, dict[str, Any] | None]:
+        ...
+
+    def pay_market_order(
+        self,
+        *,
+        user_id: str,
+        market_order_id: str,
+        amount_cents: int,
+        currency: str,
+        idempotency_key: str,
+    ) -> WalletPayment:
         ...
 
     def reset_demo_state(self, session_id: str) -> DemoSession:

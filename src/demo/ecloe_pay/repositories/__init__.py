@@ -11,6 +11,7 @@ from src.demo.ecloe_pay.repositories.base import (
     PayRepository,
     SyntheticAccount,
     SyntheticProfile,
+    WalletPayment,
     WalletSnapshot,
     WalletTransaction,
 )
@@ -31,6 +32,7 @@ __all__ = [
     "PaymentOrder",
     "SyntheticAccount",
     "SyntheticProfile",
+    "WalletPayment",
     "WalletSnapshot",
     "WalletTransaction",
     "create_pay_repository",

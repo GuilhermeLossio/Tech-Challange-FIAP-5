@@ -666,6 +666,80 @@ class AzureSqlMarketRepository(MarketRepository):
             raise RuntimeError("Order transaction committed without a readable order.")
         return order
 
+    def mark_order_paid(
+        self,
+        *,
+        order_id: str,
+        user_id: str,
+        payment_id: str,
+        pay_payment_order_id: str,
+        amount_cents: int,
+        currency: str,
+    ) -> Order:
+        from sqlalchemy import text
+
+        with self._transaction() as connection:
+            order = connection.execute(
+                text(
+                    """
+                    SELECT order_id, checkout_id, user_id, status, total_cents, currency, correlation_id
+                    FROM ecloe_market.orders WITH (UPDLOCK, HOLDLOCK)
+                    WHERE order_id = :order_id AND user_id = :user_id
+                    """
+                ),
+                {"order_id": order_id, "user_id": user_id},
+            ).mappings().first()
+            if order is None:
+                raise ValueError("Synthetic ECloe Market order was not found.")
+            if order["total_cents"] != amount_cents or order["currency"] != currency:
+                raise ValueError("Payment amount does not match the Market order.")
+            if order["status"] == "paid":
+                return _load_order(connection, order_id, user_id)
+            if order["status"] != "payment_pending":
+                raise ValueError("Synthetic ECloe Market order is not payable.")
+            connection.execute(
+                text(
+                    """
+                    UPDATE ecloe_market.orders
+                    SET status = N'paid', updated_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                    WHERE order_id = :order_id AND user_id = :user_id
+                    """
+                ),
+                {"order_id": order_id, "user_id": user_id},
+            )
+            connection.execute(
+                text(
+                    """
+                    UPDATE ecloe_market.checkout_sessions
+                    SET status = N'paid', updated_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                    WHERE checkout_id = :checkout_id
+                    """
+                ),
+                {"checkout_id": order["checkout_id"]},
+            )
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO ecloe_market.payment_references (
+                        payment_reference_id, order_id, pay_payment_order_id, status, amount_cents, currency
+                    ) VALUES (
+                        :payment_id, :order_id, :pay_payment_order_id, N'verified', :amount_cents, :currency
+                    )
+                    """
+                ),
+                {
+                    "payment_id": payment_id,
+                    "order_id": order_id,
+                    "pay_payment_order_id": pay_payment_order_id,
+                    "amount_cents": amount_cents,
+                    "currency": currency,
+                },
+            )
+            result = _load_order(connection, order_id, user_id)
+        if result is None:
+            raise RuntimeError("Order payment committed without a readable order.")
+        return result
+
     def list_orders(self, *, user_id: str) -> list[Order]:
         from sqlalchemy import text
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import secrets
 import uuid
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -22,7 +23,9 @@ from src.demo.ecloe_pay.repositories.base import (
     PayRepository,
     SyntheticAccount,
     SyntheticProfile,
+    WalletPayment,
     WalletSnapshot,
+    WalletTransaction,
     demo_identity_emails,
     initial_session,
     normalize_email,
@@ -48,6 +51,7 @@ class MemoryPayRepository(PayRepository):
         self.demo_sessions: dict[str, DemoSession] = {}
         self.benefit_events: dict[str, list[dict[str, Any]]] = {}
         self.outbox_events: list[dict[str, Any]] = []
+        self.wallet_payments: dict[str, WalletPayment] = {}
         self._seed_user()
 
     def _seed_user(self) -> None:
@@ -71,6 +75,10 @@ class MemoryPayRepository(PayRepository):
             persona_label=DEMO_USER_PERSONA_LABEL,
         )
         self.users[user.user_id] = (user, password_hash)
+        if user.user_id not in self.accounts:
+            persona = persona_for_subject(user.user_id)
+            self.profiles[user.user_id] = persona.profile
+            self.accounts[user.user_id] = persona.account
         return user
 
     def authenticate(self, email: str, password: str) -> DemoUser | None:
@@ -253,6 +261,64 @@ class MemoryPayRepository(PayRepository):
             self.outbox_events = outbox_events_before
             raise
 
+    def pay_market_order(
+        self,
+        *,
+        user_id: str,
+        market_order_id: str,
+        amount_cents: int,
+        currency: str,
+        idempotency_key: str,
+    ) -> WalletPayment:
+        existing = self.wallet_payments.get(idempotency_key)
+        if existing is not None:
+            if (
+                existing.user_id != user_id
+                or existing.market_order_id != market_order_id
+                or existing.amount_cents != amount_cents
+                or existing.currency != currency
+            ):
+                raise ValueError("Wallet payment idempotency key belongs to another order.")
+            return existing
+        if amount_cents <= 0 or currency != "BRL":
+            raise ValueError("The synthetic wallet payment amount is invalid.")
+        account = self.accounts.get(user_id)
+        if account is None or account.status != "active":
+            raise ValueError("The ECloe Pay wallet is not active.")
+        if account.available_balance_cents < amount_cents:
+            raise ValueError("Insufficient ECloe Pay balance.")
+        payment = WalletPayment(
+            payment_id=f"wallet_payment_{uuid.uuid4().hex}",
+            user_id=user_id,
+            market_order_id=market_order_id,
+            amount_cents=amount_cents,
+            currency=currency,
+            status="paid",
+            balance_after_cents=account.available_balance_cents - amount_cents,
+        )
+        self.accounts[user_id] = replace(
+            account,
+            available_balance_cents=payment.balance_after_cents,
+            transactions=(
+                *account.transactions,
+                WalletTransaction(
+                    transaction_id=payment.payment_id,
+                    description=f"ECloe Market order {market_order_id}",
+                    amount_cents=-amount_cents,
+                    category="market_purchase",
+                    occurred_at=datetime.now(UTC).isoformat(),
+                ),
+            ),
+        )
+        self.wallet_payments[idempotency_key] = payment
+        self._insert_outbox(
+            "wallet_payment",
+            payment.payment_id,
+            "wallet_payment_paid",
+            {"market_order_id": market_order_id, "amount_cents": amount_cents},
+        )
+        return payment
+
     def reset_demo_state(self, session_id: str) -> DemoSession:
         current = self.demo_sessions[session_id]
         for (_issuer, subject_key), user_id in self.external_identities.items():
@@ -265,6 +331,7 @@ class MemoryPayRepository(PayRepository):
         session = initial_session(current.user_id)
         self.demo_sessions[session.session_id] = session
         self.benefit_events[session.session_id] = []
+        self.wallet_payments.clear()
         return session
 
     def reset_session(self, session_id: str) -> DemoSession:

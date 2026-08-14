@@ -382,8 +382,8 @@ BEGIN
         );
     END;
 
-    IF OBJECT_ID(N'ecloe_pay.consent_acceptances', N'U') IS NULL
-    BEGIN
+IF OBJECT_ID(N'ecloe_pay.consent_acceptances', N'U') IS NULL
+BEGIN
         CREATE TABLE ecloe_pay.consent_acceptances (
             acceptance_id NVARCHAR(64) NOT NULL CONSTRAINT pk_consent_acceptances PRIMARY KEY,
             user_id NVARCHAR(64) NOT NULL,
@@ -465,5 +465,36 @@ BEGIN
     CREATE INDEX ix_outbox_events_unpublished
         ON ecloe_pay.outbox_events (occurred_at)
         WHERE published_at IS NULL;
+END;
+GO
+
+IF OBJECT_ID(N'ecloe_pay.wallet_payment_transactions', N'U') IS NULL
+BEGIN
+    CREATE TABLE ecloe_pay.wallet_payment_transactions (
+        payment_id NVARCHAR(80) NOT NULL CONSTRAINT pk_wallet_payment_transactions PRIMARY KEY,
+        idempotency_key NVARCHAR(180) NOT NULL CONSTRAINT uq_wallet_payment_transactions_idempotency UNIQUE,
+        user_id NVARCHAR(64) NOT NULL,
+        market_order_id NVARCHAR(80) NOT NULL,
+        amount_cents INT NOT NULL,
+        currency CHAR(3) NOT NULL CONSTRAINT df_wallet_payment_transactions_currency DEFAULT 'BRL',
+        status NVARCHAR(24) NOT NULL,
+        balance_after_cents INT NOT NULL,
+        created_at DATETIMEOFFSET(7) NOT NULL CONSTRAINT df_wallet_payment_transactions_created_at DEFAULT (TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')),
+        CONSTRAINT fk_wallet_payment_transactions_user FOREIGN KEY (user_id) REFERENCES ecloe_pay.demo_users(user_id),
+        CONSTRAINT ck_wallet_payment_transactions_amount CHECK (amount_cents > 0),
+        CONSTRAINT ck_wallet_payment_transactions_balance CHECK (balance_after_cents >= 0),
+        CONSTRAINT ck_wallet_payment_transactions_currency CHECK (currency = 'BRL'),
+        CONSTRAINT ck_wallet_payment_transactions_status CHECK (status IN (N'paid', N'refunded'))
+    );
+END;
+GO
+
+IF NOT EXISTS (
+    SELECT 1 FROM ecloe_pay.schema_migrations
+    WHERE migration_id = N'20260813_ecloe_pay_wallet_market_payments_v1'
+)
+BEGIN
+    INSERT INTO ecloe_pay.schema_migrations (migration_id)
+    VALUES (N'20260813_ecloe_pay_wallet_market_payments_v1');
 END;
 GO

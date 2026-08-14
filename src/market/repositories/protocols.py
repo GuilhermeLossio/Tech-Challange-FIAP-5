@@ -60,6 +60,18 @@ class MarketRepository(Protocol):
     def create_order(self, *, checkout_id: str, user_id: str) -> Order:
         ...
 
+    def mark_order_paid(
+        self,
+        *,
+        order_id: str,
+        user_id: str,
+        payment_id: str,
+        pay_payment_order_id: str,
+        amount_cents: int,
+        currency: str,
+    ) -> Order:
+        ...
+
     def list_orders(self, *, user_id: str) -> list[Order]:
         ...
 

@@ -11,7 +11,7 @@
 | Azure SQL transaction model | Implemented | Source of truth for catalog, carts, checkout, pending orders, interactions, and outbox records. |
 | Recommendation integration | Planned for demo | Market/BFF aggregates context, gets eligible offers from upstream services, and calls ECloe Engine. |
 | ECloe Engine API | Implemented | Existing FastAPI service for decisions, likelihood estimates, policy metadata, and reward ingestion. |
-| Real payment processing, fraud, risk, credit, pricing automation, and eligibility decisions | Out of scope | These remain upstream responsibilities and are not performed by ECloe Market or ECloe Engine. |
+| Real payment processing, fraud, risk, credit, pricing automation, and eligibility decisions | Out of scope | These remain upstream responsibilities and are not performed by ECloe Market or ECloe Engine. The demo can debit synthetic ECloe Pay wallet balance only. |
 
 ## Purpose
 
@@ -214,7 +214,7 @@ Idempotency-Key: <unique-operation-id>
 X-Correlation-Id: <uuid>
 ```
 
-The versioned external API surface below remains Planned for demo. The integrated Flask demo already provides local cart, checkout, pending-order, catalog, and recommendation-feedback endpoints under `/api/market/`.
+The versioned external API surface below remains Planned for demo. The integrated Flask demo provides local cart, checkout, wallet-payment, paid-order, catalog, and recommendation-feedback endpoints under `/api/market/`. Wallet payment debits the authenticated synthetic ECloe Pay account and requires an idempotency key; it never reaches a bank or payment provider.
 
 ## Core Data Model
 

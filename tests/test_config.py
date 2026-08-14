@@ -110,6 +110,16 @@ def test_config_requires_external_id_settings(monkeypatch) -> None:
         load_settings(use_env_file=False)
 
 
+def test_config_rejects_external_id_placeholder_settings(monkeypatch) -> None:
+    monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "entra_external")
+    monkeypatch.setenv("ECLOE_WEB_ENTRA_AUTHORITY", "https://seu-tenant.ciamlogin.com")
+    monkeypatch.setenv("ECLOE_WEB_ENTRA_CLIENT_ID", "seu-client-id")
+    monkeypatch.setenv("ECLOE_WEB_ENTRA_CLIENT_SECRET", "seu-client-secret")
+
+    with pytest.raises(ValueError, match="placeholder values"):
+        load_settings(use_env_file=False)
+
+
 def test_config_rejects_unknown_ecloe_pay_sql_auth_mode(monkeypatch) -> None:
     monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "password")
 

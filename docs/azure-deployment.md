@@ -7,6 +7,7 @@ ECloe Engine deploys as a low-cost Azure Container Apps runtime backed by promot
 - Azure CLI authenticated with a deployment identity.
 - GitHub Actions OIDC configured for the target subscription.
 - Existing resource group `FIAPTechChallange5`.
+- Existing Azure Container Registry `ecloedemo1266`.
 - Existing Cosmos DB account `ecloe5cosmos1266cl`, database `ecloe`, and containers `decisions`, `rewards`, `policy_versions`.
 - Existing Azure SQL server `ecloe-sql-1266`, database `ecloe_validation`, for optional ECloe Pay demo persistence.
 - A Microsoft Entra External ID customer tenant, confidential web app registration, and e-mail/password user flow.
@@ -21,10 +22,34 @@ Deploy or update the runtime resources:
 az deployment group create \
   --resource-group FIAPTechChallange5 \
   --template-file infra/bicep/main.bicep \
-  --parameters environmentName=mvp containerImage=<acr>/ecloe-engine:<git-sha> entraTenantId=<tenant> entraClientId=<client> subjectKeySalt=<secret>
+  --parameters environmentName=mvp location=chilecentral acrName=ecloedemo1266 containerAppsEnvironmentName=ecloe-demo-aca-env containerImage=ecloedemo1266.azurecr.io/ecloe-engine:<git-sha> entraTenantId=<tenant> entraClientId=<client> subjectKeySalt=<secret>
 ```
 
-The template creates Azure Container Registry, Storage, `ecloe-artifacts`, Log Analytics, Application Insights, a Container Apps environment, and the ECloe Engine Container App with a system-assigned Managed Identity.
+The template uses the existing Azure Container Registry and existing Container Apps environment. It creates Storage, `ecloe-artifacts`, Application Insights, and the ECloe Engine Container App with a system-assigned Managed Identity.
+
+The standard deployment path is the GitHub Actions `Deploy` workflow. The workflow builds `Dockerfile`, pushes `ecloe-engine:<tag>` to `ecloedemo1266.azurecr.io`, and then runs the Bicep deployment with `location=chilecentral`, `acrName=ecloedemo1266`, and `containerAppsEnvironmentName=ecloe-demo-aca-env`.
+
+Required GitHub environment variables for `mvp`:
+
+```text
+AZURE_RESOURCE_GROUP=FIAPTechChallange5
+AZURE_LOCATION=chilecentral
+ACR_NAME=ecloedemo1266
+ACR_LOGIN_SERVER=ecloedemo1266.azurecr.io
+CONTAINERAPPS_ENVIRONMENT=ecloe-demo-aca-env
+AZURE_COSMOS_ACCOUNT=ecloe5cosmos1266cl
+AZURE_COSMOS_DATABASE=ecloe
+```
+
+Required GitHub environment secrets for `mvp`:
+
+```text
+AZURE_CLIENT_ID
+AZURE_TENANT_ID
+AZURE_SUBSCRIPTION_ID
+ENTRA_CLIENT_ID
+SUBJECT_KEY_SALT
+```
 
 After deployment, grant the Container App identity Cosmos DB data-plane access:
 
@@ -89,6 +114,8 @@ Confirmed non-secret Azure state:
 | Cosmos region | `Chile Central` |
 | Cosmos endpoint | `https://ecloe5cosmos1266cl.documents.azure.com:443/` |
 | Microsoft.App provider | Registered |
+
+The Engine Bicep deployment now targets the existing `ecloedemo1266` ACR. This avoids creating a second ACR that cannot contain the image pushed by the workflow.
 
 The existing Cosmos `decisions` and `rewards` containers use `/customer_id` as partition key. ECloe writes the pseudonymized subject key into that field and does not persist a direct customer identifier.
 

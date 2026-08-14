@@ -5,6 +5,8 @@ This folder contains the first static ECloe Pay implementation slice.
 Run it with Flask:
 
 ```powershell
+$env:APP_ENVIRONMENT="local"
+$env:ECLOE_WEB_AUTH_MODE="local"
 .venv\Scripts\python.exe -m flask --app "src.demo.ecloe_pay.app:create_server_app" run --host 127.0.0.1 --port 5000
 ```
 
@@ -46,7 +48,13 @@ browser demo:
 
 ```text
 ECLOE_PAY_DATABASE_MODE=memory
+ECLOE_WEB_AUTH_MODE=local
 ```
+
+Use `ECLOE_WEB_AUTH_MODE=entra_external` only after replacing the placeholder
+`ECLOE_WEB_ENTRA_*` values with a real Microsoft Entra External ID tenant,
+client ID, and client secret. Placeholder values such as
+`https://seu-tenant.ciamlogin.com` are rejected during startup.
 
 Azure SQL persistence is the intended mode for validating the browser login
 flow against the configured demo persona:

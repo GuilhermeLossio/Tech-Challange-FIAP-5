@@ -21,6 +21,7 @@ ECLOE_PAY_SQL_AUTH_MODES = {"entra_interactive", "azure_cli", "managed_identity"
 ECLOE_WEB_AUTH_MODES = {"local", "entra_external"}
 CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
 RECOMMENDATION_ACTIVE_POLICIES = {"deterministic_baseline", "likelihood_ranker"}
+PLACEHOLDER_MARKERS = ("<", ">", "seu-", "your-", "tenant-subdomain")
 
 
 def _load_env_file(path: Path) -> None:
@@ -318,6 +319,21 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
             raise ValueError(f"Missing ECloe web External ID settings: {missing}")
         if not settings.ecloe_web_entra_authority.startswith("https://"):
             raise ValueError("ECLOE_WEB_ENTRA_AUTHORITY must use HTTPS.")
+        placeholder_settings = [
+            name
+            for name, value in (
+                ("ECLOE_WEB_ENTRA_AUTHORITY", settings.ecloe_web_entra_authority),
+                ("ECLOE_WEB_ENTRA_CLIENT_ID", settings.ecloe_web_entra_client_id),
+                ("ECLOE_WEB_ENTRA_CLIENT_SECRET", settings.ecloe_web_entra_client_secret),
+            )
+            if _looks_like_placeholder(value)
+        ]
+        if placeholder_settings:
+            raise ValueError(
+                "ECloe web External ID settings contain placeholder values: "
+                f"{placeholder_settings}. Use ECLOE_WEB_AUTH_MODE=local for local demo runs "
+                "or replace the placeholders with real Microsoft Entra External ID values."
+            )
 
     if settings.ecloe_pay_database_mode == "azure_sql":
         missing = []
@@ -338,6 +354,11 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
             and settings.ecloe_pay_sql_auth_mode != "managed_identity"
         ):
             raise ValueError("Cloud ECloe Pay Azure SQL must use managed_identity.")
+
+
+def _looks_like_placeholder(value: str) -> bool:
+    normalized = value.strip().lower()
+    return any(marker in normalized for marker in PLACEHOLDER_MARKERS)
 
 
 def _validate_ecloe_market_settings(settings: Settings) -> None:

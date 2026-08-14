@@ -134,7 +134,18 @@
         if (!orderResponse.ok) {
           throw new Error(orderBody.error || "Order could not be created.");
         }
-        checkoutStatus.textContent = `${orderBody.order.order_id} - ${orderBody.order.status}`;
+        const paymentResponse = await fetch(`/api/market/orders/${orderBody.order.order_id}/pay`, {
+          method: "POST",
+          headers: {
+            ...csrfHeaders(),
+            "Idempotency-Key": `wallet-${orderBody.order.order_id}`,
+          },
+        });
+        const paymentBody = await paymentResponse.json();
+        if (!paymentResponse.ok) {
+          throw new Error(paymentBody.error || "Wallet payment could not be completed.");
+        }
+        checkoutStatus.textContent = `${paymentBody.order.order_id} - ${paymentBody.order.status}`;
         checkoutButton.hidden = true;
       } catch (error) {
         checkoutStatus.textContent = error.message;

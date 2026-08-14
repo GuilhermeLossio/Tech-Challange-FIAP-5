@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from dataclasses import replace
 
 from src.market.application.catalog_loader import load_catalog
 from src.market.domain import (
@@ -251,6 +252,30 @@ class MemoryMarketRepository(MarketRepository):
             **{**checkout.__dict__, "status": "payment_pending"}
         )
         return order
+
+    def mark_order_paid(
+        self,
+        *,
+        order_id: str,
+        user_id: str,
+        payment_id: str,
+        pay_payment_order_id: str,
+        amount_cents: int,
+        currency: str,
+    ) -> Order:
+        order = self._orders.get(order_id)
+        if order is None or order.user_id != user_id:
+            raise ValueError("Synthetic ECloe Market order was not found.")
+        if order.total_cents != amount_cents or order.currency != currency:
+            raise ValueError("Payment amount does not match the Market order.")
+        if order.status == "paid":
+            return order
+        if order.status != "payment_pending":
+            raise ValueError("Synthetic ECloe Market order is not payable.")
+        self._orders[order_id] = replace(order, status="paid")
+        checkout = self._checkouts[order.checkout_id]
+        self._checkouts[order.checkout_id] = replace(checkout, status="paid")
+        return self._orders[order_id]
 
     def list_orders(self, *, user_id: str) -> list[Order]:
         return sorted(

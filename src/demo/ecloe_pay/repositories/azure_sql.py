@@ -26,6 +26,7 @@ from src.demo.ecloe_pay.repositories.base import (
     PayRepository,
     SyntheticAccount,
     SyntheticProfile,
+    WalletPayment,
     WalletSnapshot,
     WalletTransaction,
     aware_utc,
@@ -817,6 +818,118 @@ class AzureSqlPayRepository(PayRepository):
                 if transaction.is_active:
                     transaction.commit()
         return "verified", payload
+
+    def pay_market_order(
+        self,
+        *,
+        user_id: str,
+        market_order_id: str,
+        amount_cents: int,
+        currency: str,
+        idempotency_key: str,
+    ) -> WalletPayment:
+        from sqlalchemy import text
+
+        if amount_cents <= 0 or currency != "BRL":
+            raise ValueError("The synthetic wallet payment amount is invalid.")
+        with self._transaction() as connection:
+            existing = connection.execute(
+                text(
+                    """
+                    SELECT payment_id, user_id, market_order_id, amount_cents, currency,
+                        status, balance_after_cents
+                    FROM ecloe_pay.wallet_payment_transactions
+                    WHERE idempotency_key = :idempotency_key
+                    """
+                ),
+                {"idempotency_key": idempotency_key},
+            ).mappings().first()
+            if existing is not None:
+                if (
+                    existing["user_id"] != user_id
+                    or existing["market_order_id"] != market_order_id
+                    or existing["amount_cents"] != amount_cents
+                    or existing["currency"] != currency
+                ):
+                    raise ValueError("Wallet payment idempotency key belongs to another order.")
+                return WalletPayment(**dict(existing))
+            account = connection.execute(
+                text(
+                    """
+                    SELECT available_balance_cents, currency, status
+                    FROM ecloe_pay.wallet_accounts WITH (UPDLOCK, HOLDLOCK)
+                    WHERE user_id = :user_id
+                    """
+                ),
+                {"user_id": user_id},
+            ).mappings().first()
+            if account is None or account["status"] != "active":
+                raise ValueError("The ECloe Pay wallet is not active.")
+            if account["currency"] != currency:
+                raise ValueError("The ECloe Pay wallet currency is not supported.")
+            if account["available_balance_cents"] < amount_cents:
+                raise ValueError("Insufficient ECloe Pay balance.")
+            balance_after = account["available_balance_cents"] - amount_cents
+            payment_id = f"wallet_payment_{uuid.uuid4().hex}"
+            connection.execute(
+                text(
+                    """
+                    UPDATE ecloe_pay.wallet_accounts
+                    SET available_balance_cents = :balance_after,
+                        updated_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                    WHERE user_id = :user_id
+                    """
+                ),
+                {"user_id": user_id, "balance_after": balance_after},
+            )
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO ecloe_pay.wallet_transactions
+                        (user_id, transaction_id, description, amount_cents, category, occurred_at)
+                    VALUES
+                        (:user_id, :transaction_id, :description, :amount_cents, N'market_purchase',
+                         TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00'))
+                    """
+                ),
+                {
+                    "user_id": user_id,
+                    "transaction_id": payment_id,
+                    "description": f"ECloe Market order {market_order_id}",
+                    "amount_cents": -amount_cents,
+                },
+            )
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO ecloe_pay.wallet_payment_transactions (
+                        payment_id, idempotency_key, user_id, market_order_id,
+                        amount_cents, currency, status, balance_after_cents
+                    ) VALUES (
+                        :payment_id, :idempotency_key, :user_id, :market_order_id,
+                        :amount_cents, :currency, N'paid', :balance_after
+                    )
+                    """
+                ),
+                {
+                    "payment_id": payment_id,
+                    "idempotency_key": idempotency_key,
+                    "user_id": user_id,
+                    "market_order_id": market_order_id,
+                    "amount_cents": amount_cents,
+                    "currency": currency,
+                    "balance_after": balance_after,
+                },
+            )
+        return WalletPayment(
+            payment_id=payment_id,
+            user_id=user_id,
+            market_order_id=market_order_id,
+            amount_cents=amount_cents,
+            currency=currency,
+            status="paid",
+            balance_after_cents=balance_after,
+        )
 
     def reset_demo_state(self, session_id: str) -> DemoSession:
         from sqlalchemy import text

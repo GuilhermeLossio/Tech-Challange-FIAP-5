@@ -97,6 +97,7 @@
     "checkoutCopy": "Review the synthetic items in your cart before creating the demo order.",
     "checkoutDemoCopy": "No real payment is processed. This creates a payment-pending demo order.",
     "confirmOrder": "Confirm demo order",
+    "payWithWallet": "Pay with ECloe Pay",
     "plannedTitle": "Flow under construction",
     "plannedCopy": "This screen belongs to the next slice: cart, checkout, orders, and transactional ECloe Pay integration.",
     "publicCheckoutCopy": "You can browse the market without login. The account is requested only when continuing to checkout.",

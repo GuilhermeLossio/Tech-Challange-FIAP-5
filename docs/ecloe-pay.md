@@ -19,7 +19,7 @@
 
 ECloe Pay is the implemented digital wallet surface for the ECloe demo. It obtains a recommendation from ECloe Engine, turns it into a customer-facing wallet benefit, and records the interaction as an append-only event.
 
-In the MVP, ECloe Pay is not a real wallet, bank account, credit product, payment processor, or risk system. It is a simulated experience that demonstrates how wallet context and marketplace behavior can support responsible next-best-action personalization after upstream systems have already decided which offers are eligible.
+In the MVP, ECloe Pay is not a bank account, credit product, external payment processor, or risk system. It is a synthetic wallet persisted in the `ecloe_pay` Azure SQL schema. The integrated Market checkout may debit that synthetic available balance with a row-locked, idempotent wallet payment and mark the synthetic order as paid; no bank or real-money rail is reached.
 
 The first implemented demo slice is available in [`../src/demo/ecloe_pay/`](../src/demo/ecloe_pay/). It is a runnable Flask frontend/API that can also be opened as a static fallback presentation. The static fallback is explicitly labeled `Presentation mode — data is not being persisted.` and must not imply that login, terms, or payment state was persisted in Azure SQL. It includes demo-persona authentication, mandatory demo terms, deterministic simulated-payment confirmation, transaction idempotency evidence, technical mode, and optional Azure SQL persistence for Pay-owned state.
 

@@ -53,3 +53,35 @@ All displayed balances, cashback, transactions, names, locations, and segments a
 Automated tests mock the identity provider and verify state consumption, return-path validation, session revocation, deterministic provisioning, and absence of real claims or tokens in persisted data. A protected GitHub Environment may add an end-to-end smoke account for the external tenant; it must not place credentials in repository variables or logs.
 
 Microsoft references: [External ID overview](https://learn.microsoft.com/en-us/entra/external-id/external-identities-overview), [authorization code flow](https://learn.microsoft.com/en-us/entra/identity-platform/v2-oauth2-auth-code-flow), and [Python Flask sign-in tutorial](https://learn.microsoft.com/en-us/entra/identity-platform/tutorial-web-app-python-flask-sign-in-out).
+
+## ECloe Engine API Users
+
+The ECloe Engine API uses Microsoft Entra ID bearer tokens, not the ECloe Pay local demo login. The API app registration is:
+
+| Setting | Value |
+|:---|:---|
+| Display name | `ecloe-engine-api` |
+| Client ID | `ea3a2333-dced-4cc3-9b67-f833390eefa5` |
+| Audience | `api://ea3a2333-dced-4cc3-9b67-f833390eefa5` |
+
+Exposed delegated scopes:
+
+```text
+policy:read
+decision:read
+decision:write
+reward:write
+```
+
+To let a workforce tenant user call the Engine API, create or use a Microsoft Entra user in the `fiap.com.br` tenant, then have an administrator grant consent for the scopes above. For Azure CLI smoke testing, sign in interactively with the required scope:
+
+```powershell
+az logout
+az login --tenant 11dbbfe2-89b8-4549-be10-cec364e59551 --scope "api://ea3a2333-dced-4cc3-9b67-f833390eefa5/policy:read"
+$token = az account get-access-token --scope "api://ea3a2333-dced-4cc3-9b67-f833390eefa5/policy:read" --query accessToken -o tsv
+Invoke-WebRequest `
+  -Uri "https://<engine-fqdn>/v1/policies/current" `
+  -Headers @{ Authorization = "Bearer $token" }
+```
+
+If Azure CLI returns `AADSTS65001 consent_required`, complete the interactive `az login --scope ...` step above with a user allowed to consent, or ask a tenant administrator to grant consent to the API scopes.

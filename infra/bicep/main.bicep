@@ -9,6 +9,12 @@ param location string = resourceGroup().location
 @description('Container image tag to deploy, for example <acr>.azurecr.io/ecloe-engine:<git-sha>.')
 param containerImage string
 
+@description('Existing Azure Container Registry name that contains the deployed image.')
+param acrName string = 'ecloedemo1266'
+
+@description('Existing Azure Container Apps environment name reused by the Engine runtime.')
+param containerAppsEnvironmentName string = 'ecloe-demo-aca-env'
+
 @description('Existing Cosmos DB account name.')
 param cosmosAccountName string = 'ecloe5cosmos1266cl'
 
@@ -38,23 +44,13 @@ param subjectKeySalt string
 param targetPort int = 8000
 
 var unique = uniqueString(resourceGroup().id, environmentName)
-var acrName = toLower('ecloeacr${unique}')
 var storageName = toLower('ecloeart${unique}')
-var logName = 'ecloe-log-${environmentName}'
 var appInsightsName = 'ecloe-ai-${environmentName}'
-var envName = 'ecloe-aca-env-${environmentName}'
 var appName = 'ecloe-engine-${environmentName}'
 var artifactContainerName = 'ecloe-artifacts'
 
-resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
+resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' existing = {
   name: acrName
-  location: location
-  sku: {
-    name: 'Basic'
-  }
-  properties: {
-    adminUserEnabled: false
-  }
 }
 
 resource storage 'Microsoft.Storage/storageAccounts@2023-05-01' = {
@@ -77,24 +73,12 @@ resource artifactContainer 'Microsoft.Storage/storageAccounts/blobServices/conta
   }
 }
 
-resource logs 'Microsoft.OperationalInsights/workspaces@2023-09-01' = {
-  name: logName
-  location: location
-  properties: {
-    sku: {
-      name: 'PerGB2018'
-    }
-    retentionInDays: 30
-  }
-}
-
 resource appInsights 'Microsoft.Insights/components@2020-02-02' = {
   name: appInsightsName
   location: location
   kind: 'web'
   properties: {
     Application_Type: 'web'
-    WorkspaceResourceId: logs.id
   }
 }
 
@@ -107,18 +91,8 @@ resource ecloePaySqlDatabase 'Microsoft.Sql/servers/databases@2023-08-01-preview
   name: ecloePaySqlDatabaseName
 }
 
-resource managedEnv 'Microsoft.App/managedEnvironments@2024-03-01' = {
-  name: envName
-  location: location
-  properties: {
-    appLogsConfiguration: {
-      destination: 'log-analytics'
-      logAnalyticsConfiguration: {
-        customerId: logs.properties.customerId
-        sharedKey: logs.listKeys().primarySharedKey
-      }
-    }
-  }
+resource managedEnv 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
+  name: containerAppsEnvironmentName
 }
 
 resource app 'Microsoft.App/containerApps@2024-03-01' = {

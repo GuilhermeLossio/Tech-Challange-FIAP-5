@@ -448,6 +448,50 @@ def api_create_order():
     return jsonify({"order": asdict(order)})
 
 
+@market_blueprint.post("/api/market/orders/<order_id>/pay")
+def api_pay_order(order_id: str):
+    if not _csrf_valid():
+        return _csrf_error()
+    user_id, auth_error = _api_user_id()
+    if auth_error is not None:
+        return auth_error
+    idempotency_key = request.headers.get("Idempotency-Key", "").strip()
+    if not idempotency_key or len(idempotency_key) > 180:
+        return jsonify({"error": "A valid Idempotency-Key header is required."}), 400
+    order = next(
+        (item for item in _repository().list_orders(user_id=str(user_id)) if item.order_id == order_id),
+        None,
+    )
+    if order is None:
+        return jsonify({"error": "Synthetic ECloe Market order was not found."}), 404
+    try:
+        payment = current_app.pay_repository.pay_market_order(  # type: ignore[attr-defined]
+            user_id=str(user_id),
+            market_order_id=order.order_id,
+            amount_cents=order.total_cents,
+            currency=order.currency,
+            idempotency_key=idempotency_key,
+        )
+        paid_order = _repository().mark_order_paid(
+            order_id=order.order_id,
+            user_id=str(user_id),
+            payment_id=payment.payment_id,
+            pay_payment_order_id=payment.payment_id,
+            amount_cents=payment.amount_cents,
+            currency=payment.currency,
+        )
+    except ValueError as error:
+        return jsonify({"error": str(error)}), 409
+    response = jsonify(
+        {
+            "payment": asdict(payment),
+            "order": asdict(paid_order),
+            "wallet": asdict(current_app.pay_repository.synthetic_account(str(user_id))),  # type: ignore[attr-defined]
+        }
+    )
+    return _attach_market_session(response, _market_session_key())
+
+
 @market_blueprint.get("/api/market/orders")
 def api_list_orders():
     user_id, auth_error = _api_user_id()

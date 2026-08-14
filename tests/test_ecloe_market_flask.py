@@ -115,6 +115,81 @@ def test_integrated_demo_market_empty_checkout_returns_to_cart() -> None:
     assert response.headers["Location"] == "/market/cart"
 
 
+def test_integrated_demo_market_pays_order_from_ecloe_pay_wallet_once() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+    client.get("/market")
+    headers = csrf_headers(client)
+    client.post(
+        "/api/market/cart/items",
+        json={"product_id": "prd_demo_0001"},
+        headers=headers,
+    )
+    headers = csrf_headers(client)
+    checkout = client.post(
+        "/api/market/checkouts",
+        headers={**headers, "Idempotency-Key": "checkout-wallet-test"},
+    ).get_json()["checkout"]
+    order = client.post(
+        "/api/market/orders",
+        json={"checkout_id": checkout["checkout_id"]},
+        headers=headers,
+    ).get_json()["order"]
+    before = client.get("/api/session").get_json()["wallet"]["demo_balance_cents"]
+
+    payment = client.post(
+        f"/api/market/orders/{order['order_id']}/pay",
+        headers={**headers, "Idempotency-Key": "wallet-payment-test"},
+    )
+    repeated = client.post(
+        f"/api/market/orders/{order['order_id']}/pay",
+        headers={**headers, "Idempotency-Key": "wallet-payment-test"},
+    )
+
+    assert payment.status_code == 200
+    assert repeated.status_code == 200
+    assert payment.get_json() == repeated.get_json()
+    assert payment.get_json()["order"]["status"] == "paid"
+    assert payment.get_json()["wallet"]["available_balance_cents"] == before - 1990
+
+
+def test_integrated_demo_market_rejects_insufficient_wallet_balance() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+    repository = app.pay_repository
+    user = repository.get_user_by_email(SHARED_DEMO_USER_EMAIL)
+    assert user is not None
+    account = repository.accounts[user.user_id]
+    from dataclasses import replace
+
+    repository.accounts[user.user_id] = replace(account, available_balance_cents=1)
+    client.get("/market")
+    headers = csrf_headers(client)
+    client.post(
+        "/api/market/cart/items",
+        json={"product_id": "prd_demo_0001"},
+        headers=headers,
+    )
+    headers = csrf_headers(client)
+    checkout = client.post(
+        "/api/market/checkouts",
+        headers={**headers, "Idempotency-Key": "checkout-insufficient-test"},
+    ).get_json()["checkout"]
+    order = client.post(
+        "/api/market/orders",
+        json={"checkout_id": checkout["checkout_id"]},
+        headers=headers,
+    ).get_json()["order"]
+
+    payment = client.post(
+        f"/api/market/orders/{order['order_id']}/pay",
+        headers={**headers, "Idempotency-Key": "wallet-insufficient-test"},
+    )
+
+    assert payment.status_code == 409
+    assert payment.get_json()["error"] == "Insufficient ECloe Pay balance."
+
+
 def test_integrated_demo_market_product_page_is_public() -> None:
     app = create_app()
     client = app.test_client()

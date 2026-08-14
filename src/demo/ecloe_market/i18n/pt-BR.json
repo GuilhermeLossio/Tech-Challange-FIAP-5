@@ -97,6 +97,7 @@
     "checkoutCopy": "Revise os itens sinteticos do seu carrinho antes de criar o pedido demonstrativo.",
     "checkoutDemoCopy": "Nenhum pagamento real sera processado. Um pedido demonstrativo pendente sera criado.",
     "confirmOrder": "Confirmar pedido demonstrativo",
+    "payWithWallet": "Pagar com ECloe Pay",
     "plannedTitle": "Fluxo em construcao",
     "plannedCopy": "Esta tela pertence a proxima fatia: carrinho, checkout, pedidos e integracao transacional com ECloe Pay.",
     "publicCheckoutCopy": "Voce pode navegar pelo mercado sem login. A conta sera solicitada apenas ao continuar para o checkout.",
