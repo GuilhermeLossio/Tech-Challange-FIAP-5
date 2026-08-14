@@ -26,7 +26,15 @@
           <p id="loginStatus" role="status"></p>
         </div>
         {% else %}
-        <form id="loginForm" class="login-form" data-login-failed="{{ t('login.loginFailed') }}" data-return-to="{{ return_to }}">
+        <form
+          id="loginForm"
+          class="login-form"
+          method="post"
+          action="/api/auth/login"
+          autocomplete="on"
+          data-login-failed="{{ t('login.loginFailed') }}"
+          data-return-to="{{ return_to }}"
+        >
           <label for="email">{{ t("login.email") }}</label>
           <input
             id="email"
@@ -34,6 +42,9 @@
             type="email"
             placeholder="{{ t("login.emailPlaceholder") }}"
             autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            required
           />
 
           <label for="password">{{ t("login.password") }}</label>
@@ -43,9 +54,20 @@
             type="password"
             placeholder="{{ t("login.passwordPlaceholder") }}"
             autocomplete="current-password"
+            required
           />
 
-          <button type="submit">{{ t("login.submit") }}</button>
+          <button class="login-submit-button" type="submit">
+            <span class="login-submit-label">{{ t("login.submit") }}</span>
+            <span class="login-loading-state" aria-hidden="true">
+              <span class="pixel-loader">
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+              </span>
+              <span class="loading-label">{{ t("login.loading") }}</span>
+            </span>
+          </button>
           {% if web_auth_mode == "local_signup" %}
           <a class="login-secondary" href="/pay/register?return_to={{ return_to | urlencode }}&lang={{ locale }}">{{ t("login.createAccount") }}</a>
           {% endif %}

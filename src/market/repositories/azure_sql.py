@@ -678,7 +678,7 @@ class AzureSqlMarketRepository(MarketRepository):
     ) -> Order:
         from sqlalchemy import text
 
-        with self._transaction() as connection:
+        with self.engine.begin() as connection:
             order = connection.execute(
                 text(
                     """

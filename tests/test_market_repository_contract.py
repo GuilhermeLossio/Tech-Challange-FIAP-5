@@ -1,5 +1,10 @@
+from pathlib import Path
+
 from src.core.config import load_settings
 from src.market.repositories import MemoryMarketRepository
+
+
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_memory_market_repository_filters_products() -> None:
@@ -84,3 +89,10 @@ def test_memory_market_repository_manages_demo_cart() -> None:
     assert isinstance(cart.total_cents, int)
     assert updated.total_items == 3
     assert removed.empty is True
+
+
+def test_azure_market_repository_uses_available_transaction_context() -> None:
+    source = (ROOT / "src" / "market" / "repositories" / "azure_sql.py").read_text(encoding="utf-8")
+
+    assert "with self.engine.begin() as connection:" in source
+    assert "self._transaction()" not in source

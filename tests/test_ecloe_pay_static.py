@@ -50,10 +50,11 @@ def test_pay_wallet_markup_uses_accessible_semantics() -> None:
     assert 'class="nav-link active"' in html
     assert 'role="progressbar"' in html
     assert 'aria-valuenow="0"' in html
-    assert 'id="balanceAmount">--</strong>' in html
-    assert 'id="cashbackAmount">--</strong>' in html
-    assert 'id="paymentAmount">--</strong>' in html
-    assert 'id="loanAmount">--</strong>' in html
+    assert 'id="balanceAmount" class="wallet-loading-value" aria-busy="true"' in html
+    assert 'id="cashbackAmount" class="wallet-loading-value" aria-busy="true"' in html
+    assert 'id="paymentAmount" class="wallet-loading-value" aria-busy="true"' in html
+    assert 'id="loanAmount" class="wallet-loading-value" aria-busy="true"' in html
+    assert 't("wallet.loading")' in html
     assert 'role="status"' in html
     assert 'aria-live="polite"' in html
     assert 'formmethod="dialog">{{ t("wallet.cancel") }}' in html
@@ -183,6 +184,16 @@ def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
     assert "X-CSRF-Token" in script
     assert "X-CSRF-Token" in login_script
     assert 'src="../login.js"' in login
+    assert "login-loading-state" in login
+    assert "pixel-loader" in login
+    assert 'method="post"' in login
+    assert 'action="/api/auth/login"' in login
+    assert 'autocomplete="username"' in login
+    assert 'autocomplete="current-password"' in login
+    assert "setPending(true)" in login_script
+    assert "aria-busy" in login_script
+    assert "input.readOnly = pending" in login_script
+    assert "input.disabled = pending" not in login_script
     assert "token_hash(raw_token)" in azure_source
     logger_lines = [line.lower() for line in app_source.splitlines() if "LOGGER.info" in line]
     assert logger_lines
@@ -208,6 +219,7 @@ def test_pay_azure_sql_repository_uses_explicit_transactions_and_conditional_pay
 def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     script = (PAY_DEMO / "app.js").read_text(encoding="utf-8")
     index = (PAY_DEMO / "index.html").read_text(encoding="utf-8")
+    wallet_styles = (PAY_DEMO / "wallet.css").read_text(encoding="utf-8")
 
     assert "transactionLocked" in script
     assert "Previa duplicada ignorada" in script
@@ -223,6 +235,11 @@ def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     assert "Modo apresentacao" in script
     assert "formatMoney" in script
     assert "renderSession(body)" in script
+    assert "setLoadedText" in script
+    assert "wallet-loading-value" in script
+    assert ".pixel-loader" in wallet_styles
+    assert "@keyframes pixel-on" in wallet_styles
+    assert "@keyframes shimmer-text" in wallet_styles
     for fixed_value in ("R$ 428,70", "R$ 18,40", "64%", "R$ 127,90"):
         assert fixed_value not in index
     assert 't("wallet.presentationMode")' in index
@@ -261,6 +278,25 @@ def test_pay_login_page_matches_demo_identity_and_csrf_flow() -> None:
     assert "--color-mint-soft: #e3fbf3" in core_styles
     assert ".login-eyebrow" in login_styles
     assert ".login-safety-list" in login_styles
+    assert ".pixel-loader" in login_styles
+    assert "@keyframes pixel-on" in login_styles
+    assert "@keyframes shimmer-text" in login_styles
+
+
+def test_pay_register_page_uses_pending_submit_state() -> None:
+    register = (PAY_DEMO / "register.html").read_text(encoding="utf-8")
+    register_script = (PAY_DEMO / "register.js").read_text(encoding="utf-8")
+
+    assert "login-loading-state" in register
+    assert "pixel-loader" in register
+    assert 't("register.loading")' in register
+    assert 'action="/api/auth/register"' in register
+    assert 'autocomplete="new-password"' in register
+    assert "setPending(true)" in register_script
+    assert "aria-busy" in register_script
+    assert "input.readOnly = pending" in register_script
+    assert "input.disabled = pending" not in register_script
+    assert "form.querySelectorAll(\"input\")" in register_script
 
 
 def test_pay_demo_css_is_split_by_page_and_uses_shared_utilities() -> None:

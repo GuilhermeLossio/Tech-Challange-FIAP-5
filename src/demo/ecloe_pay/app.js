@@ -49,6 +49,17 @@ let transactionLocked = false;
 let flaskAvailable = false;
 let backendRequiresAuth = false;
 let runtimeState = { ...DEMO_STATE };
+const valueElements = [
+  balanceAmount,
+  cashbackAmount,
+  goalPercent,
+  goalDetail,
+  paymentAmount,
+  paymentStatus,
+  loanAmount,
+  loanStatus,
+  loanRequestedAt,
+];
 
 async function getJson(url) {
   const response = await fetch(url);
@@ -91,6 +102,18 @@ function appendTimeline(message, evidence = "") {
   const suffix = evidence ? ` Evidencia: ${evidence}` : "";
   item.textContent = `${new Date().toLocaleTimeString()} - ${message}${suffix}`;
   timeline.prepend(item);
+}
+
+function setLoadedText(element, value) {
+  element.classList.remove("wallet-loading-value", "compact");
+  element.removeAttribute("aria-busy");
+  element.textContent = value;
+}
+
+function setValuesFallback() {
+  for (const element of valueElements) {
+    setLoadedText(element, "--");
+  }
 }
 
 function formatMoney(cents, currency = "BRL") {
@@ -145,14 +168,14 @@ function renderSession(body) {
   };
 
   sessionId.textContent = session.session_id;
-  balanceAmount.textContent = formatMoney(wallet.demo_balance_cents, currency);
-  cashbackAmount.textContent = formatMoney(wallet.cashback_cents, currency);
-  goalPercent.textContent = formatPercent(goal);
-  goalDetail.textContent = `${formatMoney(goalCurrentCents, currency)} / ${formatMoney(goalTargetCents, currency)}`;
+  setLoadedText(balanceAmount, formatMoney(wallet.demo_balance_cents, currency));
+  setLoadedText(cashbackAmount, formatMoney(wallet.cashback_cents, currency));
+  setLoadedText(goalPercent, formatPercent(goal));
+  setLoadedText(goalDetail, `${formatMoney(goalCurrentCents, currency)} / ${formatMoney(goalTargetCents, currency)}`);
   goalProgress.style.setProperty("--goal-progress", `${goal}%`);
   goalProgress.setAttribute("aria-valuenow", String(goal));
-  paymentAmount.textContent = formatMoney(session.payment_amount_cents, currency);
-  paymentStatus.textContent = `${session.payment_order_id} - ${session.payment_status}`;
+  setLoadedText(paymentAmount, formatMoney(session.payment_amount_cents, currency));
+  setLoadedText(paymentStatus, `${session.payment_order_id} - ${session.payment_status}`);
   benefitTitle.textContent = body.benefit.title;
   benefitMessage.textContent = body.benefit.message;
   recommendationDecision.textContent = body.recommendation.decision_id;
@@ -161,13 +184,13 @@ function renderSession(body) {
   bucketValue.textContent = body.security.bucket_name;
 
   if (loanRequest) {
-    loanAmount.textContent = formatMoney(loanRequest.requested_amount_cents, loanRequest.currency || currency);
-    loanStatus.textContent = loanStatusLabel(loanRequest.status);
-    loanRequestedAt.textContent = formatDate(loanRequest.requested_at);
+    setLoadedText(loanAmount, formatMoney(loanRequest.requested_amount_cents, loanRequest.currency || currency));
+    setLoadedText(loanStatus, loanStatusLabel(loanRequest.status));
+    setLoadedText(loanRequestedAt, formatDate(loanRequest.requested_at));
   } else {
-    loanAmount.textContent = "--";
-    loanStatus.textContent = pageLocale === "pt-BR" ? "Nenhuma solicitacao sintetica" : "No synthetic request";
-    loanRequestedAt.textContent = "--";
+    setLoadedText(loanAmount, "--");
+    setLoadedText(loanStatus, pageLocale === "pt-BR" ? "Nenhuma solicitacao sintetica" : "No synthetic request");
+    setLoadedText(loanRequestedAt, "--");
   }
 }
 
@@ -204,6 +227,7 @@ function setPresentationMode() {
   databaseProvider.textContent = "apresentacao";
   databaseSchema.textContent = "nao persistido";
   bucketValue.textContent = DEMO_STATE.bucketName;
+  setValuesFallback();
 }
 
 function setAuthenticatedMode(auth, security) {

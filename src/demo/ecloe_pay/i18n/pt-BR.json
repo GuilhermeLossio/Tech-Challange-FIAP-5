@@ -57,6 +57,7 @@
     "password": "Senha da persona",
     "passwordPlaceholder": "Informe a senha configurada",
     "submit": "Entrar na carteira",
+    "loading": "Entrando",
     "createAccount": "Criar conta",
     "safetyAria": "Limites da demonstracao",
     "noBank": "Sem conta bancaria real",
@@ -76,6 +77,7 @@
     "passwordConfirm": "Confirmar senha",
     "passwordConfirmPlaceholder": "Repita a senha",
     "submit": "Criar conta",
+    "loading": "Criando",
     "backToLogin": "Ja tenho conta",
     "azureSql": "Conta persistida no Azure SQL",
     "registerFailed": "Cadastro falhou."
@@ -93,6 +95,7 @@
     "assistantCopy": "Sua assistente esta online e pronta para ajudar.",
     "online": "Online",
     "presentationMode": "Modo apresentacao - os dados nao sao persistidos.",
+    "loading": "Carregando",
     "topbarAria": "Controles da sessao",
     "session": "Sessao",
     "greeting": "Boa noite, Cloe",

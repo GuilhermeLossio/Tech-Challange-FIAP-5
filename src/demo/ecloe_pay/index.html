@@ -70,7 +70,13 @@
         <section class="card balance-panel hero-balance-card" aria-label="{{ t("wallet.balanceAria") }}">
           <div>
             <p class="balance-label">{{ t("wallet.demoBalance") }} <span aria-hidden="true">{{ t("wallet.view") }}</span></p>
-            <strong id="balanceAmount">--</strong>
+            <strong id="balanceAmount" class="wallet-loading-value" aria-busy="true">
+              <span class="wallet-loading-state" aria-hidden="true">
+                <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+                <span class="loading-label">{{ t("wallet.loading") }}</span>
+              </span>
+              <span class="sr-only">{{ t("wallet.loading") }}</span>
+            </strong>
             <span class="funds-copy">{{ t("wallet.noRealValue") }}</span>
             <button id="viewDetailsButton" class="details-button" type="button">{{ t("wallet.details") }}</button>
           </div>
@@ -84,7 +90,13 @@
             <span class="metric-icon sprite-icon sprite-cashback" aria-hidden="true"><span class="sr-only">{{ t("wallet.cashback") }}</span></span>
             <p>{{ t("wallet.cashback") }}</p>
           </div>
-          <strong id="cashbackAmount">--</strong>
+          <strong id="cashbackAmount" class="wallet-loading-value" aria-busy="true">
+            <span class="wallet-loading-state" aria-hidden="true">
+              <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+              <span class="loading-label">{{ t("wallet.loading") }}</span>
+            </span>
+            <span class="sr-only">{{ t("wallet.loading") }}</span>
+          </strong>
           <span>{{ t("wallet.available") }}</span>
         </div>
 
@@ -94,8 +106,20 @@
               <span class="metric-icon rose sprite-icon sprite-monthly-goal" aria-hidden="true"><span class="sr-only">{{ t("wallet.monthlyGoal") }}</span></span>
               <p>{{ t("wallet.monthlyGoal") }}</p>
             </div>
-            <strong id="goalPercent">--</strong>
-            <span id="goalDetail">--</span>
+            <strong id="goalPercent" class="wallet-loading-value" aria-busy="true">
+              <span class="wallet-loading-state" aria-hidden="true">
+                <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+                <span class="loading-label">{{ t("wallet.loading") }}</span>
+              </span>
+              <span class="sr-only">{{ t("wallet.loading") }}</span>
+            </strong>
+            <span id="goalDetail" class="wallet-loading-value compact" aria-busy="true">
+              <span class="wallet-loading-state" aria-hidden="true">
+                <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+                <span class="loading-label">{{ t("wallet.loading") }}</span>
+              </span>
+              <span class="sr-only">{{ t("wallet.loading") }}</span>
+            </span>
           </div>
           <span
             id="goalProgress"
@@ -113,9 +137,27 @@
             <span class="metric-icon loan sprite-icon sprite-payment-card" aria-hidden="true"><span class="sr-only">{{ t("wallet.loanRequests") }}</span></span>
             <p>{{ t("wallet.loanRequests") }}</p>
           </div>
-          <strong id="loanAmount">--</strong>
-          <span id="loanStatus">{{ t("wallet.noLoanRequests") }}</span>
-          <small id="loanRequestedAt">--</small>
+          <strong id="loanAmount" class="wallet-loading-value" aria-busy="true">
+            <span class="wallet-loading-state" aria-hidden="true">
+              <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+              <span class="loading-label">{{ t("wallet.loading") }}</span>
+            </span>
+            <span class="sr-only">{{ t("wallet.loading") }}</span>
+          </strong>
+          <span id="loanStatus" class="wallet-loading-value compact" aria-busy="true">
+            <span class="wallet-loading-state" aria-hidden="true">
+              <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+              <span class="loading-label">{{ t("wallet.loading") }}</span>
+            </span>
+            <span class="sr-only">{{ t("wallet.loading") }}</span>
+          </span>
+          <small id="loanRequestedAt" class="wallet-loading-value compact" aria-busy="true">
+            <span class="wallet-loading-state" aria-hidden="true">
+              <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+              <span class="loading-label">{{ t("wallet.loading") }}</span>
+            </span>
+            <span class="sr-only">{{ t("wallet.loading") }}</span>
+          </small>
         </div>
       </section>
 
@@ -167,8 +209,20 @@
           <div class="payment-strip" aria-label="{{ t("wallet.paymentOrderAria") }}">
             <div class="payment-card">
               <p class="eyebrow">{{ t("wallet.recurringPayment") }}</p>
-              <strong id="paymentAmount">--</strong>
-              <span id="paymentStatus">{{ t("wallet.dueDate") }}</span>
+              <strong id="paymentAmount" class="wallet-loading-value" aria-busy="true">
+                <span class="wallet-loading-state" aria-hidden="true">
+                  <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+                  <span class="loading-label">{{ t("wallet.loading") }}</span>
+                </span>
+                <span class="sr-only">{{ t("wallet.loading") }}</span>
+              </strong>
+              <span id="paymentStatus" class="wallet-loading-value compact" aria-busy="true">
+                <span class="wallet-loading-state" aria-hidden="true">
+                  <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+                  <span class="loading-label">{{ t("wallet.loading") }}</span>
+                </span>
+                <span class="sr-only">{{ t("wallet.loading") }}</span>
+              </span>
             </div>
 
             <form id="transactionForm" class="transaction-form inline-transaction-form">

@@ -22,6 +22,9 @@
         <form
           id="registerForm"
           class="login-form"
+          method="post"
+          action="/api/auth/register"
+          autocomplete="on"
           data-register-failed="{{ t('register.registerFailed') }}"
           data-return-to="{{ return_to }}"
         >
@@ -32,6 +35,8 @@
             type="email"
             placeholder="{{ t("login.emailPlaceholder") }}"
             autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
             required
           />
 
@@ -57,7 +62,17 @@
             required
           />
 
-          <button type="submit">{{ t("register.submit") }}</button>
+          <button class="login-submit-button" type="submit">
+            <span class="login-submit-label">{{ t("register.submit") }}</span>
+            <span class="login-loading-state" aria-hidden="true">
+              <span class="pixel-loader">
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+              </span>
+              <span class="loading-label">{{ t("register.loading") }}</span>
+            </span>
+          </button>
           <a class="login-secondary" href="/pay/login?return_to={{ return_to | urlencode }}&lang={{ locale }}">{{ t("register.backToLogin") }}</a>
           <p id="registerStatus" role="status"></p>
         </form>

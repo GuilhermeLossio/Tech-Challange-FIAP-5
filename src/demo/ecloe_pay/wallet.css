@@ -243,6 +243,69 @@
     line-height: 0.95;
   }
 
+  .wallet-loading-value {
+    align-items: center;
+    display: inline-flex;
+    min-height: 1em;
+  }
+
+  .wallet-loading-value.compact {
+    min-height: 1.4em;
+  }
+
+  .wallet-loading-state {
+    align-items: center;
+    display: inline-flex;
+    gap: 10px;
+  }
+
+  .wallet-loading-value.compact .wallet-loading-state {
+    gap: 8px;
+  }
+
+  .pixel-loader {
+    display: grid;
+    flex: 0 0 auto;
+    gap: 2px;
+    grid-template-columns: repeat(3, 4px);
+  }
+
+  .pixel-loader span {
+    animation: pixel-on 650ms ease-in-out infinite;
+    background: currentColor;
+    border-radius: 1px;
+    display: block;
+    height: 4px;
+    opacity: 0.15;
+    width: 4px;
+  }
+
+  .pixel-loader span:nth-child(1) { animation-delay: 90ms; }
+  .pixel-loader span:nth-child(2) { animation-delay: 0ms; }
+  .pixel-loader span:nth-child(3) { animation-delay: 90ms; }
+  .pixel-loader span:nth-child(4) { animation-delay: 180ms; }
+  .pixel-loader span:nth-child(5) { animation-delay: 90ms; }
+  .pixel-loader span:nth-child(6) { animation-delay: 180ms; }
+  .pixel-loader span:nth-child(7) { animation-delay: 270ms; }
+  .pixel-loader span:nth-child(8) { animation-delay: 180ms; }
+  .pixel-loader span:nth-child(9) { animation-delay: 270ms; }
+
+  .loading-label {
+    animation: shimmer-text 1.4s linear infinite;
+    background-clip: text;
+    background-image: linear-gradient(90deg, rgba(35, 57, 71, 0.58) 35%, var(--color-heading) 50%, rgba(35, 57, 71, 0.58) 65%);
+    background-size: 200% 100%;
+    color: transparent;
+    font-family: var(--font-display);
+    font-weight: 900;
+    line-height: 1;
+  }
+
+  .wallet-loading-value.compact .loading-label {
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+  }
+
   .funds-copy {
     color: rgba(7, 63, 54, 0.7);
     display: block;
@@ -714,6 +777,31 @@
     border-radius: 50%;
     height: 12px;
     width: 12px;
+  }
+
+  @keyframes pixel-on {
+    0%, 100% {
+      opacity: 0.12;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes shimmer-text {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .pixel-loader span,
+    .loading-label {
+      animation: none;
+    }
   }
 }
 

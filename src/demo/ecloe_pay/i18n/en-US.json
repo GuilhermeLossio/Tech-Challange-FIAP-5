@@ -57,6 +57,7 @@
     "password": "Persona password",
     "passwordPlaceholder": "Enter the configured password",
     "submit": "Enter wallet",
+    "loading": "Signing in",
     "createAccount": "Create account",
     "safetyAria": "Demo boundaries",
     "noBank": "No real bank account",
@@ -76,6 +77,7 @@
     "passwordConfirm": "Confirm password",
     "passwordConfirmPlaceholder": "Repeat the password",
     "submit": "Create account",
+    "loading": "Creating",
     "backToLogin": "I already have an account",
     "azureSql": "Account persisted in Azure SQL",
     "registerFailed": "Registration failed."
@@ -93,6 +95,7 @@
     "assistantCopy": "Your assistant is online and ready to help.",
     "online": "Online",
     "presentationMode": "Presentation mode - data is not being persisted.",
+    "loading": "Loading",
     "topbarAria": "Session controls",
     "session": "Session",
     "greeting": "Good evening, Cloe",
