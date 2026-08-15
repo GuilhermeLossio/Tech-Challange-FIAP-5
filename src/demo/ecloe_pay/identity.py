@@ -33,7 +33,7 @@ class CompletedIdentity:
 
 
 def safe_return_to(value: str | None) -> str:
-    candidate = (value or "/pay").strip()
+    candidate = (value or "/pay").strip().replace("\\", "/")
     parsed = urlsplit(candidate)
     if parsed.scheme or parsed.netloc or not candidate.startswith("/") or candidate.startswith("//"):
         return "/pay"
