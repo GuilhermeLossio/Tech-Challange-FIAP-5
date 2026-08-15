@@ -482,7 +482,8 @@ def api_pay_order(order_id: str):
             currency=payment.currency,
         )
     except ValueError as error:
-        return jsonify({"error": str(error)}), 409
+        current_app.logger.warning("Market order payment conflict for order_id=%s: %s", order_id, error)
+        return jsonify({"error": "Unable to process payment for this order."}), 409
     response = jsonify(
         {
             "payment": asdict(payment),
