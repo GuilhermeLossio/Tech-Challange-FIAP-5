@@ -445,7 +445,8 @@ def api_create_order():
     try:
         order = _repository().create_order(checkout_id=checkout_id, user_id=str(user_id))
     except ValueError as error:
-        return jsonify({"error": str(error)}), 400
+        current_app.logger.warning("Order creation failed due to invalid request.", exc_info=error)
+        return jsonify({"error": "Invalid order request."}), 400
     return jsonify({"order": asdict(order)})
 
 
