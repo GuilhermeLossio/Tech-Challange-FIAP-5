@@ -1,0 +1,11 @@
+[extend]
+useDefault = true
+
+[[rules]]
+id = "generic-api-key"
+
+  [[rules.allowlists]]
+  description = "Pseudonymous subject key passed as a repository lookup parameter"
+  regexTarget = "line"
+  regexes = [ '''subject_key\s*=\s*subject_key''' ]
+  paths = [ '''src/api/routers/recommendations\.py''' ]
