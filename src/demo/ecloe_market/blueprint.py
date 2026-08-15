@@ -487,10 +487,11 @@ def api_pay_order(order_id: str):
         )
     except ValueError as error:
         current_app.logger.warning("Market order payment conflict for order_id=%s: %s", order_id, error)
-        message = str(error)
-        if message != "Insufficient ECloe Pay balance.":
-            message = "Unable to process payment for this order."
-        return jsonify({"error": message}), 409
+        if str(error) == "Insufficient ECloe Pay balance.":
+            client_message = "Insufficient ECloe Pay balance."
+        else:
+            client_message = "Unable to process payment for this order."
+        return jsonify({"error": client_message}), 409
     response = jsonify(
         {
             "payment": asdict(payment),
