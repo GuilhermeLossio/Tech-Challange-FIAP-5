@@ -71,15 +71,10 @@ New accounts start with the configured synthetic balance:
 ECLOE_PAY_INITIAL_BALANCE_CENTS=50000
 ```
 
-Signup abuse control is IP based, but raw IP addresses are never stored. The app
-normalizes the client IP from `X-Forwarded-For`, stores only an HMAC hash, and
-blocks a second new subject from the same IP unless the IP is explicitly
-allowlisted:
-
-```text
-ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP=1
-ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST=<administrator-ip-if-needed>
-```
+Signup abuse control uses shared Redis rate limiting. Raw IP addresses are never
+stored: the app normalizes the client IP from `X-Forwarded-For` and stores only
+an HMAC hash for audit purposes. Multiple legitimate accounts may be created
+from the same IP.
 
 Azure SQL persistence is the intended mode for validating the browser login
 flow against the configured demo persona:

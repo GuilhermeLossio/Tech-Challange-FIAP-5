@@ -23,7 +23,6 @@ from src.demo.ecloe_pay.repositories.base import (
     PaymentOrder,
     PayRepository,
     SignupEmailAlreadyExists,
-    SignupIpLimitExceeded,
     SyntheticAccount,
     SyntheticProfile,
     WalletPayment,
@@ -114,26 +113,6 @@ class MemoryPayRepository(PayRepository):
         if self.get_user_by_email(email_normalized) is not None:
             self.record_audit_event(None, "signup_duplicate_email", "blocked")
             raise SignupEmailAlreadyExists("An account already exists for this e-mail.")
-        if not allow_ip_reuse:
-            successful_from_ip = sum(
-                1
-                for item in self.signup_registrations
-                if item["ip_hash"] == signup_ip_hash and item["result"] == "success"
-            )
-            if successful_from_ip >= self.settings.ecloe_signup_max_accounts_per_ip:
-                self.signup_registrations.append(
-                    {
-                        "ip_hash": signup_ip_hash,
-                        "user_id": None,
-                        "provider": "local_signup",
-                        "issuer": "ecloe.local",
-                        "subject_key": user_id_for_email(email_normalized),
-                        "result": "blocked_ip_limit",
-                        "created_at": datetime.now(UTC),
-                    }
-                )
-                self.record_audit_event(None, "signup_blocked_ip_limit", "blocked")
-                raise SignupIpLimitExceeded("Signup limit reached for this IP address.")
         user = DemoUser(
             user_id=user_id_for_email(email_normalized),
             email=email_normalized,
@@ -215,26 +194,6 @@ class MemoryPayRepository(PayRepository):
         if existing_user_id is not None:
             self.record_audit_event(existing_user_id, "signup_existing_identity", "success")
             return self.get_user(existing_user_id)
-        if signup_ip_hash and not allow_ip_reuse:
-            successful_from_ip = sum(
-                1
-                for item in self.signup_registrations
-                if item["ip_hash"] == signup_ip_hash and item["result"] == "success"
-            )
-            if successful_from_ip >= self.settings.ecloe_signup_max_accounts_per_ip:
-                self.signup_registrations.append(
-                    {
-                        "ip_hash": signup_ip_hash,
-                        "user_id": None,
-                        "provider": "entra_external",
-                        "issuer": issuer,
-                        "subject_key": subject_key,
-                        "result": "blocked_ip_limit",
-                        "created_at": datetime.now(UTC),
-                    }
-                )
-                self.record_audit_event(None, "signup_blocked_ip_limit", "blocked")
-                raise SignupIpLimitExceeded("Signup limit reached for this IP address.")
         persona = persona_for_subject(subject_key)
         user_id = external_user_id(subject_key)
         synthetic_email = f"{persona.persona_id}.{user_id[-8:]}@demo.ecloe.local"

@@ -65,6 +65,9 @@ ENTRA_CLIENT_ID=<api-application-client-id>
 ENTRA_AUDIENCE=api://<api-application-client-id>
 CORS_ALLOWED_ORIGINS=https://<approved-client-host>
 TRUSTED_HOSTS=<approved-api-host>
+RATE_LIMIT_BACKEND=redis
+RATE_LIMIT_REDIS_URL=<key-vault-secret-reference>
+FLASK_SECRET_KEY=<key-vault-secret-reference>
 SUBJECT_KEY_SALT=<non-default-pseudonymization-secret>
 DECISION_EVENT_TTL_SECONDS=157680000
 DECISION_REPOSITORY_MODE=cosmos
@@ -398,8 +401,6 @@ ECLOE_PAY_DATABASE_MODE=azure_sql
 ECLOE_PAY_SQL_AUTH_MODE=managed_identity
 ECLOE_PAY_INITIAL_BALANCE_CENTS=50000
 ECLOE_WEB_AUTH_MODE=local_signup
-ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP=1
-ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST=<administrator-ip-if-needed>
 ```
 
-The ECloe UI exposes both `Entrar` and `Criar conta`. In the lightweight mode, ECloe stores only password hashes and synthetic wallet state in Azure SQL, stores only an HMAC of the signup IP, and blocks additional new users from the same non-allowlisted IP.
+The ECloe UI exposes both `Entrar` and `Criar conta`. In the lightweight mode, ECloe stores only password hashes and synthetic wallet state in Azure SQL. Signup attempts are protected by shared Redis rate limiting; the pseudonymized signup IP may be retained for abuse investigation, but it is not used to impose a one-account-per-IP rule.

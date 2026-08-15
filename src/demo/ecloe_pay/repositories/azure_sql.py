@@ -26,7 +26,6 @@ from src.demo.ecloe_pay.repositories.base import (
     PaymentOrder,
     PayRepository,
     SignupEmailAlreadyExists,
-    SignupIpLimitExceeded,
     SyntheticAccount,
     SyntheticProfile,
     WalletPayment,
@@ -247,54 +246,6 @@ class AzureSqlPayRepository(PayRepository):
             if existing is not None:
                 self._record_audit(connection, None, "signup_duplicate_email", "blocked")
                 raise SignupEmailAlreadyExists("An account already exists for this e-mail.")
-            if not allow_ip_reuse:
-                connection.execute(
-                    text(
-                        """
-                        DECLARE @lock_result INT;
-                        EXEC @lock_result = sp_getapplock
-                            @Resource = :lock_resource,
-                            @LockMode = 'Exclusive',
-                            @LockOwner = 'Transaction',
-                            @LockTimeout = 10000;
-                        IF @lock_result < 0
-                            THROW 51000, 'Could not acquire signup IP lock.', 1;
-                        """
-                    ),
-                    {"lock_resource": f"ecloe_signup_ip:{signup_ip_hash}"},
-                )
-                successful_from_ip = connection.execute(
-                    text(
-                        """
-                        SELECT COUNT_BIG(1)
-                        FROM ecloe_pay.signup_registrations WITH (UPDLOCK, HOLDLOCK)
-                        WHERE ip_hash = :ip_hash
-                            AND result = N'success'
-                        """
-                    ),
-                    {"ip_hash": signup_ip_hash},
-                ).scalar_one()
-                if int(successful_from_ip) >= self.settings.ecloe_signup_max_accounts_per_ip:
-                    connection.execute(
-                        text(
-                            """
-                            INSERT INTO ecloe_pay.signup_registrations (
-                                registration_id, ip_hash, user_id, provider, issuer, subject_key, result
-                            )
-                            VALUES (
-                                :registration_id, :ip_hash, NULL, N'local_signup',
-                                N'ecloe.local', :subject_key, N'blocked_ip_limit'
-                            )
-                            """
-                        ),
-                        {
-                            "registration_id": f"signup_{uuid.uuid4().hex}",
-                            "ip_hash": signup_ip_hash,
-                            "subject_key": user_id,
-                        },
-                    )
-                    self._record_audit(connection, None, "signup_blocked_ip_limit", "blocked")
-                    raise SignupIpLimitExceeded("Signup limit reached for this IP address.")
             connection.execute(
                 text(
                     """
@@ -607,53 +558,6 @@ class AzureSqlPayRepository(PayRepository):
                     existing["user_id"], existing["email"], existing["display_name"],
                     existing["persona_label"], existing["auth_provider"],
                 )
-            if signup_ip_hash and not allow_ip_reuse:
-                connection.execute(
-                    text(
-                        """
-                        DECLARE @lock_result INT;
-                        EXEC @lock_result = sp_getapplock
-                            @Resource = :lock_resource,
-                            @LockMode = 'Exclusive',
-                            @LockOwner = 'Transaction',
-                            @LockTimeout = 10000;
-                        IF @lock_result < 0
-                            THROW 51000, 'Could not acquire signup IP lock.', 1;
-                        """
-                    ),
-                    {"lock_resource": f"ecloe_signup_ip:{signup_ip_hash}"},
-                )
-                successful_from_ip = connection.execute(
-                    text(
-                        """
-                        SELECT COUNT_BIG(1)
-                        FROM ecloe_pay.signup_registrations WITH (UPDLOCK, HOLDLOCK)
-                        WHERE ip_hash = :ip_hash AND result = N'success'
-                        """
-                    ),
-                    {"ip_hash": signup_ip_hash},
-                ).scalar_one()
-                if int(successful_from_ip) >= self.settings.ecloe_signup_max_accounts_per_ip:
-                    connection.execute(
-                        text(
-                            """
-                            INSERT INTO ecloe_pay.signup_registrations (
-                                registration_id, ip_hash, user_id, provider, issuer, subject_key, result
-                            ) VALUES (
-                                :registration_id, :ip_hash, NULL, N'entra_external', :issuer,
-                                :subject_key, N'blocked_ip_limit'
-                            )
-                            """
-                        ),
-                        {
-                            "registration_id": f"signup_{uuid.uuid4().hex}",
-                            "ip_hash": signup_ip_hash,
-                            "issuer": issuer,
-                            "subject_key": subject_key,
-                        },
-                    )
-                    self._record_audit(connection, None, "signup_blocked_ip_limit", "blocked")
-                    raise SignupIpLimitExceeded("Signup limit reached for this IP address.")
             connection.execute(
                 text(
                     """

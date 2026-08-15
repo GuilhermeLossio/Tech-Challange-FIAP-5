@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.45.15.27210",
-      "templateHash": "15435924201743993348"
+      "templateHash": "13682181367630686278"
     }
   },
   "parameters": {
@@ -90,10 +90,31 @@
         "description": "Microsoft Entra client/application ID for the API."
       }
     },
-    "subjectKeySalt": {
-      "type": "securestring",
+    "keyVaultName": {
+      "type": "string",
       "metadata": {
-        "description": "Subject-key salt should come from a secure deployment parameter or Key Vault reference."
+        "description": "Existing Key Vault containing runtime secrets."
+      }
+    },
+    "flaskSecretName": {
+      "type": "string",
+      "defaultValue": "ecloe-flask-secret-key",
+      "metadata": {
+        "description": "Key Vault secret name for the Flask signing key."
+      }
+    },
+    "subjectKeySaltSecretName": {
+      "type": "string",
+      "defaultValue": "ecloe-subject-key-salt",
+      "metadata": {
+        "description": "Key Vault secret name for the subject pseudonymization salt."
+      }
+    },
+    "rateLimitRedisSecretName": {
+      "type": "string",
+      "defaultValue": "ecloe-rate-limit-redis-url",
+      "metadata": {
+        "description": "Key Vault secret name containing the Redis URL."
       }
     },
     "targetPort": {
@@ -109,7 +130,8 @@
     "storageName": "[toLower(format('ecloeart{0}', variables('unique')))]",
     "appInsightsName": "[format('ecloe-ai-{0}', parameters('environmentName'))]",
     "appName": "[format('ecloe-engine-{0}', parameters('environmentName'))]",
-    "artifactContainerName": "ecloe-artifacts"
+    "artifactContainerName": "ecloe-artifacts",
+    "keyVaultSecretIdentity": "system"
   },
   "resources": [
     {
@@ -166,7 +188,18 @@
           "secrets": [
             {
               "name": "subject-key-salt",
-              "value": "[parameters('subjectKeySalt')]"
+              "identity": "[variables('keyVaultSecretIdentity')]",
+              "keyVaultUrl": "[format('{0}secrets/{1}', reference(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), '2023-07-01').vaultUri, parameters('subjectKeySaltSecretName'))]"
+            },
+            {
+              "name": "flask-secret-key",
+              "identity": "[variables('keyVaultSecretIdentity')]",
+              "keyVaultUrl": "[format('{0}secrets/{1}', reference(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), '2023-07-01').vaultUri, parameters('flaskSecretName'))]"
+            },
+            {
+              "name": "rate-limit-redis-url",
+              "identity": "[variables('keyVaultSecretIdentity')]",
+              "keyVaultUrl": "[format('{0}secrets/{1}', reference(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), '2023-07-01').vaultUri, parameters('rateLimitRedisSecretName'))]"
             }
           ],
           "registries": [
@@ -209,6 +242,18 @@
                 {
                   "name": "ENTRA_AUDIENCE",
                   "value": "[format('api://{0}', parameters('entraClientId'))]"
+                },
+                {
+                  "name": "RATE_LIMIT_BACKEND",
+                  "value": "redis"
+                },
+                {
+                  "name": "RATE_LIMIT_REDIS_URL",
+                  "secretRef": "rate-limit-redis-url"
+                },
+                {
+                  "name": "FLASK_SECRET_KEY",
+                  "secretRef": "flask-secret-key"
                 },
                 {
                   "name": "SUBJECT_KEY_SALT",
@@ -314,6 +359,20 @@
       "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), variables('appName'), 'AcrPull')]",
       "properties": {
         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
+        "principalId": "[reference(resourceId('Microsoft.App/containerApps', variables('appName')), '2024-03-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/containerApps', variables('appName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), variables('appName'), 'Key Vault Secrets User')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
         "principalId": "[reference(resourceId('Microsoft.App/containerApps', variables('appName')), '2024-03-01', 'full').identity.principalId]",
         "principalType": "ServicePrincipal"
       },

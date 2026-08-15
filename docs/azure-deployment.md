@@ -48,7 +48,9 @@ AZURE_CLIENT_ID
 AZURE_TENANT_ID
 AZURE_SUBSCRIPTION_ID
 ENTRA_CLIENT_ID
+FLASK_SECRET_KEY
 SUBJECT_KEY_SALT
+RATE_LIMIT_REDIS_URL
 ```
 
 After deployment, grant the Container App identity Cosmos DB data-plane access:

@@ -20,7 +20,10 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "AUTH_MODE",
         "TRUSTED_HOSTS",
         "AZURE_COSMOS_AUTH_MODE",
+        "FLASK_SECRET_KEY",
         "SUBJECT_KEY_SALT",
+        "RATE_LIMIT_BACKEND",
+        "RATE_LIMIT_REDIS_URL",
         "DECISION_EVENT_TTL_SECONDS",
         "DECISION_REPOSITORY_MODE",
         "DECISION_EVENTS_FILE",
@@ -49,8 +52,6 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
         "ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI",
         "ECLOE_WEB_SESSION_IDLE_SECONDS",
         "ECLOE_WEB_OIDC_FLOW_TTL_SECONDS",
-        "ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP",
-        "ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST",
     ]:
         monkeypatch.delenv(name, raising=False)
 
@@ -67,6 +68,8 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.azure_cosmos_auth_mode == "key"
     assert settings.azure_cosmos_endpoint == DEFAULT_AZURE_COSMOS_ENDPOINT
     assert settings.subject_key_salt == "local-dev-subject-key-salt"
+    assert settings.flask_secret_key == "local-dev-flask-secret-key"
+    assert settings.rate_limit_backend == "memory"
     assert settings.decision_event_ttl_seconds == 157680000
     assert settings.decision_repository_mode == "file"
     assert settings.decision_events_file == ROOT_DIR / "reports" / "decision_events.jsonl"
@@ -88,8 +91,6 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.ecloe_web_auth_mode == "local"
     assert settings.ecloe_web_session_idle_seconds == 1800
     assert settings.ecloe_web_oidc_flow_ttl_seconds == 600
-    assert settings.ecloe_signup_max_accounts_per_ip == 1
-    assert settings.ecloe_signup_admin_ip_allowlist == ()
 
 
 def test_config_rejects_unknown_ecloe_pay_database_mode(monkeypatch) -> None:
@@ -128,10 +129,25 @@ def test_config_accepts_cloud_local_signup_with_azure_sql(monkeypatch) -> None:
     monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "local_signup")
     monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
     monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "managed_identity")
+    monkeypatch.setenv("FLASK_SECRET_KEY", "cloud-flask-secret")
+    monkeypatch.setenv("SUBJECT_KEY_SALT", "cloud-subject-salt")
+    monkeypatch.setenv("RATE_LIMIT_BACKEND", "redis")
+    monkeypatch.setenv("RATE_LIMIT_REDIS_URL", "memory://test")
 
     settings = load_settings(use_env_file=False)
 
     assert settings.ecloe_web_auth_mode == "local_signup"
+
+
+def test_config_requires_separate_cloud_secrets_and_shared_limiter(monkeypatch) -> None:
+    monkeypatch.setenv("APP_ENVIRONMENT", "cloud")
+    monkeypatch.setenv("FLASK_SECRET_KEY", "cloud-flask-secret")
+    monkeypatch.setenv("SUBJECT_KEY_SALT", "cloud-subject-salt")
+    monkeypatch.setenv("RATE_LIMIT_BACKEND", "redis")
+    monkeypatch.delenv("RATE_LIMIT_REDIS_URL", raising=False)
+
+    with pytest.raises(ValueError, match="RATE_LIMIT_REDIS_URL"):
+        load_settings(use_env_file=False)
 
 
 def test_config_requires_external_id_settings(monkeypatch) -> None:
@@ -175,13 +191,6 @@ def test_config_rejects_negative_initial_balance(monkeypatch) -> None:
         load_settings(use_env_file=False)
 
 
-def test_config_rejects_non_positive_signup_ip_limit(monkeypatch) -> None:
-    monkeypatch.setenv("ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP", "0")
-
-    with pytest.raises(ValueError, match="ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP"):
-        load_settings(use_env_file=False)
-
-
 def test_config_rejects_missing_azure_sql_settings_when_sql_mode_is_enabled(monkeypatch) -> None:
     monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
     monkeypatch.setenv("ECLOE_PAY_SQL_SERVER", "")
@@ -203,6 +212,10 @@ def test_config_rejects_entra_interactive_in_cloud(monkeypatch) -> None:
     monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "local_signup")
     monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
     monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "entra_interactive")
+    monkeypatch.setenv("FLASK_SECRET_KEY", "cloud-flask-secret")
+    monkeypatch.setenv("SUBJECT_KEY_SALT", "cloud-subject-salt")
+    monkeypatch.setenv("RATE_LIMIT_BACKEND", "redis")
+    monkeypatch.setenv("RATE_LIMIT_REDIS_URL", "memory://test")
 
     with pytest.raises(ValueError, match="entra_interactive is local-only"):
         load_settings(use_env_file=False)
@@ -213,6 +226,10 @@ def test_config_requires_managed_identity_for_pay_sql_in_cloud(monkeypatch) -> N
     monkeypatch.setenv("ECLOE_WEB_AUTH_MODE", "local_signup")
     monkeypatch.setenv("ECLOE_PAY_DATABASE_MODE", "azure_sql")
     monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "azure_cli")
+    monkeypatch.setenv("FLASK_SECRET_KEY", "cloud-flask-secret")
+    monkeypatch.setenv("SUBJECT_KEY_SALT", "cloud-subject-salt")
+    monkeypatch.setenv("RATE_LIMIT_BACKEND", "redis")
+    monkeypatch.setenv("RATE_LIMIT_REDIS_URL", "memory://test")
 
     with pytest.raises(ValueError) as error:
         load_settings(use_env_file=False)

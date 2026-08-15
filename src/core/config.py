@@ -22,6 +22,7 @@ ECLOE_WEB_AUTH_MODES = {"local", "local_signup", "entra_external"}
 CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
 RECOMMENDATION_ACTIVE_POLICIES = {"deterministic_baseline", "likelihood_ranker"}
 PLACEHOLDER_MARKERS = ("<", ">", "seu-", "your-", "tenant-subdomain")
+LOCAL_FLASK_SECRET_KEY = "local-dev-flask-secret-key"
 
 
 def _load_env_file(path: Path) -> None:
@@ -98,7 +99,10 @@ class Settings:
     max_concurrent_requests: int
     rate_limit_requests: int
     rate_limit_window_seconds: int
+    rate_limit_backend: str
+    rate_limit_redis_url: str
     azure_cosmos_auth_mode: str
+    flask_secret_key: str
     subject_key_salt: str
     decision_event_ttl_seconds: int
     decision_repository_mode: str
@@ -123,8 +127,6 @@ class Settings:
     ecloe_web_entra_post_logout_redirect_uri: str
     ecloe_web_session_idle_seconds: int
     ecloe_web_oidc_flow_ttl_seconds: int
-    ecloe_signup_max_accounts_per_ip: int
-    ecloe_signup_admin_ip_allowlist: tuple[str, ...]
     ecloe_market_database_mode: str
     ecloe_market_catalog_path: Path
     ecloe_market_catalog_seed: int
@@ -207,7 +209,10 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         max_concurrent_requests=int(_env("MAX_CONCURRENT_REQUESTS", "16")),
         rate_limit_requests=int(_env("RATE_LIMIT_REQUESTS", "120")),
         rate_limit_window_seconds=int(_env("RATE_LIMIT_WINDOW_SECONDS", "60")),
+        rate_limit_backend=_env("RATE_LIMIT_BACKEND", "memory").lower(),
+        rate_limit_redis_url=_env("RATE_LIMIT_REDIS_URL"),
         azure_cosmos_auth_mode=_env("AZURE_COSMOS_AUTH_MODE", "key").lower(),
+        flask_secret_key=_env("FLASK_SECRET_KEY", "local-dev-flask-secret-key"),
         subject_key_salt=_env("SUBJECT_KEY_SALT", "local-dev-subject-key-salt"),
         decision_event_ttl_seconds=int(_env("DECISION_EVENT_TTL_SECONDS", "157680000")),
         decision_repository_mode=_env("DECISION_REPOSITORY_MODE", "file").lower(),
@@ -245,8 +250,6 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         ),
         ecloe_web_session_idle_seconds=int(_env("ECLOE_WEB_SESSION_IDLE_SECONDS", "1800")),
         ecloe_web_oidc_flow_ttl_seconds=int(_env("ECLOE_WEB_OIDC_FLOW_TTL_SECONDS", "600")),
-        ecloe_signup_max_accounts_per_ip=int(_env("ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP", "1")),
-        ecloe_signup_admin_ip_allowlist=_split_csv(_env("ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST")),
         ecloe_market_database_mode=_env("ECLOE_MARKET_DATABASE_MODE", "memory").lower(),
         ecloe_market_catalog_path=ROOT_DIR
         / _env("ECLOE_MARKET_CATALOG_PATH", "data/demo/ecloe_market_catalog.json"),
@@ -292,6 +295,10 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
 
 
 def _validate_ecloe_pay_settings(settings: Settings) -> None:
+    if settings.rate_limit_backend not in {"memory", "redis"}:
+        raise ValueError(f"Unsupported RATE_LIMIT_BACKEND: {settings.rate_limit_backend}")
+    if settings.rate_limit_backend == "redis" and not settings.rate_limit_redis_url:
+        raise ValueError("RATE_LIMIT_REDIS_URL is required when RATE_LIMIT_BACKEND=redis.")
     if settings.ecloe_pay_database_mode not in ECLOE_PAY_DATABASE_MODES:
         raise ValueError(f"Unsupported ECLOE_PAY_DATABASE_MODE: {settings.ecloe_pay_database_mode}")
     if settings.ecloe_pay_sql_auth_mode not in ECLOE_PAY_SQL_AUTH_MODES:
@@ -308,8 +315,6 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
         raise ValueError("ECLOE_WEB_SESSION_IDLE_SECONDS cannot exceed the session TTL.")
     if settings.ecloe_web_oidc_flow_ttl_seconds <= 0:
         raise ValueError("ECLOE_WEB_OIDC_FLOW_TTL_SECONDS must be greater than zero.")
-    if settings.ecloe_signup_max_accounts_per_ip <= 0:
-        raise ValueError("ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP must be greater than zero.")
     if (
         settings.ecloe_web_auth_mode == "local_signup"
         and settings.app_environment in CLOUD_ENVIRONMENTS
@@ -363,6 +368,12 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
             raise ValueError(f"Missing ECloe Pay Azure SQL settings: {missing}")
 
     if settings.app_environment in CLOUD_ENVIRONMENTS:
+        if not settings.flask_secret_key or settings.flask_secret_key == LOCAL_FLASK_SECRET_KEY or _looks_like_placeholder(settings.flask_secret_key):
+            raise ValueError("Cloud environments must configure a non-placeholder FLASK_SECRET_KEY.")
+        if not settings.subject_key_salt or settings.subject_key_salt == "local-dev-subject-key-salt":
+            raise ValueError("Cloud environments must configure a non-default SUBJECT_KEY_SALT.")
+        if settings.rate_limit_backend != "redis":
+            raise ValueError("Cloud environments must use RATE_LIMIT_BACKEND=redis.")
         if settings.ecloe_pay_sql_auth_mode == "entra_interactive":
             raise ValueError("ECLOE_PAY_SQL_AUTH_MODE=entra_interactive is local-only.")
         if (

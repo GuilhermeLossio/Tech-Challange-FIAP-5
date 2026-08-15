@@ -33,8 +33,9 @@ def create_app(
     if recommendation_service is not None:
         app.state.recommendation_service = recommendation_service
 
-    configure_observability(app, load_settings())
-    register_middleware(app)
+    settings = load_settings()
+    configure_observability(app, settings)
+    register_middleware(app, settings)
     register_error_handlers(app)
     app.include_router(health.router)
     app.include_router(policies.router)

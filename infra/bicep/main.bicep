@@ -36,9 +36,17 @@ param entraTenantId string
 @description('Microsoft Entra client/application ID for the API.')
 param entraClientId string
 
-@description('Subject-key salt should come from a secure deployment parameter or Key Vault reference.')
-@secure()
-param subjectKeySalt string
+@description('Existing Key Vault containing runtime secrets.')
+param keyVaultName string
+
+@description('Key Vault secret name for the Flask signing key.')
+param flaskSecretName string = 'ecloe-flask-secret-key'
+
+@description('Key Vault secret name for the subject pseudonymization salt.')
+param subjectKeySaltSecretName string = 'ecloe-subject-key-salt'
+
+@description('Key Vault secret name containing the Redis URL.')
+param rateLimitRedisSecretName string = 'ecloe-rate-limit-redis-url'
 
 @description('Container App external ingress port.')
 param targetPort int = 8000
@@ -48,6 +56,7 @@ var storageName = toLower('ecloeart${unique}')
 var appInsightsName = 'ecloe-ai-${environmentName}'
 var appName = 'ecloe-engine-${environmentName}'
 var artifactContainerName = 'ecloe-artifacts'
+var keyVaultSecretIdentity = 'system'
 
 resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' existing = {
   name: acrName
@@ -95,6 +104,10 @@ resource managedEnv 'Microsoft.App/managedEnvironments@2024-03-01' existing = {
   name: containerAppsEnvironmentName
 }
 
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' existing = {
+  name: keyVaultName
+}
+
 resource app 'Microsoft.App/containerApps@2024-03-01' = {
   name: appName
   location: location
@@ -112,7 +125,18 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
       secrets: [
         {
           name: 'subject-key-salt'
-          value: subjectKeySalt
+          identity: keyVaultSecretIdentity
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${subjectKeySaltSecretName}'
+        }
+        {
+          name: 'flask-secret-key'
+          identity: keyVaultSecretIdentity
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${flaskSecretName}'
+        }
+        {
+          name: 'rate-limit-redis-url'
+          identity: keyVaultSecretIdentity
+          keyVaultUrl: '${keyVault.properties.vaultUri}secrets/${rateLimitRedisSecretName}'
         }
       ]
       registries: [
@@ -155,6 +179,18 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'ENTRA_AUDIENCE'
               value: 'api://${entraClientId}'
+            }
+            {
+              name: 'RATE_LIMIT_BACKEND'
+              value: 'redis'
+            }
+            {
+              name: 'RATE_LIMIT_REDIS_URL'
+              secretRef: 'rate-limit-redis-url'
+            }
+            {
+              name: 'FLASK_SECRET_KEY'
+              secretRef: 'flask-secret-key'
             }
             {
               name: 'SUBJECT_KEY_SALT'
@@ -250,6 +286,19 @@ resource acrPullRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   scope: acr
   properties: {
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')
+    principalId: app.identity.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource keyVaultSecretsUserRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(keyVault.id, app.name, 'Key Vault Secrets User')
+  scope: keyVault
+  properties: {
+    roleDefinitionId: subscriptionResourceId(
+      'Microsoft.Authorization/roleDefinitions',
+      '4633458b-17de-408a-b874-0445c86b69e6'
+    )
     principalId: app.identity.principalId
     principalType: 'ServicePrincipal'
   }

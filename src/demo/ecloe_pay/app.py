@@ -5,7 +5,6 @@ import ipaddress
 import logging
 import os
 import secrets
-import time
 from dataclasses import asdict
 from pathlib import Path
 from urllib.parse import urlencode, urlsplit
@@ -18,11 +17,13 @@ from flask import (
     render_template,
     request,
     send_from_directory,
+    session,
 )
 from werkzeug.middleware.proxy_fix import ProxyFix
 from werkzeug.security import generate_password_hash
 
 from src.core.config import Settings, load_settings
+from src.core.rate_limit import RateLimitBackendUnavailable, SharedRateLimiter
 from src.demo.ecloe_pay.i18n import (
     LOCALE_COOKIE_NAME,
     load_messages,
@@ -33,7 +34,6 @@ from src.demo.ecloe_pay.identity import EntraExternalIdentity, OAuthClient, safe
 from src.demo.ecloe_pay.repositories import (
     PayRepository,
     SignupEmailAlreadyExists,
-    SignupIpLimitExceeded,
     create_pay_repository,
 )
 from src.recommendation import (
@@ -95,7 +95,10 @@ def _clear_auth_cookie(response, settings: Settings) -> None:
 
 
 def _set_csrf_cookie(response, settings: Settings) -> str:
-    token = secrets.token_hex(32)
+    token = session.get("csrf_token")
+    if not isinstance(token, str) or not token:
+        token = secrets.token_hex(32)
+        session["csrf_token"] = token
     response.set_cookie(
         CSRF_COOKIE_NAME,
         token,
@@ -106,6 +109,11 @@ def _set_csrf_cookie(response, settings: Settings) -> str:
         max_age=settings.ecloe_pay_session_ttl_seconds,
     )
     return token
+
+
+def _rotate_csrf_token(response, settings: Settings) -> str:
+    session.pop("csrf_token", None)
+    return _set_csrf_cookie(response, settings)
 
 
 def _csrf_valid() -> bool:
@@ -197,33 +205,20 @@ def _signup_ip_hash(settings: Settings) -> str:
     ).hexdigest()
 
 
-def _signup_ip_allowlisted(settings: Settings) -> bool:
-    client_ip = _client_ip()
-    normalized_allowlist = set()
-    for value in settings.ecloe_signup_admin_ip_allowlist:
-        try:
-            normalized_allowlist.add(str(ipaddress.ip_address(value)))
-        except ValueError:
-            continue
-    return client_ip in normalized_allowlist
-
-
 def _login_rate_limited(app: Flask, email: str) -> bool:
-    now = time.monotonic()
-    attempts: dict[str, list[float]] = app.pay_login_attempts  # type: ignore[attr-defined]
     key = _rate_limit_key(email)
-    recent = [stamp for stamp in attempts.get(key, []) if now - stamp < LOGIN_RATE_LIMIT_WINDOW_SECONDS]
-    if len(recent) >= LOGIN_RATE_LIMIT_ATTEMPTS:
-        attempts[key] = recent
+    limiter: SharedRateLimiter = app.rate_limiter  # type: ignore[attr-defined]
+    try:
+        return not limiter.allow(
+            f"auth:{key}", LOGIN_RATE_LIMIT_ATTEMPTS, LOGIN_RATE_LIMIT_WINDOW_SECONDS
+        )
+    except RateLimitBackendUnavailable:
         return True
-    recent.append(now)
-    attempts[key] = recent
-    return False
 
 
 def _clear_login_attempts(app: Flask, email: str) -> None:
-    attempts: dict[str, list[float]] = app.pay_login_attempts  # type: ignore[attr-defined]
-    attempts.pop(_rate_limit_key(email), None)
+    limiter: SharedRateLimiter = app.rate_limiter  # type: ignore[attr-defined]
+    limiter.clear(f"auth:{_rate_limit_key(email)}")
 
 
 def _current_user(app: Flask) -> tuple[dict[str, object] | None, str | None]:
@@ -321,10 +316,10 @@ def create_app(
         app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
             app.wsgi_app, x_for=1, x_proto=1, x_host=1
         )
-    app.secret_key = settings.subject_key_salt
+    app.secret_key = settings.flask_secret_key
     app.pay_settings = settings  # type: ignore[attr-defined]
     app.pay_repository = repository or create_pay_repository(settings)  # type: ignore[attr-defined]
-    app.pay_login_attempts = {}  # type: ignore[attr-defined]
+    app.rate_limiter = SharedRateLimiter(settings)  # type: ignore[attr-defined]
     app.recommendation_service = (  # type: ignore[attr-defined]
         recommendation_service or RecommendationService.from_settings(settings)
     )
@@ -479,20 +474,11 @@ def create_app(
             return response
         external, return_to = completed
         repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
-        try:
-            user = repository.provision_external_user(
-                external.issuer,
-                external.subject_key,
-                signup_ip_hash=_signup_ip_hash(settings),
-                allow_ip_reuse=_signup_ip_allowlisted(settings),
-            )
-        except SignupIpLimitExceeded:
-            response = _auth_json(
-                {"error": "This IP address has already created an ECloe account."},
-                403,
-            )
-            response.delete_cookie(OIDC_FLOW_COOKIE_NAME, path="/auth/callback")
-            return response
+        user = repository.provision_external_user(
+            external.issuer,
+            external.subject_key,
+            signup_ip_hash=_signup_ip_hash(settings),
+        )
         if user is None:
             repository.record_audit_event(None, "login", "disabled")
             response = _auth_json({"error": "This account is not active."}, 403)
@@ -506,7 +492,7 @@ def create_app(
         repository.record_audit_event(user.user_id, "login", "success")
         response = _redirect_to_safe_return(return_to)
         _set_auth_cookie(response, auth_session.auth_session_id, settings)
-        _set_csrf_cookie(response, settings)
+        _rotate_csrf_token(response, settings)
         response.delete_cookie(OIDC_FLOW_COOKIE_NAME, path="/auth/callback")
         return response
 
@@ -532,7 +518,7 @@ def create_app(
         _clear_login_attempts(app, email)
         response = _auth_json({"authenticated": True, "user": asdict(user)})
         _set_auth_cookie(response, auth_session.auth_session_id, settings)
-        _set_csrf_cookie(response, settings)
+        _rotate_csrf_token(response, settings)
         LOGGER.info("ecloe_pay_login user_id=%s result=success", user.user_id)
         return response
 
@@ -549,8 +535,10 @@ def create_app(
         password_confirm = str(payload.get("password_confirm", ""))
         if "@" not in email or "." not in email.rsplit("@", 1)[-1]:
             return _auth_json({"error": "Informe um e-mail valido."}, 400)
-        if len(password) < 8:
-            return _auth_json({"error": "A senha deve ter pelo menos 8 caracteres."}, 400)
+        if len(email) > 254:
+            return _auth_json({"error": "Informe um e-mail valido."}, 400)
+        if len(password) < 12 or len(password) > 128:
+            return _auth_json({"error": "A senha deve ter entre 12 e 128 caracteres."}, 400)
         if password != password_confirm:
             return _auth_json({"error": "A confirmacao de senha nao confere."}, 400)
         if _login_rate_limited(app, email):
@@ -559,23 +547,17 @@ def create_app(
         try:
             user = repository.register_local_user(
                 email,
-                generate_password_hash(password),
+                generate_password_hash(password, method="scrypt"),
                 signup_ip_hash=_signup_ip_hash(settings),
-                allow_ip_reuse=_signup_ip_allowlisted(settings),
             )
         except SignupEmailAlreadyExists:
             return _auth_json({"error": "Ja existe uma conta com este e-mail."}, 409)
-        except SignupIpLimitExceeded:
-            return _auth_json(
-                {"error": "Este endereco de IP ja criou uma conta ECloe."},
-                403,
-            )
         auth_session = repository.create_auth_session(user.user_id)
         repository.get_or_create_demo_session(user.user_id)
         _clear_login_attempts(app, email)
         response = _auth_json({"authenticated": True, "user": asdict(user)})
         _set_auth_cookie(response, auth_session.auth_session_id, settings)
-        _set_csrf_cookie(response, settings)
+        _rotate_csrf_token(response, settings)
         LOGGER.info("ecloe_pay_register user_id=%s result=success", user.user_id)
         return response
 
@@ -595,7 +577,7 @@ def create_app(
             logout_url = app.external_identity.logout_url()  # type: ignore[attr-defined]
         response = _auth_json({"authenticated": False, "logout_url": logout_url})
         _clear_auth_cookie(response, settings)
-        _set_csrf_cookie(response, settings)
+        _rotate_csrf_token(response, settings)
         LOGGER.info("ecloe_pay_logout result=success")
         return response
 

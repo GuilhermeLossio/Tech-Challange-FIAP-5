@@ -72,8 +72,8 @@ def test_local_signup_register_creates_user_session_and_initial_balance() -> Non
         "/api/auth/register",
         json={
             "email": "new.user@example.com",
-            "password": "strong-pass",
-            "password_confirm": "strong-pass",
+            "password": "strong-pass-1234",
+            "password_confirm": "strong-pass-1234",
         },
         headers=csrf_headers(client),
     )
@@ -89,7 +89,7 @@ def test_local_signup_register_creates_user_session_and_initial_balance() -> Non
     assert account.available_balance_cents == 50000
     assert account.transactions[0].amount_cents == 50000
     persisted = repr(repository.users) + repr(repository.signup_registrations)
-    assert "strong-pass" not in persisted
+    assert "strong-pass-1234" not in persisted
 
 
 def test_local_signup_duplicate_email_returns_conflict() -> None:
@@ -100,8 +100,8 @@ def test_local_signup_duplicate_email_returns_conflict() -> None:
     first.get("/pay/register")
     payload = {
         "email": "duplicate@example.com",
-        "password": "strong-pass",
-        "password_confirm": "strong-pass",
+        "password": "strong-pass-1234",
+        "password_confirm": "strong-pass-1234",
     }
     assert first.post("/api/auth/register", json=payload, headers=csrf_headers(first)).status_code == 200
     second = app.test_client()
@@ -113,7 +113,7 @@ def test_local_signup_duplicate_email_returns_conflict() -> None:
     assert any(item["event_type"] == "signup_duplicate_email" for item in repository.audit_events)
 
 
-def test_local_signup_blocks_second_new_user_from_same_ip_without_raw_ip_persistence() -> None:
+def test_local_signup_allows_multiple_users_from_same_ip_without_raw_ip_persistence() -> None:
     settings = local_signup_settings()
     repository = MemoryPayRepository(settings)
     app = create_app(settings=settings, repository=repository)
@@ -123,8 +123,8 @@ def test_local_signup_blocks_second_new_user_from_same_ip_without_raw_ip_persist
         "/api/auth/register",
         json={
             "email": "first@example.com",
-            "password": "strong-pass",
-            "password_confirm": "strong-pass",
+            "password": "strong-pass-1234",
+            "password_confirm": "strong-pass-1234",
         },
         headers={**csrf_headers(first), "X-Forwarded-For": "198.51.100.7"},
     ).status_code == 200
@@ -135,20 +135,20 @@ def test_local_signup_blocks_second_new_user_from_same_ip_without_raw_ip_persist
         "/api/auth/register",
         json={
             "email": "second@example.com",
-            "password": "strong-pass",
-            "password_confirm": "strong-pass",
+            "password": "strong-pass-1234",
+            "password_confirm": "strong-pass-1234",
         },
         headers={**csrf_headers(second), "X-Forwarded-For": "198.51.100.7"},
     )
 
-    assert response.status_code == 403
+    assert response.status_code == 200
     persisted = repr(repository.signup_registrations) + repr(repository.audit_events)
     assert "198.51.100.7" not in persisted
-    assert "blocked_ip_limit" in persisted
+    assert "blocked_ip_limit" not in persisted
 
 
 def test_local_signup_allowlisted_ip_can_create_multiple_users() -> None:
-    settings = local_signup_settings(ecloe_signup_admin_ip_allowlist=("198.51.100.7",))
+    settings = local_signup_settings()
     repository = MemoryPayRepository(settings)
     app = create_app(settings=settings, repository=repository)
 
@@ -159,8 +159,8 @@ def test_local_signup_allowlisted_ip_can_create_multiple_users() -> None:
             "/api/auth/register",
             json={
                 "email": email,
-                "password": "strong-pass",
-                "password_confirm": "strong-pass",
+                "password": "strong-pass-1234",
+                "password_confirm": "strong-pass-1234",
             },
             headers={**csrf_headers(client), "X-Forwarded-For": "198.51.100.7"},
         )
@@ -173,7 +173,7 @@ def test_local_signup_allowlisted_ip_can_create_multiple_users() -> None:
 
 
 def test_local_signup_users_get_distinct_demo_payment_orders() -> None:
-    settings = local_signup_settings(ecloe_signup_admin_ip_allowlist=("198.51.100.7",))
+    settings = local_signup_settings()
     repository = MemoryPayRepository(settings)
     app = create_app(settings=settings, repository=repository)
     order_ids = []
@@ -185,8 +185,8 @@ def test_local_signup_users_get_distinct_demo_payment_orders() -> None:
             "/api/auth/register",
             json={
                 "email": email,
-                "password": "strong-pass",
-                "password_confirm": "strong-pass",
+                "password": "strong-pass-1234",
+                "password_confirm": "strong-pass-1234",
             },
             headers={**csrf_headers(client), "X-Forwarded-For": "198.51.100.7"},
         )

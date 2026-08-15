@@ -180,7 +180,11 @@ def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
     assert "Cache-Control" in app_source
     assert "redirect(_localized_login_url(locale))" in app_source
     assert "make_response" in app_source
-    assert "session[" not in app_source
+    assert "session.get(\"csrf_token\")" in app_source
+    assert "_rotate_csrf_token" in app_source
+    assert "SharedRateLimiter" in app_source
+    assert "app.secret_key = settings.flask_secret_key" in app_source
+    assert "SignupIpLimitExceeded" not in app_source
     assert "X-CSRF-Token" in script
     assert "X-CSRF-Token" in login_script
     assert 'src="../login.js"' in login

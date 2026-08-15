@@ -48,13 +48,7 @@ The absolute session lifetime is eight hours, the idle timeout is thirty minutes
 
 The account mapping is one ECloe account per external person. Azure SQL enforces that through `ecloe_pay.external_identities` on `(provider, issuer, subject_key)`, where `subject_key` is a local HMAC pseudonym derived from issuer plus `sub`.
 
-New account creation also has an IP abuse guard:
-
-- `ECLOE_SIGNUP_MAX_ACCOUNTS_PER_IP=1` is the default runtime limit.
-- `ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST` accepts comma-separated IP addresses allowed to create multiple demo accounts for administration and testing.
-- ECloe reads the real client IP from `X-Forwarded-For` behind the cloud proxy, normalizes it, and stores only an HMAC hash in `ecloe_pay.signup_registrations`.
-- Raw IP addresses, real claims, tokens, real e-mail addresses, and real names are not stored.
-- A second new subject from a non-allowlisted IP receives `403` and the OIDC flow cookie is cleared.
+New account creation uses shared Redis rate limiting to control abuse. ECloe reads the real client IP from `X-Forwarded-For` behind the cloud proxy, normalizes it, and stores only an HMAC hash in `ecloe_pay.signup_registrations` when audit data is needed. The hash is not used to impose a one-account-per-IP rule. Raw IP addresses, real claims, tokens, real e-mail addresses, and real names are not stored.
 
 All displayed balances, cashback, transactions, names, locations, and segments are fictional. ECloe does not create realistic CPF, card, branch, or bank-account numbers and does not connect to Open Finance.
 
@@ -62,7 +56,6 @@ All displayed balances, cashback, transactions, names, locations, and segments a
 
 - Run `python -m scripts.init_ecloe_pay_sql` with a migration identity before deploying a revision that requires the new schema.
 - Keep Pay and Market on Azure SQL with Managed Identity in cloud; memory mode is local-only.
-- Configure `ECLOE_SIGNUP_ADMIN_IP_ALLOWLIST` with the current administrator IP only when repeated demo account creation from that IP is required.
 - Monitor result codes and pseudonymized user IDs only. Never log claims, authorization responses, cookies, or profile payloads.
 - Disable a compromised customer by setting `ecloe_pay.demo_users.is_active` to `0`, then revoke their rows in `auth_sessions`.
 - Delete expired `oidc_login_flows` regularly; writes also remove expired rows opportunistically.
