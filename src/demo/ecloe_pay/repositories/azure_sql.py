@@ -1038,7 +1038,7 @@ class AzureSqlPayRepository(PayRepository):
                     """
                     SELECT payment_id, user_id, market_order_id, amount_cents, currency,
                         status, balance_after_cents
-                    FROM ecloe_pay.wallet_payment_transactions
+                    FROM ecloe_pay.wallet_payment_transactions WITH (UPDLOCK, HOLDLOCK)
                     WHERE idempotency_key = :idempotency_key
                     """
                 ),

@@ -11,7 +11,7 @@ from src.api.dependencies import (
     get_recommendation_service,
     to_recommendation_request,
 )
-from src.api.errors import API_ERROR_RESPONSES, invalid_request
+from src.api.errors import API_ERROR_RESPONSES, idempotency_conflict, invalid_request
 from src.api.schemas.recommendations import (
     FeedbackRequestV2,
     FeedbackResponseV2,
@@ -26,6 +26,7 @@ from src.recommendation import RecommendationService, Surface
 from src.storage.decision_repository import (
     DecisionRecord,
     DecisionRepository,
+    IdempotencyConflict,
     RewardRecord,
     request_hash,
 )
@@ -54,7 +55,7 @@ def create_recommendation(
             )
             if existing is not None:
                 if existing.request_hash and existing.request_hash != payload_hash:
-                    raise ValueError("Idempotency-Key was already used with a different request")
+                    raise IdempotencyConflict("Idempotency-Key was already used with a different request")
                 return existing.response
 
         request = to_recommendation_request(payload)
@@ -90,6 +91,8 @@ def create_recommendation(
             )
         )
         return saved.response
+    except IdempotencyConflict as error:
+        raise idempotency_conflict(error) from error
     except ValueError as error:
         raise invalid_request(error) from error
 
@@ -134,7 +137,7 @@ def record_feedback(
                 or existing.position != payload.position
                 or existing.event_type != payload.event_type
             ):
-                raise ValueError("event_id was already used with different feedback")
+                raise IdempotencyConflict("event_id was already used with different feedback")
             return existing.response
         decision = repository.get_decision(subject_key=subject_key, decision_id=payload.decision_id)
         if decision is None:
@@ -176,6 +179,7 @@ def record_feedback(
                 occurred_at=occurred_at.isoformat(),
                 created_at=datetime.now(UTC).isoformat(),
                 response=response,
+                request_hash=request_hash(payload.model_dump(mode="json")),
                 ttl=settings.decision_event_ttl_seconds,
                 surface=decision.surface,
                 candidate_id=payload.candidate_id,
@@ -184,6 +188,8 @@ def record_feedback(
             )
         )
         return saved.response
+    except IdempotencyConflict as error:
+        raise idempotency_conflict(error) from error
     except (TypeError, ValueError) as error:
         raise invalid_request(error) from error
 

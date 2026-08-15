@@ -5,6 +5,8 @@ import secrets
 import uuid
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from functools import wraps
+from threading import RLock
 from typing import Any
 
 from werkzeug.security import check_password_hash, generate_password_hash
@@ -39,6 +41,15 @@ from src.demo.ecloe_pay.repositories.base import (
 )
 
 
+def _synchronized(method):
+    @wraps(method)
+    def wrapper(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+
+    return wrapper
+
+
 class MemoryPayRepository(PayRepository):
     requires_authentication = False
 
@@ -58,6 +69,7 @@ class MemoryPayRepository(PayRepository):
         self.outbox_events: list[dict[str, Any]] = []
         self.wallet_payments: dict[str, WalletPayment] = {}
         self.loan_request_rows: dict[str, tuple[LoanRequest, ...]] = {}
+        self._lock = RLock()
         self._seed_user()
 
     def _seed_user(self) -> None:
@@ -285,6 +297,7 @@ class MemoryPayRepository(PayRepository):
         self.consent_acceptances.add((session.user_id, "demo_terms", "2026-08"))
         return session
 
+    @_synchronized
     def record_benefit_interaction(self, session_id: str, event_type: str, reward: float) -> dict[str, Any]:
         session = self.demo_sessions[session_id]
         events = self.benefit_events.setdefault(session_id, [])
@@ -311,6 +324,7 @@ class MemoryPayRepository(PayRepository):
     def loan_requests(self, user_id: str) -> tuple[LoanRequest, ...]:
         return self.loan_request_rows.setdefault(user_id, initial_loan_requests(user_id))
 
+    @_synchronized
     def simulate_payment(self, session_id: str, confirmation_code: str) -> tuple[str, dict[str, Any] | None]:
         sessions_before = copy.deepcopy(self.demo_sessions)
         benefit_events_before = copy.deepcopy(self.benefit_events)
@@ -341,6 +355,7 @@ class MemoryPayRepository(PayRepository):
             self.outbox_events = outbox_events_before
             raise
 
+    @_synchronized
     def pay_market_order(
         self,
         *,

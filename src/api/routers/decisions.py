@@ -11,14 +11,24 @@ from src.api.dependencies import (
     get_request_context,
     to_engine_request,
 )
-from src.api.errors import API_ERROR_RESPONSES, artifact_unavailable, invalid_request
+from src.api.errors import (
+    API_ERROR_RESPONSES,
+    artifact_unavailable,
+    idempotency_conflict,
+    invalid_request,
+)
 from src.api.schemas.decisions import DecisionRequest, DecisionResponse
 from src.api.security import Principal, require_scopes, subject_key_for
 from src.core.config import Settings, load_settings
 from src.engine import DecisionService
 from src.engine.artifacts import ArtifactValidationError
 from src.engine.validation import validate_engine_request
-from src.storage.decision_repository import DecisionRecord, DecisionRepository, request_hash
+from src.storage.decision_repository import (
+    DecisionRecord,
+    DecisionRepository,
+    IdempotencyConflict,
+    request_hash,
+)
 
 router = APIRouter(prefix="/v1/decisions", tags=["decisions"])
 
@@ -38,16 +48,27 @@ def create_decision(
 ) -> dict[str, object]:
     try:
         subject_key = subject_key_for(principal, settings)
+        request = to_engine_request(payload)
+        validate_engine_request(request)
+        payload_hash = request_hash(
+            {
+                "request_id": request.request_id,
+                "customer_context": request.customer_context,
+                "eligible_offers": request.eligible_offers,
+            }
+        )
         if idempotency_key:
             existing = repository.get_by_idempotency_key(
                 subject_key=subject_key,
                 idempotency_key=idempotency_key,
             )
             if existing is not None:
+                if existing.request_hash and existing.request_hash != payload_hash:
+                    raise IdempotencyConflict(
+                        "Idempotency-Key was already used with a different request."
+                    )
                 return existing.response
 
-        request = to_engine_request(payload)
-        validate_engine_request(request)
         response = service.decide(request)
         response_payload = asdict(response)
         saved = repository.save_decision(
@@ -65,13 +86,7 @@ def create_decision(
                 minimized_context=request.customer_context,
                 response=response_payload,
                 idempotency_key=idempotency_key,
-                request_hash=request_hash(
-                    {
-                        "request_id": request.request_id,
-                        "customer_context": request.customer_context,
-                        "eligible_offers": request.eligible_offers,
-                    }
-                ),
+                request_hash=payload_hash,
                 ttl=settings.decision_event_ttl_seconds,
             )
         )
@@ -80,6 +95,8 @@ def create_decision(
             request_context.state.policy_version = saved.policy_version
     except (ArtifactValidationError, FileNotFoundError) as error:
         raise artifact_unavailable(error) from error
+    except IdempotencyConflict as error:
+        raise idempotency_conflict(error) from error
     except ValueError as error:
         raise invalid_request(error) from error
     return saved.response

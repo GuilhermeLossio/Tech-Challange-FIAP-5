@@ -5,6 +5,7 @@ description = "Adaptive experimentation platform for personalized financial offe
 readme = "README.md"
 requires-python = "==3.14.6"
 dependencies = [
+    "alembic>=1.13.0",
     "fastapi>=0.111.0",
     "flask>=3.1.0",
     "kaggle>=1.6.17",

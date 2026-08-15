@@ -128,6 +128,11 @@ Apply pending Azure SQL migrations and seed the deterministic demo state with:
 python -m scripts.init_ecloe_pay_sql
 ```
 
+For versioned schema changes, configure `ECLOE_PAY_SQLALCHEMY_URL` and run
+`alembic upgrade head`. The initial Alembic revision is a baseline for the
+existing `schema.sql`; subsequent revisions are incremental and safe to run
+more than once.
+
 `/pay` and the Pay APIs require the demo persona login. In Azure SQL mode,
 credentials are validated against `ecloe_pay.demo_users`. The raw session token
 is only sent to the browser as the

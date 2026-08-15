@@ -6,11 +6,16 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Request
 
 from src.api.dependencies import get_decision_repository, get_request_context
-from src.api.errors import API_ERROR_RESPONSES, invalid_request
+from src.api.errors import API_ERROR_RESPONSES, idempotency_conflict, invalid_request
 from src.api.schemas.rewards import RewardRequest, RewardResponse
 from src.api.security import Principal, require_scopes, subject_key_for
 from src.core.config import Settings, load_settings
-from src.storage.decision_repository import DecisionRepository, RewardRecord
+from src.storage.decision_repository import (
+    DecisionRepository,
+    IdempotencyConflict,
+    RewardRecord,
+    request_hash,
+)
 
 router = APIRouter(prefix="/v1/rewards", tags=["rewards"])
 
@@ -25,11 +30,14 @@ def ingest_reward(
 ) -> dict[str, object]:
     try:
         subject_key = subject_key_for(principal, settings)
+        payload_hash = request_hash(payload.model_dump(mode="json"))
         existing_reward = repository.get_reward_by_event_id(
             subject_key=subject_key,
             event_id=payload.event_id,
         )
         if existing_reward is not None:
+            if existing_reward.request_hash and existing_reward.request_hash != payload_hash:
+                raise IdempotencyConflict("Event id was already used with a different request.")
             if hasattr(request_context, "state"):
                 request_context.state.decision_id = existing_reward.decision_id
             return existing_reward.response
@@ -64,11 +72,14 @@ def ingest_reward(
                 occurred_at=occurred_at.isoformat(),
                 created_at=datetime.now(UTC).isoformat(),
                 response=response,
+                request_hash=payload_hash,
                 ttl=settings.decision_event_ttl_seconds,
             )
         )
         if hasattr(request_context, "state"):
             request_context.state.decision_id = saved.decision_id
+    except IdempotencyConflict as error:
+        raise idempotency_conflict(error) from error
     except ValueError as error:
         raise invalid_request(error) from error
     return saved.response

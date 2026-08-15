@@ -11,6 +11,7 @@ API_ERROR_RESPONSES = {
     400: {"model": ErrorResponse},
     401: {"model": ErrorResponse},
     403: {"model": ErrorResponse},
+    409: {"model": ErrorResponse},
     422: {"model": ErrorResponse},
     500: {"model": ErrorResponse},
     503: {"model": ErrorResponse},
@@ -59,6 +60,16 @@ def invalid_request(error: Exception) -> HTTPException:
     return HTTPException(
         status_code=400,
         detail=ErrorResponse(code=ErrorCode.invalid_request, message=str(error)).model_dump(mode="json"),
+    )
+
+
+def idempotency_conflict(error: Exception) -> HTTPException:
+    return HTTPException(
+        status_code=409,
+        detail=ErrorResponse(
+            code=ErrorCode.idempotency_conflict,
+            message=str(error),
+        ).model_dump(mode="json"),
     )
 
 

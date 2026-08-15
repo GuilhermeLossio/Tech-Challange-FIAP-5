@@ -83,7 +83,7 @@ def test_v2_idempotency_key_rejects_a_different_request() -> None:
         "/v2/decisions", json=payload, headers={"Idempotency-Key": "idem-v2"}
     )
 
-    assert response.status_code == 400
+    assert response.status_code == 409
     assert "different request" in response.text
 
 
