@@ -8,7 +8,7 @@ import secrets
 import time
 from dataclasses import asdict
 from pathlib import Path
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlsplit
 
 from flask import (
     Flask,
@@ -137,15 +137,16 @@ def _localized_login_url(locale: str, return_to: str | None = None) -> str:
 def _redirect_to_safe_return(value: str | None):
     """Map validated local return paths to Flask routes without redirecting to raw input."""
     target = safe_return_to(value)
-    if target == "/":
-        return redirect("/")
-    if target == "/market":
-        return redirect("/market")
-    if target == "/market/orders":
-        return redirect("/market/orders")
-    if target == "/demo/summary":
-        return redirect("/demo/summary")
-    return redirect("/pay")
+    route = {
+        "/": "/",
+        "/pay": "/pay",
+        "/market": "/market",
+        "/market/cart": "/market/cart",
+        "/market/checkout": "/market/checkout",
+        "/market/orders": "/market/orders",
+        "/demo/summary": "/demo/summary",
+    }.get(urlsplit(target).path, "/pay")
+    return redirect(route)
 
 
 def _render_demo_template(template_name: str, settings: Settings, **context):
@@ -383,6 +384,10 @@ def create_app(
         if user is None:
             return redirect(_localized_login_url(locale))
         return _render_demo_template("index.html", settings)
+
+    @app.get("/pay/")
+    def pay_trailing_slash():
+        return redirect("/pay")
 
     @app.get("/pay/login")
     def login_page():

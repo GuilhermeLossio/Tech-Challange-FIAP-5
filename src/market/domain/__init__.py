@@ -1,4 +1,4 @@
-from src.market.domain.cart import Cart, CartItem
+from src.market.domain.cart import Cart, CartItem, CheckoutItemRequest
 from src.market.domain.catalog import (
     Category,
     InventoryItem,
@@ -15,6 +15,7 @@ __all__ = [
     "Cart",
     "CartItem",
     "Category",
+    "CheckoutItemRequest",
     "CheckoutSession",
     "InventoryItem",
     "MarketplaceEvent",

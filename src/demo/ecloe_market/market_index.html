@@ -26,7 +26,7 @@
         <a href="/market/orders">{{ t("market.orders") }}</a>
         <a class="cart-link" href="/market/cart">
           {{ t("market.cart") }}
-          <span data-cart-count aria-live="polite">{{ cart.total_items }}</span>
+          <span data-cart-count aria-live="polite">0</span>
         </a>
         {% if user %}
           <span class="identity-chip">{{ user.display_name }}</span>
@@ -71,7 +71,7 @@
           </div>
           <div>
             <dt>{{ t("market.cart") }}</dt>
-            <dd data-cart-count>{{ cart.total_items }}</dd>
+            <dd data-cart-count>0</dd>
           </div>
         </dl>
       </div>
@@ -163,6 +163,14 @@
               data-add-product="{{ product.product_id }}"
               data-recommendation-decision="{{ recommendation.decision_id }}"
               data-recommendation-position="{{ ranked.rank }}"
+              data-cart-title="{{ product_title }}"
+              data-cart-thumbnail="{{ product.thumbnail }}"
+              data-cart-price="{{ product.price_cents }}"
+              data-cart-currency="{{ product.currency }}"
+              data-add-label="{{ t('market.addToCart') }}"
+              data-adding-label="{{ t('market.addingToCart') }}"
+              data-added-label="{{ t('market.addedToCartButton') }}"
+              data-failed-label="{{ t('market.cartAddFailed') }}"
             >{{ t("market.addToCart") }}</button>
           </article>
         {% endfor %}
@@ -206,7 +214,11 @@
             <h2>{{ t("market.products") }}</h2>
           </div>
           <div class="results-meta">
-            <span>{{ t("market.publicBrowsing") }}</span>
+            {% if user %}
+              <span>{{ t("market.loggedInAs") }} {{ user.display_name }}</span>
+            {% else %}
+              <span>{{ t("market.publicBrowsing") }}</span>
+            {% endif %}
             <span>{{ t("market.page") }} {{ catalog_query.page }}</span>
           </div>
         </header>
@@ -269,7 +281,7 @@
                 </div>
               </div>
               <div class="product-card-actions">
-                <button class="primary-link" type="button" data-add-product="{{ product.product_id }}">{{ t("market.addToCart") }}</button>
+                <button class="primary-link" type="button" data-add-product="{{ product.product_id }}" data-cart-title="{{ product_title }}" data-cart-thumbnail="{{ product.thumbnail }}" data-cart-price="{{ product.price_cents }}" data-cart-currency="{{ product.currency }}" data-add-label="{{ t('market.addToCart') }}" data-adding-label="{{ t('market.addingToCart') }}" data-added-label="{{ t('market.addedToCartButton') }}" data-failed-label="{{ t('market.cartAddFailed') }}">{{ t("market.addToCart") }}</button>
                 <a class="secondary-link" href="/market/products/{{ product.product_id }}">{{ t("market.viewProduct") }}</a>
               </div>
             </article>
@@ -293,9 +305,9 @@
   </main>
   <div class="cart-toast" data-cart-toast role="status" aria-live="polite" hidden>{{ t("market.addedToCart") }}</div>
   <aside class="mobile-cart-bar" aria-label="{{ t('market.cart') }}">
-    <span>{{ t("market.cart") }}: <strong data-cart-count>{{ cart.total_items }}</strong></span>
+    <span>{{ t("market.cart") }}: <strong data-cart-count>0</strong></span>
     <a class="primary-link" href="/market/cart">{{ t("market.goToCart") }}</a>
   </aside>
-  <script src="/market/assets/market.js"></script>
+  <script src="/market/assets/market.js?v=3"></script>
 </body>
 </html>

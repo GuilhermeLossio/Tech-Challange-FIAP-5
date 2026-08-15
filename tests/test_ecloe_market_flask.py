@@ -1,5 +1,7 @@
 import re
+from dataclasses import replace
 
+from src.core.config import load_settings
 from src.demo.app import create_app
 from src.demo.ecloe_pay.app import CSRF_COOKIE_NAME
 from src.demo.ecloe_pay.repositories import SHARED_DEMO_USER_EMAIL
@@ -40,6 +42,19 @@ def test_integrated_demo_market_catalog_is_public() -> None:
     assert "deterministic_baseline" in body
 
 
+def test_pay_and_market_trailing_slashes_redirect_to_canonical_routes() -> None:
+    app = create_app()
+    client = app.test_client()
+
+    pay_response = client.get("/pay/")
+    market_response = client.get("/market/")
+
+    assert pay_response.status_code == 302
+    assert pay_response.headers["Location"] == "/pay"
+    assert market_response.status_code == 302
+    assert market_response.headers["Location"] == "/market"
+
+
 def test_integrated_demo_market_checkout_requires_shared_login() -> None:
     app = create_app()
     client = app.test_client()
@@ -72,6 +87,48 @@ def test_login_return_path_rejects_external_urls() -> None:
     assert 'data-return-to="/pay"' in response.get_data(as_text=True)
 
 
+def test_authenticated_pay_login_return_to_market_preserves_shared_session() -> None:
+    settings = replace(load_settings(use_env_file=False), ecloe_web_auth_mode="local_signup")
+    app = create_app(settings=settings)
+    client = authenticated_client(app)
+
+    response = client.get("/pay/login?return_to=/market/")
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/market"
+    market = client.get(response.headers["Location"])
+    assert market.status_code == 200
+    assert "ECloe Demo Persona" in market.get_data(as_text=True)
+
+
+def test_login_from_checkout_returns_with_existing_cart() -> None:
+    app = create_app()
+    client = app.test_client()
+    client.get("/market")
+    add = client.post(
+        "/api/market/cart/items",
+        json={"product_id": "prd_demo_0001", "quantity": 1},
+        headers=csrf_headers(client),
+    )
+    assert add.status_code == 200
+
+    checkout = client.get("/market/checkout")
+    assert checkout.status_code == 302
+    assert checkout.headers["Location"].endswith("return_to=%2Fmarket%2Fcheckout")
+
+    client.get(checkout.headers["Location"])
+    login = client.post(
+        "/api/auth/login",
+        json={"email": SHARED_DEMO_USER_EMAIL, "password": "change-this-demo-password"},
+        headers=csrf_headers(client),
+    )
+    assert login.status_code == 200
+
+    returned = client.get("/market/checkout")
+    assert returned.status_code == 200
+    assert "data-local-checkout-page" in returned.get_data(as_text=True)
+
+
 def test_integrated_demo_market_renders_after_pay_login() -> None:
     app = create_app()
     client = authenticated_client(app)
@@ -83,6 +140,8 @@ def test_integrated_demo_market_renders_after_pay_login() -> None:
     assert "ECloe Market" in body
     assert "No real money is processed" in body
     assert "/pay" in body
+    assert "Signed in as" in body
+    assert "ECloe Demo Persona" in body
 
 
 def test_integrated_demo_market_checkout_renders_cart_after_login() -> None:
@@ -101,18 +160,18 @@ def test_integrated_demo_market_checkout_renders_cart_after_login() -> None:
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert "Review checkout" in body
-    assert "Glow balm 01" in body
+    assert "data-local-checkout-items" in body
     assert "Flow under construction" not in body
 
 
-def test_integrated_demo_market_empty_checkout_returns_to_cart() -> None:
+def test_integrated_demo_market_empty_checkout_is_redirected_by_local_cart_ui() -> None:
     app = create_app()
     client = authenticated_client(app)
 
     response = client.get("/market/checkout")
 
-    assert response.status_code == 302
-    assert response.headers["Location"] == "/market/cart"
+    assert response.status_code == 200
+    assert "data-local-checkout-page" in response.get_data(as_text=True)
 
 
 def test_integrated_demo_market_pays_order_from_ecloe_pay_wallet_once() -> None:
@@ -125,6 +184,7 @@ def test_integrated_demo_market_pays_order_from_ecloe_pay_wallet_once() -> None:
         json={"product_id": "prd_demo_0001"},
         headers=headers,
     )
+    inventory_before = client.get("/api/market/products/prd_demo_0001").get_json()["inventory_items"]
     headers = csrf_headers(client)
     checkout = client.post(
         "/api/market/checkouts",
@@ -152,6 +212,9 @@ def test_integrated_demo_market_pays_order_from_ecloe_pay_wallet_once() -> None:
     assert payment.get_json()["order"]["status"] == "paid"
     assert payment.get_json()["wallet"]["available_balance_cents"] == before - 1990
     assert client.get("/api/session").get_json()["wallet"]["demo_balance_cents"] == before - 1990
+    assert client.get("/api/market/cart").get_json()["cart"]["total_items"] == 1
+    inventory_after = client.get("/api/market/products/prd_demo_0001").get_json()["inventory_items"]
+    assert inventory_after == inventory_before
 
 
 def test_integrated_demo_market_rejects_insufficient_wallet_balance() -> None:
@@ -189,6 +252,14 @@ def test_integrated_demo_market_rejects_insufficient_wallet_balance() -> None:
 
     assert payment.status_code == 409
     assert payment.get_json()["error"] == "Insufficient ECloe Pay balance."
+    cart = client.get("/api/market/cart").get_json()["cart"]
+    assert cart["total_items"] == 1
+    removed = client.delete(
+        f"/api/market/cart/items/{cart['items'][0]['cart_item_id']}",
+        headers=headers,
+    )
+    assert removed.status_code == 200
+    assert removed.get_json()["cart"]["total_items"] == 0
 
 
 def test_integrated_demo_market_product_page_is_public() -> None:
@@ -282,7 +353,7 @@ def test_integrated_demo_market_cart_is_public_and_mutable_with_csrf() -> None:
     assert payload["cart"]["total_cents"] == 3980
     assert cart_page.status_code == 200
     assert "Shopping cart" in cart_page.get_data(as_text=True)
-    assert "Glow balm 01" in cart_page.get_data(as_text=True)
+    assert "data-local-cart-items" in cart_page.get_data(as_text=True)
 
 
 def test_integrated_demo_market_cart_mutations_require_csrf() -> None:
@@ -338,6 +409,135 @@ def test_integrated_demo_market_persists_checkout_and_pending_order() -> None:
     assert len(first_order.get_json()["order"]["items"]) == 1
     assert orders.status_code == 200
     assert len(orders.get_json()["orders"]) == 1
+
+
+def test_local_cart_checkout_validates_and_creates_server_snapshot_once() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+    client.get("/market")
+    headers = {**csrf_headers(client), "Idempotency-Key": "local-cart-checkout-001"}
+    payload = {
+        "items": [
+            {
+                "product_id": "prd_demo_0001",
+                "variant_id": None,
+                "quantity": 2,
+                "expected_unit_price_cents": 1990,
+            }
+        ]
+    }
+
+    first = client.post("/api/market/checkouts", json=payload, headers=headers)
+    repeated = client.post("/api/market/checkouts", json=payload, headers=headers)
+
+    assert first.status_code == 200
+    assert repeated.status_code == 200
+    assert first.get_json() == repeated.get_json()
+    assert first.get_json()["checkout"]["total_cents"] == 3980
+    assert first.get_json()["items"][0]["current_unit_price_cents"] == 1990
+    assert first.get_json()["items"][0]["issues"] == []
+    assert client.get("/api/market/cart").get_json()["cart"]["empty"] is True
+
+
+def test_local_cart_payment_does_not_mutate_inventory_or_legacy_cart() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+    client.get("/market")
+    inventory_before = client.get("/api/market/products/prd_demo_0001").get_json()[
+        "inventory_items"
+    ]
+    headers = {**csrf_headers(client), "Idempotency-Key": "local-cart-payment-001"}
+    checkout = client.post(
+        "/api/market/checkouts",
+        json={
+            "items": [
+                {
+                    "product_id": "prd_demo_0001",
+                    "quantity": 1,
+                    "expected_unit_price_cents": 1990,
+                }
+            ]
+        },
+        headers=headers,
+    ).get_json()["checkout"]
+    order = client.post(
+        "/api/market/orders",
+        json={"checkout_id": checkout["checkout_id"]},
+        headers=csrf_headers(client),
+    ).get_json()["order"]
+
+    payment = client.post(
+        f"/api/market/orders/{order['order_id']}/pay",
+        headers={**csrf_headers(client), "Idempotency-Key": "local-cart-wallet-001"},
+    )
+
+    assert payment.status_code == 200
+    assert payment.get_json()["order"]["status"] == "paid"
+    assert client.get("/api/market/cart").get_json()["cart"]["empty"] is True
+    inventory_after = client.get("/api/market/products/prd_demo_0001").get_json()[
+        "inventory_items"
+    ]
+    assert inventory_after == inventory_before
+
+
+def test_local_cart_checkout_blocks_price_and_stock_changes_before_order() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+    client.get("/market")
+    headers = {**csrf_headers(client), "Idempotency-Key": "local-cart-conflict-001"}
+
+    response = client.post(
+        "/api/market/checkouts",
+        json={
+            "items": [
+                {
+                    "product_id": "prd_demo_0001",
+                    "quantity": 1,
+                    "expected_unit_price_cents": 1,
+                },
+                {
+                    "product_id": "prd_demo_0013",
+                    "quantity": 9,
+                    "expected_unit_price_cents": 5765,
+                }
+            ]
+        },
+        headers=headers,
+    )
+
+    assert response.status_code == 409
+    body = response.get_json()
+    assert body["code"] == "cart_changed"
+    assert "price_changed" in body["items"][0]["issues"]
+    assert "quantity_unavailable" in body["items"][1]["issues"]
+    assert body["items"][0]["current_unit_price_cents"] == 1990
+    assert client.get("/api/market/orders").get_json()["orders"] == []
+
+
+def test_local_cart_checkout_rejects_malformed_or_duplicate_lines() -> None:
+    app = create_app()
+    client = authenticated_client(app)
+    client.get("/market")
+    headers = {**csrf_headers(client), "Idempotency-Key": "local-cart-invalid-001"}
+    item = {
+        "product_id": "prd_demo_0001",
+        "quantity": 1,
+        "expected_unit_price_cents": 1990,
+    }
+
+    duplicate = client.post(
+        "/api/market/checkouts",
+        json={"items": [item, item]},
+        headers=headers,
+    )
+    invalid_quantity = client.post(
+        "/api/market/checkouts",
+        json={"items": [{**item, "quantity": 0}]},
+        headers={**csrf_headers(client), "Idempotency-Key": "local-cart-invalid-002"},
+    )
+
+    assert duplicate.status_code == 400
+    assert invalid_quantity.status_code == 400
 
 
 def test_integrated_demo_market_checkout_api_requires_login() -> None:

@@ -167,3 +167,17 @@ def test_ecloe_market_runtime_uses_repository_factory() -> None:
     assert "create_market_repository(settings)" in app_source
     assert "ECLOE_MARKET_DATABASE_MODE" in factory_source
     assert "AzureSqlMarketRepository" in factory_source
+
+
+def test_ecloe_market_browser_cart_uses_versioned_local_storage() -> None:
+    market_js = (ROOT / "src" / "demo" / "ecloe_market" / "assets" / "market.js").read_text(
+        encoding="utf-8"
+    )
+
+    assert 'CART_STORAGE_KEY = "ecloe_market_cart_v1"' in market_js
+    assert "14 * 24 * 60 * 60 * 1000" in market_js
+    assert 'fetch("/api/market/cart/items"' not in market_js
+    assert 'fetch("/api/market/cart"' in market_js
+    assert "LEGACY_MIGRATION_KEY" in market_js
+    assert 'fetch("/api/market/checkouts"' in market_js
+    assert 'window.addEventListener("storage"' in market_js

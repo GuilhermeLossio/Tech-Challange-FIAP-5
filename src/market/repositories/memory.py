@@ -8,6 +8,7 @@ from src.market.domain import (
     Cart,
     CartItem,
     Category,
+    CheckoutItemRequest,
     CheckoutSession,
     Order,
     OrderItem,
@@ -172,6 +173,10 @@ class MemoryMarketRepository(MarketRepository):
         items = tuple(item for item in cart.items if item.cart_item_id != cart_item_id)
         return self._save_cart(cart, items)
 
+    def clear_cart(self, *, session_key: str) -> Cart:
+        cart = self.get_cart(session_key)
+        return self._save_cart(cart, ())
+
     def start_checkout(
         self,
         *,
@@ -199,8 +204,85 @@ class MemoryMarketRepository(MarketRepository):
             idempotency_key=idempotency_key,
             correlation_id=f"corr_{checkout_id}",
         )
-        self._carts[session_key] = Cart(
-            **{**cart.__dict__, "status": "checkout_started"}
+        self._checkouts[checkout_id] = checkout
+        self._checkout_by_idempotency[idempotency_key] = checkout
+        return checkout
+
+    def start_checkout_from_items(
+        self,
+        *,
+        user_id: str,
+        idempotency_key: str,
+        items: tuple[CheckoutItemRequest, ...],
+    ) -> CheckoutSession:
+        existing = self._checkout_by_idempotency.get(idempotency_key)
+        if existing is not None:
+            if existing.user_id != user_id:
+                raise ValueError("Checkout idempotency key belongs to another user.")
+            return existing
+        if not items:
+            raise ValueError("Synthetic ECloe Market checkout cart is empty.")
+
+        checkout_id = _checkout_id(idempotency_key)
+        cart_id = _checkout_cart_id(checkout_id)
+        cart_items: list[CartItem] = []
+        for requested in items:
+            detail = self.get_product_detail(requested.product_id)
+            if detail is None:
+                raise ValueError("Synthetic ECloe Market product was not found.")
+            variant = detail.default_variant
+            if requested.variant_id:
+                variant = next(
+                    (item for item in detail.variants if item.variant_id == requested.variant_id),
+                    None,
+                )
+            if variant is None:
+                raise ValueError("Synthetic ECloe Market variant was not found.")
+            price = next(
+                (item for item in detail.current_prices if item.variant_id == variant.variant_id),
+                None,
+            )
+            inventory = next(
+                (item for item in detail.inventory_items if item.variant_id == variant.variant_id),
+                None,
+            )
+            if price is None or inventory is None:
+                raise ValueError("Synthetic ECloe Market price or inventory was not found.")
+            if price.price_cents != requested.expected_unit_price_cents:
+                raise ValueError("Synthetic ECloe Market price changed before checkout.")
+            if requested.quantity > inventory.available_quantity:
+                raise ValueError("Requested quantity exceeds synthetic inventory.")
+            cart_items.append(
+                CartItem(
+                    cart_item_id=_cart_item_id(cart_id, variant.variant_id),
+                    cart_id=cart_id,
+                    product_id=detail.product.product_id,
+                    variant_id=variant.variant_id,
+                    title=detail.product.title_en,
+                    quantity=requested.quantity,
+                    unit_price_cents=price.price_cents,
+                    currency=price.currency,
+                    thumbnail=detail.product.thumbnail,
+                )
+            )
+
+        checkout_session_key = f"checkout:{checkout_id}"
+        cart = Cart(
+            cart_id=cart_id,
+            session_key=checkout_session_key,
+            status="checkout_started",
+            items=tuple(cart_items),
+        )
+        self._carts[checkout_session_key] = cart
+        checkout = CheckoutSession(
+            checkout_id=checkout_id,
+            cart_id=cart_id,
+            user_id=user_id,
+            status="created",
+            total_cents=cart.total_cents,
+            currency=cart.currency,
+            idempotency_key=idempotency_key,
+            correlation_id=f"corr_{checkout_id}",
         )
         self._checkouts[checkout_id] = checkout
         self._checkout_by_idempotency[idempotency_key] = checkout
@@ -252,6 +334,15 @@ class MemoryMarketRepository(MarketRepository):
             **{**checkout.__dict__, "status": "payment_pending"}
         )
         return order
+
+    def release_checkout_cart(self, *, checkout_id: str, user_id: str) -> None:
+        checkout = self.get_checkout(checkout_id=checkout_id, user_id=user_id)
+        if checkout is None:
+            return
+        for session_key, cart in self._carts.items():
+            if cart.cart_id == checkout.cart_id and cart.status == "checkout_started":
+                self._carts[session_key] = replace(cart, status="active")
+                return
 
     def mark_order_paid(
         self,
@@ -362,6 +453,11 @@ def _cart_item_id(cart_id: str, variant_id: str) -> str:
 def _checkout_id(idempotency_key: str) -> str:
     digest = hashlib.sha256(idempotency_key.encode("utf-8")).hexdigest()[:20]
     return f"checkout_demo_{digest}"
+
+
+def _checkout_cart_id(checkout_id: str) -> str:
+    digest = hashlib.sha256(checkout_id.encode()).hexdigest()[:20]
+    return f"cart_checkout_{digest}"
 
 
 def _order_id(checkout_id: str) -> str:

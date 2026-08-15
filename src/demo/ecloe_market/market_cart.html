@@ -17,14 +17,25 @@
         <input name="q" type="search" placeholder="{{ t("market.searchPlaceholder") }}" aria-label="{{ t("market.search") }}" />
         <button type="submit">{{ t("market.searchAction") }}</button>
       </form>
-      <nav class="marketplace-actions" aria-label="{{ t("market.navAria") }}">
-        <a href="/pay">{{ t("market.pay") }}</a>
-        <a class="cart-link" href="/market/cart">{{ t("market.cart") }} <span data-cart-count>{{ cart.total_items }}</span></a>
-      </nav>
+        <nav class="marketplace-actions" aria-label="{{ t("market.navAria") }}">
+          <a href="/pay">{{ t("market.pay") }}</a>
+          <a class="cart-link" href="/market/cart">{{ t("market.cart") }} <span data-cart-count>0</span></a>
+          {% if user %}
+            <span class="identity-chip">{{ t("market.loggedInAs") }} {{ user.display_name }}</span>
+          {% else %}
+            <a class="identity-chip" href="/market/checkout">{{ t("market.checkoutLogin") }}</a>
+          {% endif %}
+        </nav>
     </div>
   </header>
 
-  <main class="cart-page">
+  <main
+    class="cart-page"
+    data-local-cart-page
+    data-quantity-label="{{ t('market.quantity') }}"
+    data-remove-label="{{ t('market.remove') }}"
+    data-synthetic-label="{{ t('market.syntheticProduct') }}"
+  >
     <section class="cart-items-panel">
       <div class="results-header">
         <div>
@@ -34,33 +45,13 @@
         <a class="secondary-link" href="/market">{{ t("market.continueShopping") }}</a>
       </div>
 
-      {% if cart.empty %}
-        <article class="empty-cart">
+        <article class="empty-cart" data-cart-empty hidden>
           <span class="cloe-image small sprite-art sprite-cloe-waving" aria-hidden="true"></span>
           <h2>{{ t("market.emptyCart") }}</h2>
           <p>{{ t("market.emptyCartCopy") }}</p>
           <a class="primary-link" href="/market">{{ t("market.exploreDeals") }}</a>
         </article>
-      {% else %}
-        <div class="cart-item-list">
-          {% for item in cart.items %}
-            <article class="cart-item" data-cart-item="{{ item.cart_item_id }}">
-              <img src="{{ item.thumbnail }}" alt="" />
-              <div>
-                <h2>{{ item.title }}</h2>
-                <p>{{ t("market.syntheticProduct") }}</p>
-                <strong>R$ {{ "%.2f"|format(item.unit_price_cents / 100) }}</strong>
-              </div>
-              <label>
-                <span>{{ t("market.quantity") }}</span>
-                <input data-cart-quantity="{{ item.cart_item_id }}" type="number" min="1" max="9" value="{{ item.quantity }}" />
-              </label>
-              <strong>R$ {{ "%.2f"|format(item.subtotal_cents / 100) }}</strong>
-              <button class="secondary-link" type="button" data-remove-cart-item="{{ item.cart_item_id }}">{{ t("market.remove") }}</button>
-            </article>
-          {% endfor %}
-        </div>
-      {% endif %}
+        <div class="cart-item-list" data-local-cart-items></div>
     </section>
 
     <aside class="cart-summary-panel">
@@ -68,11 +59,11 @@
       <dl>
         <div>
           <dt>{{ t("market.items") }}</dt>
-          <dd data-cart-count>{{ cart.total_items }}</dd>
+          <dd data-cart-count>0</dd>
         </div>
         <div>
           <dt>{{ t("market.total") }}</dt>
-          <dd>R$ {{ "%.2f"|format(cart.total_cents / 100) }}</dd>
+          <dd data-cart-total>R$ 0,00</dd>
         </div>
       </dl>
       <p class="synthetic-note">{{ t("market.cartDemoCopy") }}</p>
@@ -84,6 +75,6 @@
       {% endif %}
     </aside>
   </main>
-  <script src="/market/assets/market.js"></script>
+  <script src="/market/assets/market.js?v=3"></script>
 </body>
 </html>

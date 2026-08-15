@@ -108,6 +108,8 @@ def test_oidc_flow_is_single_use_and_rejects_external_return_url() -> None:
     assert second is None
     assert safe_return_to("//attacker.example") == "/pay"
     assert safe_return_to("/market/products/demo") == "/market/products/demo"
+    assert safe_return_to("/pay/") == "/pay"
+    assert safe_return_to("/market/?lang=pt-BR") == "/market?lang=pt-BR"
 
 
 def test_expired_oidc_flow_and_idle_session_are_rejected() -> None:

@@ -11,6 +11,7 @@ from src.market.domain import (
     Cart,
     CartItem,
     Category,
+    CheckoutItemRequest,
     CheckoutSession,
     InventoryItem,
     Order,
@@ -392,6 +393,23 @@ class AzureSqlMarketRepository(MarketRepository):
             )
         return self.get_cart(session_key)
 
+    def clear_cart(self, *, session_key: str) -> Cart:
+        from sqlalchemy import text
+
+        with self.engine.begin() as connection:
+            connection.execute(
+                text(
+                    """
+                    DELETE ci
+                    FROM ecloe_market.cart_items ci
+                    JOIN ecloe_market.carts c ON c.cart_id = ci.cart_id
+                    WHERE c.session_key_hash = :session_key_hash
+                    """
+                ),
+                {"session_key_hash": _session_hash(session_key)},
+            )
+        return self.get_cart(session_key)
+
     def start_checkout(
         self,
         *,
@@ -476,10 +494,6 @@ class AzureSqlMarketRepository(MarketRepository):
                         :checkout_id, :cart_id, :user_id, N'created', :total_cents, 'BRL',
                         :idempotency_key, :correlation_id, :context_snapshot_json, 1
                     );
-                    UPDATE ecloe_market.carts
-                    SET status = N'checkout_started', user_id = :user_id,
-                        updated_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
-                    WHERE cart_id = :cart_id;
                     INSERT INTO ecloe_market.outbox_events (
                         outbox_event_id, aggregate_id, event_type, payload_json, status, is_demo
                     ) VALUES (
@@ -513,6 +527,27 @@ class AzureSqlMarketRepository(MarketRepository):
             raise RuntimeError("Checkout transaction committed without a readable checkout.")
         return checkout
 
+    def release_checkout_cart(self, *, checkout_id: str, user_id: str) -> None:
+        from sqlalchemy import text
+
+        with self.engine.begin() as connection:
+            connection.execute(
+                text(
+                    """
+                    UPDATE c
+                    SET c.status = N'active',
+                        c.updated_at = TODATETIMEOFFSET(SYSUTCDATETIME(), '+00:00')
+                    FROM ecloe_market.carts c
+                    JOIN ecloe_market.checkout_sessions cs ON cs.cart_id = c.cart_id
+                    WHERE cs.checkout_id = :checkout_id
+                      AND cs.user_id = :user_id
+                      AND cs.status IN (N'created', N'payment_pending')
+                      AND c.status = N'checkout_started'
+                    """
+                ),
+                {"checkout_id": checkout_id, "user_id": user_id},
+            )
+
     def get_checkout(self, *, checkout_id: str, user_id: str) -> CheckoutSession | None:
         from sqlalchemy import text
 
@@ -529,6 +564,168 @@ class AzureSqlMarketRepository(MarketRepository):
                 {"checkout_id": checkout_id, "user_id": user_id},
             ).mappings().first()
         return _checkout_from_row(row) if row is not None else None
+
+    def start_checkout_from_items(
+        self,
+        *,
+        user_id: str,
+        idempotency_key: str,
+        items: tuple[CheckoutItemRequest, ...],
+    ) -> CheckoutSession:
+        from sqlalchemy import text
+
+        if not items:
+            raise ValueError("Synthetic ECloe Market checkout cart is empty.")
+        checkout_id = _checkout_id(idempotency_key)
+        cart_id = _checkout_cart_id(checkout_id)
+        correlation_id = f"corr_{checkout_id}"
+        with self.engine.begin() as connection:
+            existing = connection.execute(
+                text(
+                    """
+                    SELECT checkout_id, cart_id, user_id, status, total_cents, currency,
+                        idempotency_key, correlation_id, CAST(is_demo AS bit) AS is_demo
+                    FROM ecloe_market.checkout_sessions
+                    WHERE idempotency_key = :idempotency_key
+                    """
+                ),
+                {"idempotency_key": idempotency_key},
+            ).mappings().first()
+            if existing is not None:
+                if existing["user_id"] != user_id:
+                    raise ValueError("Checkout idempotency key belongs to another user.")
+                return _checkout_from_row(existing)
+
+            resolved_items: list[dict[str, object]] = []
+            for requested in items:
+                row = connection.execute(
+                    text(
+                        """
+                        SELECT p.product_id, p.title_en, p.thumbnail, pv.variant_id,
+                            pp.price_cents, pp.currency, inventory.available_quantity
+                        FROM ecloe_market.products p
+                        JOIN ecloe_market.product_variants pv ON pv.product_id = p.product_id
+                        JOIN ecloe_market.product_prices pp
+                            ON pp.variant_id = pv.variant_id AND pp.is_current = 1
+                        JOIN ecloe_market.inventory_items inventory WITH (UPDLOCK, HOLDLOCK)
+                            ON inventory.variant_id = pv.variant_id
+                        WHERE p.product_id = :product_id
+                          AND p.status = N'active'
+                          AND pv.status = N'active'
+                          AND (
+                            pv.variant_id = :variant_id
+                            OR (:variant_id IS NULL AND pv.is_default = 1)
+                          )
+                        """
+                    ),
+                    {
+                        "product_id": requested.product_id,
+                        "variant_id": requested.variant_id,
+                    },
+                ).mappings().first()
+                if row is None:
+                    raise ValueError("Synthetic ECloe Market product or variant was not found.")
+                if row["price_cents"] != requested.expected_unit_price_cents:
+                    raise ValueError("Synthetic ECloe Market price changed before checkout.")
+                if requested.quantity > row["available_quantity"]:
+                    raise ValueError("Requested quantity exceeds synthetic inventory.")
+                resolved_items.append({**dict(row), "quantity": requested.quantity})
+
+            total_cents = sum(
+                int(item["quantity"]) * int(item["price_cents"]) for item in resolved_items
+            )
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO ecloe_market.carts (
+                        cart_id, session_key_hash, status, currency, is_demo
+                    ) VALUES (
+                        :cart_id, :session_key_hash, N'checkout_started', 'BRL', 1
+                    )
+                    """
+                ),
+                {
+                    "cart_id": cart_id,
+                    "session_key_hash": _session_hash(f"checkout:{checkout_id}"),
+                },
+            )
+            for item in resolved_items:
+                connection.execute(
+                    text(
+                        """
+                        INSERT INTO ecloe_market.cart_items (
+                            cart_item_id, cart_id, product_id, variant_id, quantity,
+                            unit_price_cents, currency, is_demo
+                        ) VALUES (
+                            :cart_item_id, :cart_id, :product_id, :variant_id, :quantity,
+                            :unit_price_cents, :currency, 1
+                        )
+                        """
+                    ),
+                    {
+                        "cart_item_id": _cart_item_id(cart_id, str(item["variant_id"])),
+                        "cart_id": cart_id,
+                        "product_id": item["product_id"],
+                        "variant_id": item["variant_id"],
+                        "quantity": item["quantity"],
+                        "unit_price_cents": item["price_cents"],
+                        "currency": item["currency"],
+                    },
+                )
+            snapshot = {
+                "cart_id": cart_id,
+                "items": [
+                    {
+                        "product_id": item["product_id"],
+                        "variant_id": item["variant_id"],
+                        "quantity": item["quantity"],
+                        "unit_price_cents": item["price_cents"],
+                    }
+                    for item in resolved_items
+                ],
+            }
+            connection.execute(
+                text(
+                    """
+                    INSERT INTO ecloe_market.checkout_sessions (
+                        checkout_id, cart_id, user_id, status, total_cents, currency,
+                        idempotency_key, correlation_id, context_snapshot_json, is_demo
+                    ) VALUES (
+                        :checkout_id, :cart_id, :user_id, N'created', :total_cents, 'BRL',
+                        :idempotency_key, :correlation_id, :context_snapshot_json, 1
+                    );
+                    INSERT INTO ecloe_market.outbox_events (
+                        outbox_event_id, aggregate_id, event_type, payload_json, status, is_demo
+                    ) VALUES (
+                        :outbox_event_id, :checkout_id, N'market.checkout_started',
+                        :outbox_payload, N'pending', 1
+                    )
+                    """
+                ),
+                {
+                    "checkout_id": checkout_id,
+                    "cart_id": cart_id,
+                    "user_id": user_id,
+                    "total_cents": total_cents,
+                    "idempotency_key": idempotency_key,
+                    "correlation_id": correlation_id,
+                    "context_snapshot_json": json.dumps(snapshot, sort_keys=True),
+                    "outbox_event_id": f"out_market_{uuid.uuid4().hex}",
+                    "outbox_payload": json.dumps(
+                        {
+                            "checkout_id": checkout_id,
+                            "cart_id": cart_id,
+                            "total_cents": total_cents,
+                            "currency": "BRL",
+                        },
+                        sort_keys=True,
+                    ),
+                },
+            )
+        checkout = self.get_checkout(checkout_id=checkout_id, user_id=user_id)
+        if checkout is None:
+            raise RuntimeError("Checkout transaction committed without a readable checkout.")
+        return checkout
 
     def create_order(self, *, checkout_id: str, user_id: str) -> Order:
         from sqlalchemy import text
@@ -753,7 +950,7 @@ class AzureSqlMarketRepository(MarketRepository):
                     """
                 ),
                 {"user_id": user_id},
-            ).scalars()
+            ).scalars().all()
             return [
                 order
                 for order_id in order_ids
@@ -908,6 +1105,11 @@ def _cart_item_id(cart_id: str, variant_id: str) -> str:
 def _checkout_id(idempotency_key: str) -> str:
     digest = hashlib.sha256(idempotency_key.encode()).hexdigest()[:20]
     return f"checkout_demo_{digest}"
+
+
+def _checkout_cart_id(checkout_id: str) -> str:
+    digest = hashlib.sha256(checkout_id.encode()).hexdigest()[:20]
+    return f"cart_checkout_{digest}"
 
 
 def _order_id(checkout_id: str) -> str:

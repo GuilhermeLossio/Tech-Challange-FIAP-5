@@ -13,6 +13,7 @@ from src.demo.ecloe_pay.app import CSRF_COOKIE_NAME, CSRF_HEADER_NAME
 from src.demo.ecloe_pay.identity import safe_return_to
 from src.demo.shared.auth import current_user
 from src.demo.shared.i18n import load_messages, resolve_locale, translate
+from src.market.domain import CheckoutItemRequest
 from src.market.repositories import MarketRepository
 from src.recommendation import Candidate, CandidateType, RecommendationRequest, Surface
 from src.recommendation.privacy import neutralize_category
@@ -165,6 +166,106 @@ def _cart_payload(cart) -> dict[str, object]:
     }
 
 
+def _review_checkout_items(payload: object) -> tuple[tuple[CheckoutItemRequest, ...], list[dict[str, object]]]:
+    if not isinstance(payload, list) or not payload or len(payload) > 50:
+        raise ValueError("Checkout items must contain between 1 and 50 lines.")
+    requests: list[CheckoutItemRequest] = []
+    reviewed: list[dict[str, object]] = []
+    seen: set[tuple[str, str | None]] = set()
+    locale = resolve_locale(request, cookie_name=LOCALE_COOKIE_NAME)
+    for raw_item in payload:
+        if not isinstance(raw_item, dict):
+            raise ValueError("Checkout item must be an object.")
+        product_id = str(raw_item.get("product_id", "")).strip()
+        raw_variant_id = raw_item.get("variant_id")
+        variant_id = str(raw_variant_id).strip() if raw_variant_id else None
+        try:
+            quantity = int(raw_item.get("quantity"))
+            expected_price = int(raw_item.get("expected_unit_price_cents"))
+        except (TypeError, ValueError) as error:
+            raise ValueError("Checkout quantity and expected price must be integers.") from error
+        if not product_id or len(product_id) > 64 or (variant_id and len(variant_id) > 80):
+            raise ValueError("Checkout product or variant identifier is invalid.")
+        if quantity < 1 or quantity > 9 or expected_price < 0:
+            raise ValueError("Checkout quantity or expected price is outside the allowed range.")
+        identity = (product_id, variant_id)
+        if identity in seen:
+            raise ValueError("Checkout contains duplicate item lines.")
+        seen.add(identity)
+
+        issues: list[str] = []
+        detail = _repository().get_product_detail(product_id)
+        selected_variant = detail.default_variant if detail else None
+        if detail and variant_id:
+            selected_variant = next(
+                (item for item in detail.variants if item.variant_id == variant_id),
+                None,
+            )
+        price = (
+            next(
+                (
+                    item
+                    for item in detail.current_prices
+                    if selected_variant and item.variant_id == selected_variant.variant_id
+                ),
+                None,
+            )
+            if detail
+            else None
+        )
+        inventory = (
+            next(
+                (
+                    item
+                    for item in detail.inventory_items
+                    if selected_variant and item.variant_id == selected_variant.variant_id
+                ),
+                None,
+            )
+            if detail
+            else None
+        )
+        if detail is None:
+            issues.append("product_unavailable")
+        elif selected_variant is None:
+            issues.append("variant_unavailable")
+        elif price is None or inventory is None:
+            issues.append("product_unavailable")
+        else:
+            if price.price_cents != expected_price:
+                issues.append("price_changed")
+            if quantity > inventory.available_quantity:
+                issues.append("quantity_unavailable")
+
+        reviewed_item: dict[str, object] = {
+            "product_id": product_id,
+            "variant_id": selected_variant.variant_id if selected_variant else variant_id,
+            "quantity": quantity,
+            "expected_unit_price_cents": expected_price,
+            "current_unit_price_cents": price.price_cents if price else None,
+            "currency": price.currency if price else "BRL",
+            "available_quantity": inventory.available_quantity if inventory else 0,
+            "title": (
+                detail.product.title_pt
+                if detail and locale == "pt-BR"
+                else detail.product.title_en if detail else product_id
+            ),
+            "thumbnail": detail.product.thumbnail if detail else "",
+            "issues": issues,
+        }
+        reviewed.append(reviewed_item)
+        if not issues and selected_variant and price:
+            requests.append(
+                CheckoutItemRequest(
+                    product_id=product_id,
+                    variant_id=selected_variant.variant_id,
+                    quantity=quantity,
+                    expected_unit_price_cents=price.price_cents,
+                )
+            )
+    return tuple(requests), reviewed
+
+
 def _price_band(price_cents: int) -> str:
     if price_cents < 5000:
         return "low"
@@ -226,7 +327,6 @@ def _market_recommendations(
 def market_home():
     repository = _repository()
     session_key = _market_session_key()
-    cart = repository.get_cart(session_key)
     catalog_query = _catalog_query()
     products = repository.list_products(
         category_id=catalog_query["category_id"],  # type: ignore[arg-type]
@@ -249,12 +349,16 @@ def market_home():
         categories=categories,
         categories_by_id=categories_by_id,
         catalog_query=catalog_query,
-        cart=cart,
         has_next_page=len(products) == int(catalog_query["limit"]),
         recommendation=recommendation,
         recommended_products=recommended_products,
     )
     return _attach_market_session(response, session_key)
+
+
+@market_blueprint.get("/market/")
+def market_trailing_slash():
+    return redirect("/market")
 
 
 @market_blueprint.get("/market/products/<product_id>")
@@ -266,14 +370,12 @@ def product_detail(product_id: str):
         response = _render_market_template("market_not_found.html", user=_optional_user())
         return _attach_market_session(response, session_key), 404
     categories_by_id = {category.category_id: category for category in repository.list_categories()}
-    cart = repository.get_cart(session_key)
     response = _render_market_template(
         "market_product.html",
         user=_optional_user(),
         detail=detail,
         product=detail.product,
         category=categories_by_id.get(detail.product.category_id),
-        cart=cart,
     )
     return _attach_market_session(response, session_key)
 
@@ -281,8 +383,7 @@ def product_detail(product_id: str):
 @market_blueprint.get("/market/cart")
 def market_cart():
     session_key = _market_session_key()
-    cart = _repository().get_cart(session_key)
-    response = _render_market_template("market_cart.html", user=_optional_user(), cart=cart)
+    response = _render_market_template("market_cart.html", user=_optional_user())
     return _attach_market_session(response, session_key)
 
 
@@ -292,13 +393,9 @@ def market_checkout():
     if login_response is not None:
         return login_response
     session_key = _market_session_key()
-    cart = _repository().get_cart(session_key)
-    if cart.empty:
-        return redirect("/market/cart")
     response = _render_market_template(
         "market_checkout.html",
         user=user,
-        cart=cart,
     )
     return _attach_market_session(response, session_key)
 
@@ -422,6 +519,36 @@ def api_start_checkout():
     if not idempotency_key or len(idempotency_key) > 180:
         return jsonify({"error": "A valid Idempotency-Key header is required."}), 400
     session_key = _market_session_key()
+    payload = request.get_json(silent=True) or {}
+    local_items = payload.get("items") if isinstance(payload, dict) else None
+    if local_items is not None:
+        try:
+            checkout_items, reviewed_items = _review_checkout_items(local_items)
+        except ValueError as error:
+            current_app.logger.warning("Invalid local checkout payload: %s", error)
+            return jsonify({"error": "Invalid checkout item payload."}), 400
+        if any(item["issues"] for item in reviewed_items):
+            return (
+                jsonify(
+                    {
+                        "error": "Cart requires review before checkout.",
+                        "code": "cart_changed",
+                        "items": reviewed_items,
+                    }
+                ),
+                409,
+            )
+        try:
+            checkout = _repository().start_checkout_from_items(
+                user_id=str(user_id),
+                idempotency_key=idempotency_key,
+                items=checkout_items,
+            )
+        except ValueError as error:
+            current_app.logger.warning("Local checkout changed during validation: %s", error)
+            return jsonify({"error": "Cart changed during checkout.", "code": "cart_changed"}), 409
+        response = jsonify({"checkout": asdict(checkout), "items": reviewed_items})
+        return _attach_market_session(response, session_key)
     try:
         checkout = _repository().start_checkout(
             session_key=session_key,
@@ -489,6 +616,10 @@ def api_pay_order(order_id: str):
     except ValueError as error:
         current_app.logger.warning("Market order payment conflict for order_id=%s: %s", order_id, error)
         if str(error) == "Insufficient ECloe Pay balance.":
+            _repository().release_checkout_cart(
+                checkout_id=order.checkout_id,
+                user_id=str(user_id),
+            )
             client_message = "Insufficient ECloe Pay balance."
         else:
             client_message = "Unable to process payment for this order."

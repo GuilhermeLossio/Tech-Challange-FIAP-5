@@ -40,7 +40,10 @@ def safe_return_to(value: str | None) -> str:
     path = parsed.path.rstrip("/") or "/"
     if not any(path == allowed or path.startswith(f"{allowed}/") for allowed in ALLOWED_RETURN_PATHS):
         return "/pay"
-    return candidate
+    normalized = path
+    if parsed.query:
+        normalized += f"?{parsed.query}"
+    return normalized
 
 
 def subject_key(settings: Settings, issuer: str, subject: str) -> str:

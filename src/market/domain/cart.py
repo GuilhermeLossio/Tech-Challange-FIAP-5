@@ -4,6 +4,14 @@ from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
+class CheckoutItemRequest:
+    product_id: str
+    variant_id: str | None
+    quantity: int
+    expected_unit_price_cents: int
+
+
+@dataclass(frozen=True)
 class CartItem:
     cart_item_id: str
     cart_id: str
