@@ -3,7 +3,6 @@ from pathlib import Path
 from src.core.config import load_settings
 from src.market.repositories import MemoryMarketRepository
 
-
 ROOT = Path(__file__).resolve().parents[1]
 
 

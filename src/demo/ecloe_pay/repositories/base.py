@@ -336,7 +336,7 @@ def initial_session(user_id: str) -> DemoSession:
 
 
 def initial_loan_requests(user_id: str) -> tuple[LoanRequest, ...]:
-    digest = hashlib.sha256(f"loan-request\x00{user_id}".encode("utf-8")).hexdigest()
+    digest = hashlib.sha256(f"loan-request\x00{user_id}".encode()).hexdigest()
     amount_cents = 25000 + (int(digest[:4], 16) % 12) * 5000
     status = ("requested", "under_review", "cancelled")[int(digest[4:6], 16) % 3]
     return (
