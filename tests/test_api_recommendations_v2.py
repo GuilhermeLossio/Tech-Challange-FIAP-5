@@ -6,6 +6,8 @@ from fastapi.testclient import TestClient
 
 import src.api.main as api_main
 from src.recommendation import RecommendationService
+from src.recommendation.artifacts import RecommendationArtifactMetadata, RecommendationRuntime
+from src.recommendation.models import OutcomeStats, RecommendationEvidence, Surface
 from src.storage.decision_repository import InMemoryDecisionRepository
 
 
@@ -85,6 +87,39 @@ def test_v2_idempotency_key_rejects_a_different_request() -> None:
 
     assert response.status_code == 409
     assert "different request" in response.text
+
+
+def test_v2_policy_reload_replaces_surface_snapshot(monkeypatch) -> None:
+    client, _ = client_and_repository()
+    runtime = RecommendationRuntime(
+        evidence=RecommendationEvidence(global_stats=OutcomeStats(successes=100, count=1_000)),
+        policy="likelihood_ranker",
+        metadata=RecommendationArtifactMetadata(
+            surface=Surface.market,
+            run_id="run-market",
+            version="market-v2",
+            checksum="a" * 64,
+        ),
+    )
+    monkeypatch.setattr(
+        "src.api.routers.recommendations.load_recommendation_runtime",
+        lambda _settings, surface: runtime if surface is Surface.market else RecommendationRuntime(
+            evidence=RecommendationEvidence(),
+            policy="deterministic_baseline",
+            metadata=RecommendationArtifactMetadata(
+                surface=Surface.pay,
+                run_id="baseline",
+                version="pay-baseline-v1",
+                checksum="b" * 64,
+            ),
+        ),
+    )
+
+    response = client.post("/v2/policies/reload", json={"surface": "market"})
+
+    assert response.status_code == 200
+    assert response.json()["reloaded"]["market"]["run_id"] == "run-market"
+    assert response.json()["reloaded"]["market"]["policy"] == "likelihood_ranker"
 
 
 def test_v2_rejects_blocked_and_arbitrary_context_fields() -> None:

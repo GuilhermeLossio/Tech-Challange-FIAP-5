@@ -82,6 +82,7 @@ Exposed delegated scopes:
 
 ```text
 policy:read
+policy:reload
 decision:read
 decision:write
 reward:write

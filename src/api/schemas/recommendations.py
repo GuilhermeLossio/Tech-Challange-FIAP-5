@@ -177,3 +177,13 @@ class RecommendationPolicyResponse(StrictApiModel):
     challengers: list[str]
     challenger_mode: Literal["shadow"]
     promotion: Literal["manual"]
+    run_id: str | None = None
+    warning: str | None = None
+
+
+class RecommendationReloadRequest(StrictApiModel):
+    surface: Surface | Literal["all"] = "all"
+
+
+class RecommendationReloadResponse(StrictApiModel):
+    reloaded: dict[str, RecommendationPolicyResponse]

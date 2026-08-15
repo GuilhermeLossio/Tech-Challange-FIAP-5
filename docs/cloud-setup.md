@@ -81,6 +81,8 @@ ARTIFACT_SOURCE=azure_blob
 AZURE_STORAGE_ACCOUNT_URL=https://<storage-account>.blob.core.windows.net
 AZURE_BLOB_CONTAINER_ARTIFACTS=ecloe-artifacts
 AZURE_ARTIFACT_PROMOTION_BLOB=promoted/current.json
+AZURE_ARTIFACT_PROMOTION_BLOB_MARKET=promoted/market/current.json
+AZURE_ARTIFACT_PROMOTION_BLOB_PAY=promoted/pay/current.json
 ARTIFACT_CACHE_DIR=/tmp/ecloe/artifacts
 ```
 

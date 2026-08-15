@@ -18,7 +18,9 @@ SUPPORTED_AUTH_MODES = {"disabled", "entra_id"}
 SUPPORTED_DECISION_REPOSITORY_MODES = {"memory", "file", "cosmos"}
 SUPPORTED_ARTIFACT_SOURCES = {"file", "azure_blob"}
 REQUIRED_ENTRA_SETTINGS = {"entra_tenant_id", "entra_client_id", "entra_audience"}
-AVAILABLE_SCOPES = frozenset({"decision:write", "decision:read", "reward:write", "policy:read"})
+AVAILABLE_SCOPES = frozenset(
+    {"decision:write", "decision:read", "reward:write", "policy:read", "policy:reload"}
+)
 LOCAL_SUBJECT_KEY_SALT = "local-dev-subject-key-salt"
 
 bearer_scheme = HTTPBearer(auto_error=False)

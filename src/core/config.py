@@ -77,6 +77,8 @@ class Settings:
     azure_blob_container_processed: str
     azure_blob_container_artifacts: str
     azure_artifact_promotion_blob: str
+    azure_artifact_promotion_blob_market: str
+    azure_artifact_promotion_blob_pay: str
     artifact_source: str
     artifact_cache_dir: Path
     azure_cosmos_endpoint: str
@@ -186,6 +188,14 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         azure_artifact_promotion_blob=_env(
             "AZURE_ARTIFACT_PROMOTION_BLOB",
             "promoted/current.json",
+        ),
+        azure_artifact_promotion_blob_market=_env(
+            "AZURE_ARTIFACT_PROMOTION_BLOB_MARKET",
+            "promoted/market/current.json",
+        ),
+        azure_artifact_promotion_blob_pay=_env(
+            "AZURE_ARTIFACT_PROMOTION_BLOB_PAY",
+            "promoted/pay/current.json",
         ),
         artifact_source=_env("ARTIFACT_SOURCE", "file").lower(),
         artifact_cache_dir=ROOT_DIR / _env("ARTIFACT_CACHE_DIR", ".artifact_cache"),

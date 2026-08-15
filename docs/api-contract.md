@@ -15,6 +15,7 @@ The dedicated ECloe Pay wallet surface documentation is maintained separately in
 | `GET` | `/livez` | None | Returns liveness for the HTTP process. |
 | `GET` | `/readyz` | None | Returns readiness after serving artifacts are loaded. |
 | `GET` | `/v1/policies/current` | `policy:read` | Returns the serving strategy, serving artifact metadata, and promoted offline policy metadata. |
+| `POST` | `/v2/policies/reload` | `policy:reload` | Atomically reloads promoted Market/Pay artifacts while preserving the previous snapshot on failure. |
 | `POST` | `/v1/likelihood-estimates` | `decision:read` | Estimates purchase or conversion probability for eligible offers. |
 | `POST` | `/v1/purchase-likelihood` | `decision:read` | Deprecated alias for `/v1/likelihood-estimates`. |
 | `POST` | `/v1/decisions` | `decision:write` | Selects one eligible offer and returns likelihood, policy, and reason codes. |
@@ -28,6 +29,7 @@ Available scopes:
 - `decision:write` - create decisions.
 - `reward:write` - write future reward events.
 - `policy:read` - read active policy metadata.
+- `policy:reload` - reload promoted recommendation artifacts; administrative use only.
 
 `POST /v1/decisions` accepts the optional `Idempotency-Key` header, up to 128 characters. Repeating a decision request with the same authenticated subject and the same `Idempotency-Key` returns the original persisted decision response and does not create a second decision event.
 

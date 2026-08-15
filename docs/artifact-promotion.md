@@ -26,6 +26,18 @@ python scripts/publish_artifacts_to_blob.py --promote
 
 Promotion updates `promoted/current.json` to point at an immutable run manifest. It should be used only after tests, artifact validation, and human review pass.
 
+Recommendation artifacts are promoted independently per surface. The feedback job writes
+`reports/recommendation/<surface>/<run_id>/`; after review, publish it with:
+
+```powershell
+python scripts/publish_recommendation_artifacts.py --run-dir reports/recommendation/market/<run_id> --surface market --promote
+python scripts/publish_recommendation_artifacts.py --run-dir reports/recommendation/pay/<run_id> --surface pay --promote
+```
+
+The mutable pointers are `promoted/market/current.json` and
+`promoted/pay/current.json`. A failed runtime reload keeps the previously loaded
+surface snapshot and does not change either pointer.
+
 ## Publish Training Results to Cosmos DB
 
 Cosmos publication is separate from Blob artifact promotion. Use it when the validated offline metrics and policy metadata need to be available in the cloud event store:

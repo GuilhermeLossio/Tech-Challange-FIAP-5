@@ -78,6 +78,8 @@ def test_config_defaults_point_to_hillstrom_files(monkeypatch) -> None:
     assert settings.artifact_source == "file"
     assert settings.azure_blob_container_artifacts == "ecloe-artifacts"
     assert settings.azure_artifact_promotion_blob == "promoted/current.json"
+    assert settings.azure_artifact_promotion_blob_market == "promoted/market/current.json"
+    assert settings.azure_artifact_promotion_blob_pay == "promoted/pay/current.json"
     assert settings.artifact_cache_dir == ROOT_DIR / ".artifact_cache"
     assert settings.ecloe_pay_database_mode == "memory"
     assert settings.ecloe_pay_sql_server == "ecloe-sql-1266.database.windows.net"

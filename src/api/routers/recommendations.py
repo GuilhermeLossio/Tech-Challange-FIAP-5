@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict
 from datetime import UTC, datetime
 from typing import Annotated
@@ -18,10 +19,13 @@ from src.api.schemas.recommendations import (
     LikelihoodEstimatesResponseV2,
     RecommendationDecisionResponse,
     RecommendationPolicyResponse,
+    RecommendationReloadRequest,
+    RecommendationReloadResponse,
     RecommendationRequestV2,
 )
 from src.api.security import Principal, require_scopes, subject_key_for
 from src.core.config import Settings, load_settings
+from src.engine.artifact_sources import load_recommendation_runtime
 from src.recommendation import RecommendationService, Surface
 from src.storage.decision_repository import (
     DecisionRecord,
@@ -32,6 +36,7 @@ from src.storage.decision_repository import (
 )
 
 router = APIRouter(prefix="/v2", tags=["recommendations-v2"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/decisions", response_model=RecommendationDecisionResponse, responses=API_ERROR_RESPONSES)
@@ -205,6 +210,35 @@ def current_recommendation_policy(
     _: Annotated[Principal, Depends(require_scopes("policy:read"))],
 ) -> dict[str, object]:
     return service.current_policy(surface)
+
+
+@router.post(
+    "/policies/reload",
+    response_model=RecommendationReloadResponse,
+    responses=API_ERROR_RESPONSES,
+)
+def reload_recommendation_policy(
+    payload: RecommendationReloadRequest,
+    service: Annotated[RecommendationService, Depends(get_recommendation_service)],
+    settings: Annotated[Settings, Depends(load_settings)],
+    _: Annotated[Principal, Depends(require_scopes("policy:reload"))],
+) -> dict[str, object]:
+    try:
+        surfaces = (
+            (Surface.market, Surface.pay)
+            if payload.surface == "all"
+            else (payload.surface,)
+        )
+        runtimes = {
+            surface: load_recommendation_runtime(settings, surface)
+            for surface in surfaces
+        }
+        result = service.reload(runtimes)
+        logger.info("Recommendation policy reload completed surfaces=%s", sorted(result))
+        return {"reloaded": result}
+    except (TypeError, ValueError, FileNotFoundError, RuntimeError) as error:
+        logger.warning("Recommendation policy reload rejected reason=%s", type(error).__name__)
+        raise invalid_request(error) from error
 
 
 def _feedback_outcome(surface: str, event_type: str) -> tuple[bool, float | None]:

@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from datetime import UTC, datetime
+from threading import RLock
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
+from src.recommendation.artifacts import RecommendationArtifactMetadata, RecommendationRuntime
 from src.recommendation.models import (
     Candidate,
     CandidateType,
@@ -39,7 +41,9 @@ class RecommendationService:
         *,
         evidence_by_surface: dict[Surface, RecommendationEvidence] | None = None,
         active_policy_by_surface: dict[Surface, str] | None = None,
+        artifact_metadata_by_surface: dict[Surface, RecommendationArtifactMetadata] | None = None,
     ) -> None:
+        self._lock = RLock()
         self.evidence_by_surface = evidence_by_surface or {}
         defaults = {
             Surface.market: "deterministic_baseline",
@@ -50,19 +54,47 @@ class RecommendationService:
             surface: self._guarded_policy(surface, policy)
             for surface, policy in self.requested_policy_by_surface.items()
         }
+        default_metadata = artifact_metadata_by_surface or {}
+        self._runtime_by_surface = {
+            surface: RecommendationRuntime(
+                evidence=self.evidence_by_surface.get(surface, RecommendationEvidence()),
+                policy=self.active_policy_by_surface[surface],
+                metadata=self._metadata_with_guard_warning(
+                    surface,
+                    self.active_policy_by_surface[surface],
+                    default_metadata.get(
+                        surface,
+                        RecommendationArtifactMetadata(
+                            surface=surface,
+                            run_id="baseline",
+                            version=f"{surface.value}-baseline-v1",
+                            checksum=self._evidence_checksum(surface),
+                        ),
+                    ),
+                    requested=self.requested_policy_by_surface[surface],
+                ),
+            )
+            for surface in (Surface.market, Surface.pay)
+        }
 
     @classmethod
     def from_settings(cls, settings: Settings) -> RecommendationService:
+        from src.engine.artifact_sources import load_recommendation_runtimes
+
+        runtimes = load_recommendation_runtimes(settings)
         return cls(
-            active_policy_by_surface={
-                Surface.market: settings.recommendation_market_policy,
-                Surface.pay: settings.recommendation_pay_policy,
-            }
+            evidence_by_surface={surface: item.evidence for surface, item in runtimes.items()},
+            active_policy_by_surface={surface: item.policy for surface, item in runtimes.items()},
+            artifact_metadata_by_surface={
+                surface: item.metadata for surface, item in runtimes.items()
+            },
         )
 
     def decide(self, request: RecommendationRequest) -> RecommendationDecision:
+        with self._lock:
+            runtime = self._runtime_by_surface[request.surface]
         candidates = self._validated_candidates(request)
-        policy_name = self.active_policy_by_surface[request.surface]
+        policy_name = runtime.policy
         strategy = self._strategy(policy_name, request.surface)
         ranked = strategy.rank(candidates, request.context, request.request_id)
         limit = min(max(request.limit, 1), 6 if request.surface is Surface.market else 1)
@@ -90,11 +122,12 @@ class RecommendationService:
             created_at=datetime.now(UTC).isoformat(),
             ranked_candidates=selected,
             policy=policy_name,
-            policy_version="recommendation-v2",
+            policy_version=runtime.metadata.version,
             artifact_schema=ARTIFACT_SCHEMA,
-            artifact_version=f"{request.surface.value}-recommendation-v2",
-            artifact_checksum=self._artifact_checksum(request.surface),
-            warnings=self._warnings(request.surface, selected),
+            artifact_version=runtime.metadata.version,
+            artifact_checksum=runtime.metadata.checksum,
+            artifact_status=runtime.metadata.status,
+            warnings=self._warnings(request.surface, selected, runtime),
             shadow_rankings=shadow,
         )
 
@@ -117,22 +150,49 @@ class RecommendationService:
         )
 
     def current_policy(self, surface: Surface) -> dict[str, object]:
-        policy = self.active_policy_by_surface[surface]
+        with self._lock:
+            runtime = self._runtime_by_surface[surface]
+        policy = runtime.policy
         challengers = ["epsilon_greedy", "ucb", "thompson_sampling"]
         if policy == "deterministic_baseline":
             challengers.insert(0, "likelihood_ranker")
         return {
             "surface": surface.value,
             "policy": policy,
-            "policy_version": "recommendation-v2",
+            "policy_version": runtime.metadata.version,
             "status": "active",
             "artifact_schema": ARTIFACT_SCHEMA,
-            "artifact_version": f"{surface.value}-recommendation-v2",
-            "artifact_checksum": self._artifact_checksum(surface),
+            "artifact_version": runtime.metadata.version,
+            "artifact_checksum": runtime.metadata.checksum,
             "challengers": challengers,
             "challenger_mode": "shadow",
             "promotion": "manual",
+            "run_id": runtime.metadata.run_id,
+            "warning": runtime.metadata.warning,
         }
+
+    def reload(self, runtimes: dict[Surface, RecommendationRuntime]) -> dict[str, object]:
+        with self._lock:
+            next_runtime = dict(self._runtime_by_surface)
+            for surface, runtime in runtimes.items():
+                policy = self._guarded_policy_for_evidence(
+                    surface, runtime.policy, runtime.evidence
+                )
+                next_runtime[surface] = RecommendationRuntime(
+                    evidence=runtime.evidence,
+                    policy=policy,
+                    metadata=self._metadata_with_guard_warning(
+                        surface, policy, runtime.metadata, requested=runtime.policy
+                    ),
+                )
+            self._runtime_by_surface = next_runtime
+            self.evidence_by_surface = {
+                surface: runtime.evidence for surface, runtime in next_runtime.items()
+            }
+            self.active_policy_by_surface = {
+                surface: runtime.policy for surface, runtime in next_runtime.items()
+            }
+        return {surface.value: self.current_policy(surface) for surface in runtimes}
 
     def _validated_candidates(self, request: RecommendationRequest) -> tuple[Candidate, ...]:
         assert_allowed_context(request.context, request.surface.value)
@@ -162,7 +222,8 @@ class RecommendationService:
         return filtered
 
     def _strategy(self, name: str, surface: Surface):
-        evidence = self.evidence_by_surface.get(surface, RecommendationEvidence())
+        with self._lock:
+            evidence = self._runtime_by_surface[surface].evidence
         if name == "deterministic_baseline":
             return DeterministicBaseline()
         if name == "likelihood_ranker":
@@ -181,16 +242,20 @@ class RecommendationService:
         self,
         surface: Surface,
         selected: tuple[RankedCandidate, ...],
+        runtime: RecommendationRuntime | None = None,
     ) -> tuple[str, ...]:
         warnings = []
         if self.requested_policy_by_surface[surface] != self.active_policy_by_surface[surface]:
             warnings.append("baseline_guardrail_active")
+        if runtime and runtime.metadata.warning:
+            warnings.append(runtime.metadata.warning)
         if all("cold_start_popularity" in item.reason_codes for item in selected):
             warnings.append("limited_evidence_fallback")
         return tuple(warnings)
 
     def _shadow_strategies(self, surface: Surface) -> dict[str, object]:
-        evidence = self.evidence_by_surface.get(surface, RecommendationEvidence())
+        with self._lock:
+            evidence = self._runtime_by_surface[surface].evidence
         likelihood = LikelihoodRanker(evidence, smoothing_alpha=2.0, min_samples=10)
         return {
             "epsilon_greedy": EpsilonGreedyRanker(likelihood, epsilon=0.1),
@@ -202,3 +267,29 @@ class RecommendationService:
         evidence = asdict(self.evidence_by_surface.get(surface, RecommendationEvidence()))
         payload = json.dumps(evidence, sort_keys=True, separators=(",", ":"))
         return hashlib.sha256(payload.encode()).hexdigest()
+
+    def _evidence_checksum(self, surface: Surface) -> str:
+        return self._artifact_checksum(surface)
+
+    def _guarded_policy_for_evidence(
+        self, surface: Surface, policy: str, evidence: RecommendationEvidence
+    ) -> str:
+        if policy != "likelihood_ranker":
+            return policy
+        stats = evidence.global_stats
+        if stats.count < MIN_PROMOTION_DECISIONS or stats.successes < MIN_PROMOTION_POSITIVES:
+            return "deterministic_baseline"
+        return policy
+
+    def _metadata_with_guard_warning(
+        self,
+        surface: Surface,
+        policy: str,
+        metadata: RecommendationArtifactMetadata,
+        *,
+        requested: str | None = None,
+    ) -> RecommendationArtifactMetadata:
+        del surface
+        if requested is not None and requested != policy and metadata.warning is None:
+            return replace(metadata, warning="baseline_guardrail_active")
+        return metadata

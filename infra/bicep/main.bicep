@@ -229,6 +229,14 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
               value: 'promoted/current.json'
             }
             {
+              name: 'AZURE_ARTIFACT_PROMOTION_BLOB_MARKET'
+              value: 'promoted/market/current.json'
+            }
+            {
+              name: 'AZURE_ARTIFACT_PROMOTION_BLOB_PAY'
+              value: 'promoted/pay/current.json'
+            }
+            {
               name: 'ARTIFACT_CACHE_DIR'
               value: '/tmp/ecloe/artifacts'
             }

@@ -83,3 +83,6 @@ class RecommendationEvidence:
     candidate_stats: dict[str, OutcomeStats] = field(default_factory=dict)
     category_stats: dict[str, OutcomeStats] = field(default_factory=dict)
     context_stats: dict[str, OutcomeStats] = field(default_factory=dict)
+    exposure_count: int = 0
+    terminal_count: int = 0
+    positive_count: int = 0
