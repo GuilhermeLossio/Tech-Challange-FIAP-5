@@ -9,6 +9,10 @@ from flask import Request
 
 DEFAULT_LOCALE = "en-US"
 SUPPORTED_LOCALES = ("pt-BR", "en-US")
+MESSAGE_FILES = {
+    "pt-BR": "pt-BR.json",
+    "en-US": "en-US.json",
+}
 
 
 def normalize_locale(value: str | None) -> str | None:
@@ -38,7 +42,7 @@ def resolve_locale(request: Request, *, cookie_name: str) -> str:
 @lru_cache(maxsize=16)
 def load_messages(i18n_dir: str, locale: str) -> dict[str, Any]:
     effective_locale = normalize_locale(locale) or DEFAULT_LOCALE
-    path = Path(i18n_dir) / f"{effective_locale}.json"
+    path = Path(i18n_dir) / MESSAGE_FILES[effective_locale]
     with path.open(encoding="utf-8") as source:
         data = json.load(source)
     return data if isinstance(data, dict) else {}

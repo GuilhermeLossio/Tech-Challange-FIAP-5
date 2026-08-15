@@ -95,7 +95,7 @@ def _clear_auth_cookie(response, settings: Settings) -> None:
 
 
 def _set_csrf_cookie(response, settings: Settings) -> str:
-    token = secrets.token_urlsafe(32)
+    token = secrets.token_hex(32)
     response.set_cookie(
         CSRF_COOKIE_NAME,
         token,
@@ -132,6 +132,20 @@ def _localized_login_url(locale: str, return_to: str | None = None) -> str:
     if return_to and return_to != "/pay":
         query["return_to"] = return_to
     return f"/pay/login?{urlencode(query)}"
+
+
+def _redirect_to_safe_return(value: str | None):
+    """Map validated local return paths to Flask routes without redirecting to raw input."""
+    target = safe_return_to(value)
+    if target == "/":
+        return redirect("/")
+    if target == "/market":
+        return redirect("/market")
+    if target == "/market/orders":
+        return redirect("/market/orders")
+    if target == "/demo/summary":
+        return redirect("/demo/summary")
+    return redirect("/pay")
 
 
 def _render_demo_template(template_name: str, settings: Settings, **context):
@@ -376,7 +390,7 @@ def create_app(
         user, _ = _current_user(app)
         return_to = safe_return_to(request.args.get("return_to"))
         if user is not None and settings.ecloe_web_auth_mode in {"entra_external", "local_signup"}:
-            return redirect(return_to)
+            return _redirect_to_safe_return(return_to)
         if settings.ecloe_web_auth_mode in {"local", "local_signup"}:
             auth_session_id = request.cookies.get(AUTH_COOKIE_NAME)
             if isinstance(auth_session_id, str):
@@ -412,7 +426,7 @@ def create_app(
             user, _ = _current_user(app)
             return_to = safe_return_to(request.args.get("return_to"))
             if user is not None:
-                return redirect(return_to)
+                return _redirect_to_safe_return(return_to)
             return _render_demo_template("register.html", settings, return_to=return_to)
         if settings.ecloe_web_auth_mode != "entra_external":
             return redirect(
@@ -485,7 +499,7 @@ def create_app(
         auth_session = repository.create_auth_session(user.user_id)
         repository.get_or_create_demo_session(user.user_id)
         repository.record_audit_event(user.user_id, "login", "success")
-        response = redirect(return_to)
+        response = _redirect_to_safe_return(return_to)
         _set_auth_cookie(response, auth_session.auth_session_id, settings)
         _set_csrf_cookie(response, settings)
         response.delete_cookie(OIDC_FLOW_COOKIE_NAME, path="/auth/callback")

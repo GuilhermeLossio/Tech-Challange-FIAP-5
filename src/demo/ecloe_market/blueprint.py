@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 import secrets
 from dataclasses import asdict
 from pathlib import Path
@@ -72,7 +73,7 @@ def _csrf_error():
 
 def _market_session_key() -> str:
     session_key = request.cookies.get(MARKET_SESSION_COOKIE_NAME, "")
-    if session_key.startswith("market_sess_"):
+    if re.fullmatch(r"market_sess_[A-Za-z0-9_-]{32}", session_key):
         return session_key
     return f"market_sess_{secrets.token_urlsafe(24)}"
 
@@ -394,8 +395,8 @@ def api_update_cart_item(cart_item_id: str):
             cart_item_id=cart_item_id,
             quantity=int(payload.get("quantity", 1)),
         )
-    except (TypeError, ValueError) as error:
-        return jsonify({"error": str(error)}), 400
+    except (TypeError, ValueError):
+        return jsonify({"error": "Invalid cart item request."}), 400
     response = jsonify({"cart": _cart_payload(cart)})
     return _attach_market_session(response, session_key)
 
