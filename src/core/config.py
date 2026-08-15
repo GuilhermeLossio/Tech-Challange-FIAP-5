@@ -363,8 +363,6 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
             raise ValueError(f"Missing ECloe Pay Azure SQL settings: {missing}")
 
     if settings.app_environment in CLOUD_ENVIRONMENTS:
-        if settings.ecloe_web_auth_mode == "local":
-            raise ValueError("Cloud demo web must not use ECLOE_WEB_AUTH_MODE=local.")
         if settings.ecloe_pay_sql_auth_mode == "entra_interactive":
             raise ValueError("ECLOE_PAY_SQL_AUTH_MODE=entra_interactive is local-only.")
         if (

@@ -71,6 +71,9 @@ def _csrf_error():
 
 
 def _market_session_key() -> str:
+    session_key = request.cookies.get(MARKET_SESSION_COOKIE_NAME, "")
+    if session_key.startswith("market_sess_"):
+        return session_key
     return f"market_sess_{secrets.token_urlsafe(24)}"
 
 
@@ -484,7 +487,10 @@ def api_pay_order(order_id: str):
         )
     except ValueError as error:
         current_app.logger.warning("Market order payment conflict for order_id=%s: %s", order_id, error)
-        return jsonify({"error": "Unable to process payment for this order."}), 409
+        message = str(error)
+        if message != "Insufficient ECloe Pay balance.":
+            message = "Unable to process payment for this order."
+        return jsonify({"error": message}), 409
     response = jsonify(
         {
             "payment": asdict(payment),

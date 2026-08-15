@@ -14,8 +14,8 @@ from src.core.config import load_settings
 from src.demo.ecloe_pay.repositories.base import (
     DEMO_USER_DISPLAY_NAME,
     DEMO_USER_PERSONA_LABEL,
-    initial_loan_requests,
     demo_identity_emails,
+    initial_loan_requests,
     initial_session,
     normalize_email,
     user_id_for_email,

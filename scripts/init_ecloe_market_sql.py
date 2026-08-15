@@ -110,17 +110,25 @@ def _engine_with_entra_token(settings: Any, access_token: str, driver_name: str)
     return engine
 
 
-def _schema_migration_applied(connection: Any) -> bool:
-    from sqlalchemy import text
+def _sql_statement(statement: str) -> Any:
+    try:
+        from sqlalchemy import text
+    except ModuleNotFoundError:
+        return statement
+    return text(statement)
 
+
+def _schema_migration_applied(connection: Any) -> bool:
     exists = connection.execute(
-        text("SELECT CASE WHEN OBJECT_ID(N'ecloe_market.schema_migrations', N'U') IS NULL THEN 0 ELSE 1 END")
+        _sql_statement(
+            "SELECT CASE WHEN OBJECT_ID(N'ecloe_market.schema_migrations', N'U') IS NULL THEN 0 ELSE 1 END"
+        )
     ).scalar_one()
     if not exists:
         return False
     return bool(
         connection.execute(
-            text(
+            _sql_statement(
                 """
                 SELECT COUNT(*)
                 FROM ecloe_market.schema_migrations
@@ -143,11 +151,9 @@ def _apply_schema(connection: Any) -> int:
 
 
 def _seed_catalog(connection: Any, catalog: Catalog) -> InitMarketSummary:
-    from sqlalchemy import text
-
     for sort_order, category in enumerate(catalog.categories, start=1):
         connection.execute(
-            text(
+            _sql_statement(
                 """
                 IF NOT EXISTS (
                     SELECT 1 FROM ecloe_market.categories WHERE category_id = :category_id
@@ -178,7 +184,7 @@ def _seed_catalog(connection: Any, catalog: Catalog) -> InitMarketSummary:
 
     for product in catalog.products:
         connection.execute(
-            text(
+            _sql_statement(
                 """
                 IF NOT EXISTS (
                     SELECT 1 FROM ecloe_market.products WHERE product_id = :product_id
@@ -228,7 +234,7 @@ def _seed_catalog(connection: Any, catalog: Catalog) -> InitMarketSummary:
 
     for variant in catalog.variants:
         connection.execute(
-            text(
+            _sql_statement(
                 """
                 IF NOT EXISTS (
                     SELECT 1 FROM ecloe_market.product_variants WHERE variant_id = :variant_id
@@ -262,7 +268,7 @@ def _seed_catalog(connection: Any, catalog: Catalog) -> InitMarketSummary:
 
     for price in catalog.prices:
         connection.execute(
-            text(
+            _sql_statement(
                 """
                 IF NOT EXISTS (
                     SELECT 1 FROM ecloe_market.product_prices WHERE price_id = :price_id
@@ -293,7 +299,7 @@ def _seed_catalog(connection: Any, catalog: Catalog) -> InitMarketSummary:
 
     for inventory in catalog.inventory_items:
         connection.execute(
-            text(
+            _sql_statement(
                 """
                 IF NOT EXISTS (
                     SELECT 1 FROM ecloe_market.inventory_items WHERE inventory_id = :inventory_id
