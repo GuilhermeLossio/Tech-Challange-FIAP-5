@@ -42,7 +42,7 @@
 
       <div class="status-panel wallet-status" role="status" aria-live="polite">
         <span class="status-dot" aria-hidden="true"></span>
-        <span id="runtimeMode">{{ t("wallet.presentationMode") }}</span>
+        <span id="runtimeMode">{{ t("wallet.loading") }}</span>
       </div>
     </aside>
 
@@ -52,7 +52,7 @@
         <div class="welcome-copy">
           <p class="eyebrow">{{ t("wallet.session") }}</p>
           <h2>{{ t("wallet.greeting") }}</h2>
-          <strong id="sessionId">sess_pay_demo_001</strong>
+          <strong id="sessionId">{{ t("wallet.loading") }}</strong>
           <span id="authIdentity">{{ t("wallet.demoWallet") }}</span>
         </div>
         <div class="topbar-actions">
@@ -70,7 +70,13 @@
         <section class="card balance-panel hero-balance-card" aria-label="{{ t("wallet.balanceAria") }}">
           <div>
             <p class="balance-label">{{ t("wallet.demoBalance") }} <span aria-hidden="true">{{ t("wallet.view") }}</span></p>
-            <strong>R$ 428,70</strong>
+            <strong id="balanceAmount" class="wallet-loading-value" aria-busy="true">
+              <span class="wallet-loading-state" aria-hidden="true">
+                <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+                <span class="loading-label">{{ t("wallet.loading") }}</span>
+              </span>
+              <span class="sr-only">{{ t("wallet.loading") }}</span>
+            </strong>
             <span class="funds-copy">{{ t("wallet.noRealValue") }}</span>
             <button id="viewDetailsButton" class="details-button" type="button">{{ t("wallet.details") }}</button>
           </div>
@@ -84,7 +90,13 @@
             <span class="metric-icon sprite-icon sprite-cashback" aria-hidden="true"><span class="sr-only">{{ t("wallet.cashback") }}</span></span>
             <p>{{ t("wallet.cashback") }}</p>
           </div>
-          <strong>R$ 18,40</strong>
+          <strong id="cashbackAmount" class="wallet-loading-value" aria-busy="true">
+            <span class="wallet-loading-state" aria-hidden="true">
+              <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+              <span class="loading-label">{{ t("wallet.loading") }}</span>
+            </span>
+            <span class="sr-only">{{ t("wallet.loading") }}</span>
+          </strong>
           <span>{{ t("wallet.available") }}</span>
         </div>
 
@@ -94,17 +106,58 @@
               <span class="metric-icon rose sprite-icon sprite-monthly-goal" aria-hidden="true"><span class="sr-only">{{ t("wallet.monthlyGoal") }}</span></span>
               <p>{{ t("wallet.monthlyGoal") }}</p>
             </div>
-            <strong>64%</strong>
-            <span>R$ 640,00 de R$ 1.000,00</span>
+            <strong id="goalPercent" class="wallet-loading-value" aria-busy="true">
+              <span class="wallet-loading-state" aria-hidden="true">
+                <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+                <span class="loading-label">{{ t("wallet.loading") }}</span>
+              </span>
+              <span class="sr-only">{{ t("wallet.loading") }}</span>
+            </strong>
+            <span id="goalDetail" class="wallet-loading-value compact" aria-busy="true">
+              <span class="wallet-loading-state" aria-hidden="true">
+                <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+                <span class="loading-label">{{ t("wallet.loading") }}</span>
+              </span>
+              <span class="sr-only">{{ t("wallet.loading") }}</span>
+            </span>
           </div>
           <span
+            id="goalProgress"
             class="progress-ring"
             role="progressbar"
             aria-label="{{ t("wallet.goalProgressAria") }}"
-            aria-valuenow="64"
+            aria-valuenow="0"
             aria-valuemin="0"
             aria-valuemax="100"
           ></span>
+        </div>
+
+        <div class="card metric-panel metric-card loan-card" aria-label="{{ t("wallet.loanRequestsAria") }}">
+          <div class="metric-card-heading">
+            <span class="metric-icon loan sprite-icon sprite-payment-card" aria-hidden="true"><span class="sr-only">{{ t("wallet.loanRequests") }}</span></span>
+            <p>{{ t("wallet.loanRequests") }}</p>
+          </div>
+          <strong id="loanAmount" class="wallet-loading-value" aria-busy="true">
+            <span class="wallet-loading-state" aria-hidden="true">
+              <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+              <span class="loading-label">{{ t("wallet.loading") }}</span>
+            </span>
+            <span class="sr-only">{{ t("wallet.loading") }}</span>
+          </strong>
+          <span id="loanStatus" class="wallet-loading-value compact" aria-busy="true">
+            <span class="wallet-loading-state" aria-hidden="true">
+              <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+              <span class="loading-label">{{ t("wallet.loading") }}</span>
+            </span>
+            <span class="sr-only">{{ t("wallet.loading") }}</span>
+          </span>
+          <small id="loanRequestedAt" class="wallet-loading-value compact" aria-busy="true">
+            <span class="wallet-loading-state" aria-hidden="true">
+              <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+              <span class="loading-label">{{ t("wallet.loading") }}</span>
+            </span>
+            <span class="sr-only">{{ t("wallet.loading") }}</span>
+          </small>
         </div>
       </section>
 
@@ -156,8 +209,20 @@
           <div class="payment-strip" aria-label="{{ t("wallet.paymentOrderAria") }}">
             <div class="payment-card">
               <p class="eyebrow">{{ t("wallet.recurringPayment") }}</p>
-              <strong>R$ 127,90</strong>
-              <span>{{ t("wallet.dueDate") }}</span>
+              <strong id="paymentAmount" class="wallet-loading-value" aria-busy="true">
+                <span class="wallet-loading-state" aria-hidden="true">
+                  <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+                  <span class="loading-label">{{ t("wallet.loading") }}</span>
+                </span>
+                <span class="sr-only">{{ t("wallet.loading") }}</span>
+              </strong>
+              <span id="paymentStatus" class="wallet-loading-value compact" aria-busy="true">
+                <span class="wallet-loading-state" aria-hidden="true">
+                  <span class="pixel-loader"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span>
+                  <span class="loading-label">{{ t("wallet.loading") }}</span>
+                </span>
+                <span class="sr-only">{{ t("wallet.loading") }}</span>
+              </span>
             </div>
 
             <form id="transactionForm" class="transaction-form inline-transaction-form">
@@ -212,15 +277,15 @@
             <dl>
               <div>
                 <dt>decision_id</dt>
-                <dd>dec_demo_001</dd>
+                <dd id="recommendationDecision">pending</dd>
               </div>
               <div>
                 <dt>offer_id</dt>
-                <dd>cashback_recurring_purchase</dd>
+                <dd id="recommendationOffer">pending</dd>
               </div>
               <div>
                 <dt>policy</dt>
-                <dd>likelihood_ranker</dd>
+                <dd id="recommendationPolicy">pending</dd>
               </div>
               <div>
                 <dt>database_provider</dt>
@@ -232,7 +297,7 @@
               </div>
               <div>
                 <dt>bucket</dt>
-                <dd>ecloe-pay-demo-artifacts</dd>
+                <dd id="bucketValue">pending</dd>
               </div>
             </dl>
           </div>

@@ -45,11 +45,9 @@ def processed_dataframe() -> pd.DataFrame:
             "row_id": [f"row_{index}" for index in range(9)],
             "recency": [1, 2, 3] * 3,
             "history_segment": ["1) Low", "2) Medium", "3) High"] * 3,
-            "mens": [1, 0, 1] * 3,
-            "womens": [0, 1, 1] * 3,
             "newbie": [1, 0, 0] * 3,
             "channel": ["Web", "Phone", "Multichannel"] * 3,
-            "action": ["mens_email", "womens_email", "no_email"] * 3,
+            "action": ["legacy_variant_a", "legacy_variant_b", "legacy_control"] * 3,
             "reward": [1, 0, 0, 1, 1, 0, 1, 0, 0],
             "visit": [1, 0, 1] * 3,
             "spend": [10.0, 0.0, 0.0] * 3,
@@ -422,9 +420,6 @@ def test_api_schema_rejects_too_many_offers() -> None:
             request_id="req_1",
             customer_context={"channel": "Web"},
             eligible_offers=[
-                "mens_email",
-                "womens_email",
-                "no_email",
                 "cashback_recurring_purchase",
                 "savings_goal",
                 "financial_education",
@@ -433,10 +428,11 @@ def test_api_schema_rejects_too_many_offers() -> None:
                 "credit_limit",
                 "personal_loan",
                 "cashback_investment",
+                "savings_goal",
             ],
         )
 
-    assert "at most 10 items" in str(error.value)
+    assert "at most 8 items" in str(error.value)
 
 
 def test_api_routes_have_explicit_response_models() -> None:
@@ -450,6 +446,10 @@ def test_api_routes_have_explicit_response_models() -> None:
         ("/v1/purchase-likelihood", "POST"),
         ("/v1/decisions", "POST"),
         ("/v1/rewards", "POST"),
+        ("/v2/policies/current", "GET"),
+        ("/v2/likelihood-estimates", "POST"),
+        ("/v2/decisions", "POST"),
+        ("/v2/feedback", "POST"),
     ]:
         route = route_for(app, path, method)
         assert getattr(route, "response_model", None) is not None
@@ -469,6 +469,10 @@ def test_business_routes_require_expected_scopes() -> None:
         ("/v1/purchase-likelihood", "POST"): {"decision:read"},
         ("/v1/decisions", "POST"): {"decision:write"},
         ("/v1/rewards", "POST"): {"reward:write"},
+        ("/v2/policies/current", "GET"): {"policy:read"},
+        ("/v2/likelihood-estimates", "POST"): {"decision:read"},
+        ("/v2/decisions", "POST"): {"decision:write"},
+        ("/v2/feedback", "POST"): {"reward:write"},
     }
     for (path, method), scopes in expected.items():
         route = route_for(app, path, method)
@@ -479,13 +483,22 @@ def test_business_routes_require_expected_scopes() -> None:
         assert route_scopes == scopes
 
 
-def test_api_public_documentation_routes_are_disabled() -> None:
+def test_api_public_documentation_routes_are_available() -> None:
     app = api_main.create_app()
     paths = {getattr(route, "path", None) for route in app.routes}
 
-    assert "/docs" not in paths
-    assert "/redoc" not in paths
-    assert "/openapi.json" not in paths
+    assert "/docs" in paths
+    assert "/redoc" in paths
+    assert "/openapi.json" in paths
+
+
+def test_swagger_documentation_is_exposed_by_the_http_app() -> None:
+    app = api_main.create_app()
+    client = TestClient(app, base_url="http://127.0.0.1")
+
+    assert client.get("/docs").status_code == 200
+    assert client.get("/redoc").status_code == 200
+    assert client.get("/openapi.json").status_code == 200
 
 
 @requires_testclient
@@ -602,6 +615,9 @@ def test_http_business_route_requires_token_in_cloud(monkeypatch, tmp_path) -> N
     monkeypatch.setenv("ENTRA_CLIENT_ID", "client")
     monkeypatch.setenv("ENTRA_AUDIENCE", "api://client")
     monkeypatch.setenv("SUBJECT_KEY_SALT", "cloud-secret")
+    monkeypatch.setenv("FLASK_SECRET_KEY", "cloud-flask-secret")
+    monkeypatch.setenv("RATE_LIMIT_BACKEND", "redis")
+    monkeypatch.setenv("RATE_LIMIT_REDIS_URL", "memory://test")
     monkeypatch.setenv("AZURE_COSMOS_AUTH_MODE", "managed_identity")
     monkeypatch.setenv("DECISION_REPOSITORY_MODE", "cosmos")
     monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "managed_identity")
@@ -631,6 +647,9 @@ def test_http_business_route_rejects_missing_scope(monkeypatch, tmp_path) -> Non
     monkeypatch.setenv("ENTRA_CLIENT_ID", "client")
     monkeypatch.setenv("ENTRA_AUDIENCE", "api://client")
     monkeypatch.setenv("SUBJECT_KEY_SALT", "cloud-secret")
+    monkeypatch.setenv("FLASK_SECRET_KEY", "cloud-flask-secret")
+    monkeypatch.setenv("RATE_LIMIT_BACKEND", "redis")
+    monkeypatch.setenv("RATE_LIMIT_REDIS_URL", "memory://test")
     monkeypatch.setenv("AZURE_COSMOS_AUTH_MODE", "managed_identity")
     monkeypatch.setenv("DECISION_REPOSITORY_MODE", "cosmos")
     monkeypatch.setenv("ECLOE_PAY_SQL_AUTH_MODE", "managed_identity")

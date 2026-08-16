@@ -15,6 +15,7 @@ from src.demo.ecloe_pay.repositories.base import (
     DEMO_USER_DISPLAY_NAME,
     DEMO_USER_PERSONA_LABEL,
     demo_identity_emails,
+    initial_loan_requests,
     initial_session,
     normalize_email,
     user_id_for_email,
@@ -22,7 +23,7 @@ from src.demo.ecloe_pay.repositories.base import (
 
 ROOT = Path(__file__).resolve().parents[1]
 SCHEMA_FILE = ROOT / "src" / "demo" / "ecloe_pay" / "schema.sql"
-MIGRATION_ID = "20260728_ecloe_pay_azure_sql_schema"
+MIGRATION_ID = "20260814_ecloe_pay_loan_requests_v1"
 PLACEHOLDER_PASSWORD = "change-this-demo-password"
 SQL_TOKEN_SCOPE = "https://database.windows.net/.default"
 REQUIRED_ODBC_DRIVER_FAMILY = "ODBC Driver 18"
@@ -83,7 +84,7 @@ def _entra_access_token(auth_mode: str) -> str:
 
 def _engine_with_entra_token(settings: Any, access_token: str) -> Any:
     try:
-        from sqlalchemy import URL, create_engine
+        from sqlalchemy import URL, create_engine, event
     except ModuleNotFoundError as error:
         raise RuntimeError("SQLAlchemy is required. Install the azure-sql extra first.") from error
 
@@ -100,7 +101,14 @@ def _engine_with_entra_token(settings: Any, access_token: str) -> Any:
             "Connection Timeout": "30",
         },
     )
-    return create_engine(url, connect_args={"attrs_before": attrs_before}, pool_pre_ping=True)
+    engine = create_engine(url, connect_args={"attrs_before": attrs_before}, pool_pre_ping=True)
+
+    @event.listens_for(engine, "do_connect")
+    def _remove_sqlalchemy_trusted_connection(dialect, connection_record, cargs, cparams):
+        if cargs:
+            cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
+
+    return engine
 
 
 def _schema_migration_applied(connection: Any) -> bool:
@@ -218,6 +226,28 @@ def _seed_deterministic_demo_state(connection: Any, user_id: str) -> None:
         ),
         session.__dict__,
     )
+    for loan_request in initial_loan_requests(user_id):
+        connection.execute(
+            text(
+                """
+                IF NOT EXISTS (
+                    SELECT 1 FROM ecloe_pay.loan_requests
+                    WHERE loan_request_id = :loan_request_id
+                )
+                BEGIN
+                    INSERT INTO ecloe_pay.loan_requests (
+                        loan_request_id, user_id, requested_amount_cents,
+                        currency, status, requested_at, synthetic_notice
+                    )
+                    VALUES (
+                        :loan_request_id, :user_id, :requested_amount_cents,
+                        :currency, :status, :requested_at, :synthetic_notice
+                    )
+                END
+                """
+            ),
+            loan_request.__dict__,
+        )
     connection.execute(
         text(
             """
@@ -279,18 +309,34 @@ def _validate_seed(connection: Any, email: str) -> bool:
                 (SELECT COUNT(*) FROM ecloe_pay.wallet_snapshots
                  WHERE snapshot_id = N'snap_pay_demo_7841' AND currency = 'BRL') AS wallets_count,
                 (SELECT COUNT(*) FROM ecloe_pay.payment_orders
-                 WHERE payment_order_id = N'pay_order_demo_7841' AND currency = 'BRL') AS orders_count
+                 WHERE payment_order_id = N'pay_order_demo_7841' AND currency = 'BRL') AS orders_count,
+                (SELECT COUNT(*) FROM ecloe_pay.loan_requests lr
+                 JOIN ecloe_pay.demo_users du ON du.user_id = lr.user_id
+                 WHERE du.email_normalized = :email_normalized
+                    AND lr.currency = 'BRL'
+                    AND lr.status IN (N'requested', N'under_review', N'cancelled')) AS loan_requests_count
             """
         ),
         {"email_normalized": email_normalized},
     ).mappings().one()
-    return all(row[key] >= 1 for key in ("users_count", "sessions_count", "wallets_count", "orders_count"))
+    return all(
+        row[key] >= 1
+        for key in (
+            "users_count",
+            "sessions_count",
+            "wallets_count",
+            "orders_count",
+            "loan_requests_count",
+        )
+    )
 
 
 def initialize() -> InitSummary:
     settings = load_settings()
     seed_xlsx = os.getenv(SEED_XLSX_ENV, "").strip()
-    password = "" if seed_xlsx else _require_explicit_demo_password(settings.ecloe_pay_demo_user_password)
+    password = ""
+    if settings.ecloe_web_auth_mode == "local" and not seed_xlsx:
+        password = _require_explicit_demo_password(settings.ecloe_pay_demo_user_password)
     _validate_odbc_driver(settings.ecloe_pay_sql_driver)
     access_token = _entra_access_token(settings.ecloe_pay_sql_auth_mode)
     engine = _engine_with_entra_token(settings, access_token)
@@ -303,7 +349,10 @@ def initialize() -> InitSummary:
         transaction = connection.begin()
         try:
             migrations_applied = _apply_schema(connection)
-            if seed_xlsx:
+            if settings.ecloe_web_auth_mode in {"entra_external", "local_signup"}:
+                persona_status = f"{settings.ecloe_web_auth_mode}-on-first-signup"
+                seed_validation_ok = True
+            elif seed_xlsx:
                 from scripts.seed_ecloe_pay_login_xlsx import (
                     load_seed_rows,
                     upsert_seed_row,
@@ -327,8 +376,9 @@ def initialize() -> InitSummary:
                 persona_status = "created" if "created" in persona_statuses else "updated"
                 user_id = primary_user_id
                 validation_email = settings.ecloe_pay_demo_user_email
-            _seed_deterministic_demo_state(connection, user_id)
-            seed_validation_ok = _validate_seed(connection, validation_email)
+            if settings.ecloe_web_auth_mode == "local":
+                _seed_deterministic_demo_state(connection, user_id)
+                seed_validation_ok = _validate_seed(connection, validation_email)
         except Exception:
             transaction.rollback()
             raise

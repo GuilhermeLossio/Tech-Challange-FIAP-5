@@ -10,11 +10,13 @@ from typing import Any
 import pandas as pd
 
 from src.bandits import ACTIONS
-from src.data.schemas import MODEL_CONTEXT_COLUMNS
+from src.data.legacy_hillstrom import migrate_legacy_action_rates, normalize_legacy_action
+from src.data.schemas import BLOCKED_COLUMNS, MODEL_CONTEXT_COLUMNS
 from src.engine.artifacts import (
     ARTIFACT_STATUS_ACTIVE,
     LIKELIHOOD_MODEL_SCHEMA,
     ArtifactMetadata,
+    ArtifactValidationError,
     LoadedArtifact,
     load_json_artifact,
 )
@@ -81,10 +83,17 @@ def train_likelihood_model(
     smoothing_alpha: float = DEFAULT_SMOOTHING_ALPHA,
 ) -> LikelihoodModel:
     dataframe = pd.read_csv(input_file)
+    blocked_columns = sorted(set(BLOCKED_COLUMNS).intersection(dataframe.columns))
+    if blocked_columns:
+        raise ValueError(f"Blocked columns in likelihood training data: {blocked_columns}")
+
     required_columns = {"action", "reward", *MODEL_CONTEXT_COLUMNS}
     missing = required_columns - set(dataframe.columns)
     if missing:
         raise ValueError(f"Missing required columns for likelihood training: {sorted(missing)}")
+    dataframe["action"] = dataframe["action"].map(
+        lambda value: normalize_legacy_action(str(value)) if pd.notna(value) else value
+    )
 
     invalid_actions = sorted(set(dataframe["action"].dropna().unique()) - set(ACTIONS))
     if invalid_actions:
@@ -163,7 +172,7 @@ class PurchaseLikelihoodService:
     @classmethod
     def from_file(cls, path: Path = DEFAULT_LIKELIHOOD_MODEL_FILE) -> PurchaseLikelihoodService:
         artifact = load_likelihood_artifact(path)
-        return cls(LikelihoodModel(**artifact.payload), artifact.metadata)
+        return cls(LikelihoodModel(**migrate_legacy_action_rates(artifact.payload)), artifact.metadata)
 
     def estimate(self, request: EngineRequest) -> LikelihoodResponse:
         validate_engine_request(request)
@@ -237,7 +246,7 @@ class PurchaseLikelihoodService:
 
 
 def load_likelihood_artifact(path: Path) -> LoadedArtifact:
-    return load_json_artifact(
+    artifact = load_json_artifact(
         path,
         expected_schema=LIKELIHOOD_MODEL_SCHEMA,
         required_fields={
@@ -253,6 +262,21 @@ def load_likelihood_artifact(path: Path) -> LoadedArtifact:
             "context_columns",
         },
     )
+    payload = migrate_legacy_action_rates(artifact.payload)
+    context_columns = set(payload.get("context_columns", []))
+    blocked = sorted(context_columns.intersection(BLOCKED_COLUMNS))
+    unknown = sorted(context_columns - set(MODEL_CONTEXT_COLUMNS))
+    if blocked or unknown:
+        raise ArtifactValidationError(
+            f"Artifact {path} has blocked or non-allowlisted context columns: "
+            f"{sorted(set(blocked + unknown))}"
+        )
+    invalid_actions = sorted(set(payload.get("action_rates", {})) - set(ACTIONS))
+    if invalid_actions:
+        raise ArtifactValidationError(
+            f"Artifact {path} has invalid action rates: {invalid_actions}"
+        )
+    return LoadedArtifact(payload=payload, metadata=artifact.metadata)
 
 
 def main() -> None:

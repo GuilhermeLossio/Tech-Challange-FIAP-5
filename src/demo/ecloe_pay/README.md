@@ -5,6 +5,8 @@ This folder contains the first static ECloe Pay implementation slice.
 Run it with Flask:
 
 ```powershell
+$env:APP_ENVIRONMENT="local"
+$env:ECLOE_WEB_AUTH_MODE="local"
 .venv\Scripts\python.exe -m flask --app "src.demo.ecloe_pay.app:create_server_app" run --host 127.0.0.1 --port 5000
 ```
 
@@ -16,12 +18,16 @@ http://127.0.0.1:5000/pay
 ```
 
 The root route shows the landing page. The `/pay` route redirects to
-`/pay/login` until the demo persona is authenticated. The HTML can still be
+`/pay/login` until the demo persona is authenticated. The browser client
+requires the Flask backend and reports an explicit outage instead of serving
+a public presentation fallback.
+<!--
 opened directly in a browser as a fallback
-presentation mode. In that mode the UI explicitly says
-`Presentation mode — data is not being persisted.` and does not claim that login,
+The backend-unavailable state is shown explicitly; no state-changing operation
+is simulated in the browser.
+The browser does not claim that login,
 terms, or payment state was saved in Azure SQL. It does not require account
-creation, does not call a payment provider, and does not process real money.
+creation, does not call a payment provider, and does not process real money. -->
 
 Implemented in this slice:
 
@@ -46,7 +52,33 @@ browser demo:
 
 ```text
 ECLOE_PAY_DATABASE_MODE=memory
+ECLOE_WEB_AUTH_MODE=local
 ```
+
+Use `ECLOE_WEB_AUTH_MODE=entra_external` only after replacing the placeholder
+`ECLOE_WEB_ENTRA_*` values with a real Microsoft Entra External ID tenant,
+client ID, and client secret. Placeholder values such as
+`https://seu-tenant.ciamlogin.com` are rejected during startup.
+
+Use `ECLOE_WEB_AUTH_MODE=local_signup` when Microsoft Entra is not available and
+the demo should provide its own lightweight e-mail/password registration backed
+by Azure SQL. This mode is allowed in cloud only with Azure SQL persistence.
+
+In External ID mode the login screen shows both `Entrar` and `Criar conta`.
+Both actions redirect to Microsoft Entra External ID; ECloe never collects or
+stores customer passwords. After the callback, ECloe creates the synthetic Pay
+account only if that external subject has not already been linked.
+
+New accounts start with the configured synthetic balance:
+
+```text
+ECLOE_PAY_INITIAL_BALANCE_CENTS=50000
+```
+
+Signup abuse control uses shared Redis rate limiting. Raw IP addresses are never
+stored: the app normalizes the client IP from `X-Forwarded-For` and stores only
+an HMAC hash for audit purposes. Multiple legitimate accounts may be created
+from the same IP.
 
 Azure SQL persistence is the intended mode for validating the browser login
 flow against the configured demo persona:
@@ -99,6 +131,11 @@ Apply pending Azure SQL migrations and seed the deterministic demo state with:
 ```powershell
 python -m scripts.init_ecloe_pay_sql
 ```
+
+For versioned schema changes, configure `ECLOE_PAY_SQLALCHEMY_URL` and run
+`alembic upgrade head`. The initial Alembic revision is a baseline for the
+existing `schema.sql`; subsequent revisions are incremental and safe to run
+more than once.
 
 `/pay` and the Pay APIs require the demo persona login. In Azure SQL mode,
 credentials are validated against `ecloe_pay.demo_users`. The raw session token

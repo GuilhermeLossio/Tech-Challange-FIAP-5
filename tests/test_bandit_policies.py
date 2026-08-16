@@ -6,13 +6,13 @@ from src.bandits.policies import UCB1, DeterministicBaseline, EpsilonGreedy, Tho
 def test_baseline_selects_highest_reward_rate_action() -> None:
     policy = DeterministicBaseline(
         reward_rates={
-            "mens_email": 0.01,
-            "womens_email": 0.04,
-            "no_email": 0.02,
+            "legacy_variant_a": 0.01,
+            "legacy_variant_b": 0.04,
+            "legacy_control": 0.02,
         }
     )
 
-    assert policy.select_action() == "womens_email"
+    assert policy.select_action() == "legacy_variant_b"
 
 
 def test_epsilon_greedy_updates_running_reward_value() -> None:
@@ -29,10 +29,10 @@ def test_epsilon_greedy_updates_running_reward_value() -> None:
 def test_ucb_selects_untried_actions_without_division_by_zero() -> None:
     policy = UCB1()
 
-    assert policy.select_action() == "mens_email"
-    policy.update("mens_email", 1)
+    assert policy.select_action() == "legacy_variant_a"
+    policy.update("legacy_variant_a", 1)
 
-    assert policy.select_action() == "womens_email"
+    assert policy.select_action() == "legacy_variant_b"
 
 
 def test_thompson_sampling_is_deterministic_with_seed() -> None:
@@ -48,8 +48,8 @@ def test_thompson_sampling_is_deterministic_with_seed() -> None:
 def test_thompson_sampling_updates_beta_parameters() -> None:
     policy = ThompsonSampling(seed=42)
 
-    policy.update("mens_email", 1)
-    policy.update("mens_email", 0)
+    policy.update("legacy_variant_a", 1)
+    policy.update("legacy_variant_a", 0)
 
-    assert policy.alpha["mens_email"] == 2.0
-    assert policy.beta["mens_email"] == 2.0
+    assert policy.alpha["legacy_variant_a"] == 2.0
+    assert policy.beta["legacy_variant_a"] == 2.0

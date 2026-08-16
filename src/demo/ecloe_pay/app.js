@@ -1,13 +1,3 @@
-const DEMO_STATE = Object.freeze({
-  sessionId: "sess_pay_demo_001",
-  decisionId: "dec_demo_001",
-  eventPrefix: "evt_pay_demo",
-  idempotencyKey: "pay-demo:order_demo_7841:0426",
-  confirmationCode: "0426",
-  bucketName: "ecloe-pay-demo-artifacts",
-  paymentOrderId: "pay_order_demo_7841",
-});
-
 const timeline = document.querySelector("#timeline");
 const termsDialog = document.querySelector("#termsDialog");
 const termsCheckbox = document.querySelector("#termsCheckbox");
@@ -23,15 +13,29 @@ const logoutButton = document.querySelector("#logoutButton");
 const runtimeMode = document.querySelector("#runtimeMode");
 const databaseProvider = document.querySelector("#databaseProvider");
 const databaseSchema = document.querySelector("#databaseSchema");
+const recommendationDecision = document.querySelector("#recommendationDecision");
+const recommendationOffer = document.querySelector("#recommendationOffer");
+const recommendationPolicy = document.querySelector("#recommendationPolicy");
+const balanceAmount = document.querySelector("#balanceAmount");
+const cashbackAmount = document.querySelector("#cashbackAmount");
+const goalPercent = document.querySelector("#goalPercent");
+const goalDetail = document.querySelector("#goalDetail");
+const goalProgress = document.querySelector("#goalProgress");
+const paymentAmount = document.querySelector("#paymentAmount");
+const paymentStatus = document.querySelector("#paymentStatus");
+const loanAmount = document.querySelector("#loanAmount");
+const loanStatus = document.querySelector("#loanStatus");
+const loanRequestedAt = document.querySelector("#loanRequestedAt");
+const benefitTitle = document.querySelector("#benefitTitle");
+const benefitMessage = document.querySelector("#benefitMessage");
+const bucketValue = document.querySelector("#bucketValue");
 const viewDetailsButton = document.querySelector("#viewDetailsButton");
 const quickActionButtons = document.querySelectorAll(".quick-action[data-target]");
 const pageLocale = document.documentElement.lang || "en-US";
 
-let eventCounter = 1;
 let termsAccepted = false;
 let transactionLocked = false;
-let flaskAvailable = false;
-let backendRequiresAuth = false;
+let runtimeState = {};
 
 async function getJson(url) {
   const response = await fetch(url);
@@ -76,15 +80,93 @@ function appendTimeline(message, evidence = "") {
   timeline.prepend(item);
 }
 
+function setLoadedText(element, value) {
+  element.classList.remove("wallet-loading-value", "compact");
+  element.removeAttribute("aria-busy");
+  element.textContent = value;
+}
+
+function formatMoney(cents, currency = "BRL") {
+  const amount = Number.isFinite(Number(cents)) ? Number(cents) / 100 : 0;
+  return new Intl.NumberFormat(pageLocale, {
+    style: "currency",
+    currency,
+    currencyDisplay: "symbol",
+  }).format(amount);
+}
+
+function formatPercent(value) {
+  return `${Math.max(0, Math.min(100, Number(value) || 0))}%`;
+}
+
+function formatDate(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "--";
+  }
+  return new Intl.DateTimeFormat(pageLocale, {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
+function loanStatusLabel(status) {
+  return {
+    requested: pageLocale === "pt-BR" ? "Solicitado" : "Requested",
+    under_review: pageLocale === "pt-BR" ? "Em analise" : "Under review",
+    cancelled: pageLocale === "pt-BR" ? "Cancelado" : "Cancelled",
+  }[status] || status || "--";
+}
+
+function renderSession(body) {
+  const session = body.session;
+  const wallet = body.wallet;
+  const currency = wallet.currency || "BRL";
+  const goal = Math.max(0, Math.min(100, Number(wallet.savings_goal_percent) || 0));
+  const goalTargetCents = 100000;
+  const goalCurrentCents = Math.round((goalTargetCents * goal) / 100);
+  const loanRequest = body.loan_requests?.[0];
+
+  runtimeState = {
+    ...runtimeState,
+    sessionId: session.session_id,
+    decisionId: body.recommendation.decision_id,
+    idempotencyKey: session.idempotency_key,
+    bucketName: body.security.bucket_name,
+    paymentOrderId: session.payment_order_id,
+  };
+
+  sessionId.textContent = session.session_id;
+  setLoadedText(balanceAmount, formatMoney(wallet.demo_balance_cents, currency));
+  setLoadedText(cashbackAmount, formatMoney(wallet.cashback_cents, currency));
+  setLoadedText(goalPercent, formatPercent(goal));
+  setLoadedText(goalDetail, `${formatMoney(goalCurrentCents, currency)} / ${formatMoney(goalTargetCents, currency)}`);
+  goalProgress.style.setProperty("--goal-progress", `${goal}%`);
+  goalProgress.setAttribute("aria-valuenow", String(goal));
+  setLoadedText(paymentAmount, formatMoney(session.payment_amount_cents, currency));
+  setLoadedText(paymentStatus, `${session.payment_order_id} - ${session.payment_status}`);
+  benefitTitle.textContent = body.benefit.title;
+  benefitMessage.textContent = body.benefit.message;
+  recommendationDecision.textContent = body.recommendation.decision_id;
+  recommendationOffer.textContent = body.benefit.offer_id;
+  recommendationPolicy.textContent = body.recommendation.policy;
+  bucketValue.textContent = body.security.bucket_name;
+
+  if (loanRequest) {
+    setLoadedText(loanAmount, formatMoney(loanRequest.requested_amount_cents, loanRequest.currency || currency));
+    setLoadedText(loanStatus, loanStatusLabel(loanRequest.status));
+    setLoadedText(loanRequestedAt, formatDate(loanRequest.requested_at));
+  } else {
+    setLoadedText(loanAmount, "--");
+    setLoadedText(loanStatus, pageLocale === "pt-BR" ? "Nenhuma solicitacao sintetica" : "No synthetic request");
+    setLoadedText(loanRequestedAt, "--");
+  }
+}
+
 function setBenefitState(label, variant = "default") {
   benefitState.textContent = label;
   benefitState.classList.toggle("success", variant === "success");
-}
-
-function nextEventId() {
-  const eventId = `${DEMO_STATE.eventPrefix}_${String(eventCounter).padStart(3, "0")}`;
-  eventCounter += 1;
-  return eventId;
 }
 
 function requireTerms() {
@@ -102,14 +184,6 @@ function redirectToLoginWhenNeeded(error) {
   return false;
 }
 
-function setPresentationMode() {
-  backendRequiresAuth = false;
-  authIdentity.textContent = "Carteira demonstrativa";
-  runtimeMode.textContent = "Modo apresentacao - os dados nao sao persistidos.";
-  databaseProvider.textContent = "apresentacao";
-  databaseSchema.textContent = "nao persistido";
-}
-
 function setAuthenticatedMode(auth, security) {
   authIdentity.textContent = auth.user?.email || "Persona demo";
   runtimeMode.textContent = security.database_provider === "azure_sql"
@@ -124,35 +198,21 @@ function recordReward(action, eventType, reward) {
     return;
   }
 
-  if (flaskAvailable) {
-    const actionByEvent = {
-      click: "open",
-      dismissal: "dismiss",
-      conversion: "accept",
-    };
-    postJson("/api/benefit-interactions", { action: actionByEvent[eventType] })
-      .then((body) => {
-        setBenefitState(action, reward === 1 ? "success" : "default");
-        const event = body.reward_event;
-        appendTimeline(
-          `${action}. Evento de recompensa preparado para ${body.engine_endpoint}.`,
-          `${event.event_id}, ${event.event_type}, reward=${event.reward}, decision=${event.decision_id}`,
-        );
-      })
-      .catch((error) => {
-        if (!redirectToLoginWhenNeeded(error)) {
-          appendTimeline(`Interacao rejeitada pela API Flask: ${error.message}`);
-        }
-      });
-    return;
-  }
-
-  const eventId = nextEventId();
-  setBenefitState("Previa da apresentacao");
-  appendTimeline(
-    `Modo apresentacao - os dados nao sao persistidos. ${action} foi apenas pre-visualizado.`,
-    `${eventId}, ${eventType}, reward=${reward}, decision=${DEMO_STATE.decisionId}`,
-  );
+  const actionByEvent = { click: "open", dismissal: "dismiss", conversion: "accept" };
+  postJson("/api/benefit-interactions", { action: actionByEvent[eventType] })
+    .then((body) => {
+      setBenefitState(action, reward === 1 ? "success" : "default");
+      const event = body.reward_event;
+      appendTimeline(
+        `${action}. Evento de recompensa preparado para ${body.engine_endpoint}.`,
+        `${event.event_id}, ${event.event_type}, reward=${event.reward}, decision=${event.decision_id}`,
+      );
+    })
+    .catch((error) => {
+      if (!redirectToLoginWhenNeeded(error)) {
+        appendTimeline(`Interacao rejeitada pela API Flask: ${error.message}`);
+      }
+    });
 }
 
 document.querySelector("#openTermsButton").addEventListener("click", () => {
@@ -180,13 +240,6 @@ acceptTermsButton.addEventListener("click", () => {
     termsDialog.close();
     appendTimeline("Termos da demo aceitos para esta sessao.");
   };
-
-  if (!flaskAvailable) {
-    termsAccepted = true;
-    termsDialog.close();
-    appendTimeline("Modo apresentacao - os dados nao sao persistidos. Termos aceitos apenas para pre-visualizacao.");
-    return;
-  }
 
   postJson("/api/terms", { accepted: true })
     .then(finish)
@@ -228,79 +281,52 @@ transactionForm.addEventListener("submit", (event) => {
   }
 
   const normalizedCode = confirmationCode.value.trim();
-  if (transactionLocked && !flaskAvailable) {
-    appendTimeline("Modo apresentacao - os dados nao sao persistidos. Previa duplicada ignorada.");
+  if (transactionLocked) {
+    appendTimeline("Tentativa duplicada ignorada pela idempotencia da sessao.");
     return;
   }
-
-  if (normalizedCode !== DEMO_STATE.confirmationCode) {
-    securityState.textContent = "Somente previa";
-    securityState.classList.remove("success");
-    appendTimeline("Modo apresentacao - os dados nao sao persistidos. Previa de confirmacao rejeitada.");
-    return;
-  }
-
-  if (flaskAvailable) {
-    postJson(`/api/payment-orders/${DEMO_STATE.paymentOrderId}/simulate`, {
-      confirmation_code: normalizedCode,
+  postJson(`/api/payment-orders/${runtimeState.paymentOrderId}/simulate`, {
+    confirmation_code: normalizedCode,
+  })
+    .then((body) => {
+      transactionLocked = true;
+      securityState.textContent = "Verificado";
+      securityState.classList.add("success");
+      setBenefitState("Pagamento simulado aceito", "success");
+      getJson("/api/session").then(renderSession);
+      appendTimeline(
+        "A API Flask verificou o pagamento simulado e preparou o evento de recompensa.",
+        `${body.reward_event.event_id}, provider=${body.database_provider}, schema=${body.database_schema}, bucket=${body.bucket_name}`,
+      );
     })
-      .then((body) => {
-        transactionLocked = true;
-        securityState.textContent = "Verificado";
-        securityState.classList.add("success");
-        setBenefitState("Pagamento simulado aceito", "success");
-        appendTimeline(
-          "A API Flask verificou o pagamento simulado e preparou o evento de recompensa.",
-          `${body.reward_event.event_id}, provider=${body.database_provider}, schema=${body.database_schema}, bucket=${body.bucket_name}`,
-        );
-      })
-      .catch((error) => {
-        if (redirectToLoginWhenNeeded(error)) {
-          return;
-        }
-        securityState.textContent = "Rejeitado";
-        securityState.classList.remove("success");
-        appendTimeline(`Pagamento simulado rejeitado pela API Flask: ${error.message}`);
-      });
-    return;
-  }
-
-  transactionLocked = true;
-  securityState.textContent = "Somente previa";
-  securityState.classList.remove("success");
-  recordReward("Pagamento simulado aceito", "conversion", 1);
-  appendTimeline(
-    "Modo apresentacao - os dados nao sao persistidos. Nenhuma ordem de pagamento do Azure SQL foi atualizada.",
-    `idempotency=${DEMO_STATE.idempotencyKey}, bucket=${DEMO_STATE.bucketName}`,
-  );
+    .catch((error) => {
+      if (redirectToLoginWhenNeeded(error)) return;
+      securityState.textContent = "Rejeitado";
+      securityState.classList.remove("success");
+      appendTimeline(`Pagamento simulado rejeitado pela API Flask: ${error.message}`);
+    });
 });
 
 document.querySelector("#resetButton").addEventListener("click", () => {
   const finish = (body = {}) => {
-    eventCounter = 1;
     transactionLocked = false;
     termsAccepted = false;
     confirmationCode.value = "";
-    securityState.textContent = flaskAvailable ? "Bloqueado" : "Somente previa";
-    securityState.classList.toggle("success", flaskAvailable);
-    setBenefitState(flaskAvailable ? "Pronto" : "Previa da apresentacao");
+    securityState.textContent = "Bloqueado";
+    securityState.classList.remove("success");
+    setBenefitState("Pronto");
     timeline.replaceChildren();
-    sessionId.textContent = body.session_id || DEMO_STATE.sessionId;
-    appendTimeline(
-      flaskAvailable
-        ? "Sessao reiniciada com dados deterministicos da demo."
-        : "Modo apresentacao - os dados nao sao persistidos. Estado estatico reiniciado.",
-    );
+    sessionId.textContent = body.session_id || runtimeState.sessionId;
+    appendTimeline("Sessao reiniciada com dados deterministicos da demo.");
     termsDialog.showModal();
   };
 
-  if (!flaskAvailable) {
-    finish();
-    return;
-  }
-
   postJson("/api/reset", {})
-    .then(finish)
+    .then(() => getJson("/api/session"))
+    .then((body) => {
+      renderSession(body);
+      finish({ session_id: body.session.session_id });
+    })
     .catch((error) => {
       if (!redirectToLoginWhenNeeded(error)) {
         appendTimeline(`Reinicio rejeitado pela API Flask: ${error.message}`);
@@ -310,18 +336,19 @@ document.querySelector("#resetButton").addEventListener("click", () => {
 
 logoutButton.addEventListener("click", () => {
   postJson("/api/auth/logout", {})
-    .then(() => window.location.assign(`/pay/login?lang=${encodeURIComponent(pageLocale)}`))
+    .then((body) => window.location.assign(
+      body.logout_url || `/pay/login?lang=${encodeURIComponent(pageLocale)}`,
+    ))
     .catch(() => window.location.assign(`/pay/login?lang=${encodeURIComponent(pageLocale)}`));
 });
 
 async function bootstrap() {
   try {
     const auth = await getJson("/api/auth/me");
-    flaskAvailable = true;
-    backendRequiresAuth = Boolean(auth.requires_authentication);
     const body = await getJson("/api/session");
+    document.body.dataset.backendReady = "true";
     setAuthenticatedMode(auth, body.security);
-    sessionId.textContent = body.session.session_id;
+    renderSession(body);
     termsAccepted = Boolean(body.session.terms_accepted);
     appendTimeline(
       "API Flask da ECloe Pay conectada com dados sinteticos de carteira.",
@@ -331,13 +358,22 @@ async function bootstrap() {
     if (redirectToLoginWhenNeeded(error)) {
       return;
     }
-    setPresentationMode();
-    securityState.textContent = "Somente previa";
+    securityState.textContent = "Backend indisponivel";
     securityState.classList.remove("success");
-    setBenefitState("Previa da apresentacao");
-    appendTimeline("Modo apresentacao - os dados nao sao persistidos.");
+    setBenefitState("Conecte o backend Flask para continuar");
+    appendTimeline(`A demo nao pode continuar sem o backend Flask: ${error.message}`);
+    for (const element of [
+      acceptTermsButton,
+      document.querySelector("#viewBenefitButton"),
+      document.querySelector("#dismissBenefitButton"),
+      document.querySelector("#acceptBenefitButton"),
+      transactionForm,
+      document.querySelector("#resetButton"),
+    ]) {
+      if (element) element.disabled = true;
+    }
   } finally {
-    if (!termsAccepted) {
+    if (!termsAccepted && document.body.dataset.backendReady === "true") {
       termsDialog.showModal();
     }
   }

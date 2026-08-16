@@ -1,0 +1,14 @@
+{
+  "schema_version": "selected_policy.v1",
+  "artifact_status": "active",
+  "policy": "deterministic_baseline",
+  "version": "deterministic-baseline-v1",
+  "selection_rule": "preserve eligible offer order when promoted artifacts are unavailable",
+  "metrics": {
+    "rounds": 0,
+    "cumulative_reward": 0,
+    "conversion_rate": 0.0,
+    "cumulative_regret": 0.0,
+    "exploration_rate": 0.0
+  }
+}

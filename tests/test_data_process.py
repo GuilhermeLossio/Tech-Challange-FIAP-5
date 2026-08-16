@@ -12,8 +12,6 @@ def hillstrom_dataframe() -> pd.DataFrame:
             "recency": [2, 4, 3],
             "history_segment": ["1) Low", "2) Medium", "3) High"],
             "history": [50.0, 100.0, 200.0],
-            "mens": [1, 0, 1],
-            "womens": [0, 1, 1],
             "zip_code": ["Urban", "Rural", "Suburban"],
             "newbie": [1, 0, 0],
             "channel": ["Web", "Phone", "Multichannel"],
@@ -28,7 +26,11 @@ def hillstrom_dataframe() -> pd.DataFrame:
 def test_process_dataset_creates_minimized_action_and_reward_columns() -> None:
     result = process_dataset(hillstrom_dataframe())
 
-    assert result["action"].tolist() == ["mens_email", "womens_email", "no_email"]
+    assert result["action"].tolist() == [
+        "legacy_variant_a",
+        "legacy_variant_b",
+        "legacy_control",
+    ]
     assert result["reward"].tolist() == [1, 0, 0]
     assert result["row_id"].is_unique
     assert "history" not in result.columns
@@ -37,8 +39,6 @@ def test_process_dataset_creates_minimized_action_and_reward_columns() -> None:
         "row_id",
         "recency",
         "history_segment",
-        "mens",
-        "womens",
         "newbie",
         "channel",
         "action",

@@ -159,18 +159,18 @@ No persona uses real personal data.
 | Screen | Route | Status | Purpose | API calls | Success state | Loading state | Empty state | Error state | Fallback state |
 |:---|:---|:---|:---|:---|:---|:---|:---|:---|:---|
 | Demo launcher | `/demo` | Planned for demo | Select deterministic scenario and mode. | None or BFF session create. | Session ID and seed created. | Start button disabled while session starts. | No persona selected. | Invalid scenario configuration. | Default recurring customer scenario. |
-| ECloe Market home | `/market` | Planned for demo | Simulate marketplace browsing. Detailed in [`ecloe-market.md`](ecloe-market.md). | BFF session state only. | Categories, cards, cart, and recommendation area shown. | Product cards skeleton. | Empty cart or no recommendation yet. | Demo connection unavailable. | Continue in offline presentation mode. |
+| ECloe Market home | `/market` | Planned for demo | Simulate marketplace browsing. Detailed in [`ecloe-market.md`](ecloe-market.md). | BFF session state only. | Categories, cards, cart, and recommendation area shown. | Product cards skeleton. | Empty cart or no recommendation yet. | Demo connection unavailable. | Stop and show backend-unavailable message. |
 | Product details | `/market/products/{product_id}` | Planned for demo | Add products and show wallet preview. Detailed in [`ecloe-market.md`](ecloe-market.md). | BFF state update only. | Item added to cart. | Product details skeleton. | Product not found in demo catalog. | Add-to-cart failure. | Keep previous cart state. |
 | Cart | `/market/cart` | Planned for demo | Review selected products and payment method. Detailed in [`ecloe-market.md`](ecloe-market.md). | Eligibility simulator through BFF. | Eligible offers snapshot created. | Eligibility snapshot loading. | Empty cart. | Eligibility simulation failure. | Deterministic eligible offers for the selected persona. |
 | Checkout | `/market/checkout` | Planned for demo | Main decision screen. Detailed in [`ecloe-market.md`](ecloe-market.md). | `POST /v1/decisions`; optional `POST /v1/likelihood-estimates`. | Selected eligible offer displayed. | Recommendation placeholder. | No eligible offer. | Engine unavailable or invalid request. | Deterministic safe message from demo layer. |
 | Recommendation card | Inside checkout | Planned for demo | Present selected eligible offer. | Uses checkout decision response. | Customer-facing card shown. | Card placeholder. | No eligible offer selected. | Missing decision response. | Hide technical details and show neutral message. |
 | Offer details | `/offers/{offer_id}` | Planned for demo | Accept, dismiss, or return from offer. | `POST /v1/rewards` after verified demo action. | Reward event accepted. | Reward submit progress. | Unknown offer ID. | Reward rejected. | Keep decision and show retry option. |
-| ECloe Pay | `/pay` | Planned for demo | Show simulated wallet and accepted offer status. Detailed in [`ecloe-pay.md`](ecloe-pay.md). | BFF session state; reward status from prior call. | Wallet benefits and accepted offer status shown. | Wallet summary skeleton. | No accepted offer. | Session lookup failure. | Static wallet demo view. |
+| ECloe Pay | `/pay` | Planned for demo | Show simulated wallet and accepted offer status. Detailed in [`ecloe-pay.md`](ecloe-pay.md). | BFF session state; reward status from prior call. | Wallet benefits and accepted offer status shown. | Wallet summary skeleton. | No accepted offer. | Session lookup failure. | Stop and show backend-unavailable message. |
 | Demo summary | `/demo/summary` | Planned for demo | Show full technical journey. | BFF timeline read. | Timeline with request, decision, event, policy, and latency. | Timeline loading. | No recorded events. | Timeline unavailable. | Locally reconstructed summary from session state. |
 | Decision Lab | `/engine/lab` | Planned for demo | Developer/evaluator API exploration. | `POST /v1/likelihood-estimates`, `POST /v1/decisions`. | Request and response JSON shown. | Request in progress. | No request history. | Structured API error shown. | Use sample payload. |
 | Policy and artifacts | `/engine/policies` | Planned for demo | Separate online serving strategy from offline promoted policy. | `GET /v1/policies/current`. | Current serving strategy and promoted offline policy shown separately. | Policy metadata loading. | Artifact missing. | Artifact unavailable. | Show documentation-only explanation. |
 | Decisions and rewards | `/engine/events` | Future | Inspect decision and reward timelines. | Future internal read endpoints only. | Filtered event timeline. | Timeline loading. | No events. | Read endpoint unavailable. | Explain endpoint dependency. |
-| Operations | `/engine/operations` | Planned for demo | Show liveness, readiness, telemetry, and fallback counters. | `GET /livez`, `GET /readyz`; telemetry source when available. | Health and basic operational counters shown. | Health checks loading. | No telemetry yet. | Health check failed. | Presentation mode status panel. |
+| Operations | `/engine/operations` | Planned for demo | Show liveness, readiness, telemetry, and backend counters. | `GET /livez`, `GET /readyz`, `GET /metrics`. | Health and operational counters shown. | Health checks loading. | No telemetry yet. | Health check failed. | Backend-unavailable status panel. |
 
 ## Checkout Decision Integration
 
@@ -263,14 +263,14 @@ The interaction was recorded and will be available for future policy evaluation.
 
 It must not display messages suggesting immediate model retraining or immediate online learning.
 
-## Presentation Mode
+## Backend availability
 
 | Element | Status | Behavior |
 |:---|:---|:---|
 | Deterministic seed | Planned for demo | Keeps persona, cart, eligible offers, and expected reward stable. |
 | Guided navigation | Planned for demo | Moves from launcher to Market, checkout, offer, Pay, summary, and Control Room. |
 | Customer-facing copy | Planned for demo | Hides internal payloads and technical policy configuration. |
-| Fallback cards | Planned for demo | Allows the presenter to continue if the local Engine API is unavailable. |
+| Backend-unavailable state | Implemented | Stops state-changing actions and explains how to start or restore Flask/Engine. |
 
 ## Technical Mode
 

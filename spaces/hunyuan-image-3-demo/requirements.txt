@@ -1,0 +1,7 @@
+accelerate>=1.0.0
+gradio>=5.49.1
+huggingface_hub>=0.25.0
+pillow>=10.0.0
+safetensors>=0.4.5
+torch
+transformers>=4.56.0

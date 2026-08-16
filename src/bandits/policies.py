@@ -5,7 +5,9 @@ import random
 from dataclasses import dataclass
 from typing import Protocol
 
-ACTIONS = ("mens_email", "womens_email", "no_email")
+from src.data.legacy_hillstrom import LEGACY_ACTIONS
+
+ACTIONS = LEGACY_ACTIONS
 
 
 class BanditPolicy(Protocol):

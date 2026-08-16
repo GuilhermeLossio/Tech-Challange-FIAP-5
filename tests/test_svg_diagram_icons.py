@@ -70,7 +70,9 @@ def test_svg_card_icons_do_not_collide_with_titles() -> None:
 
             icon_match = USE_PATTERN.search(lines[index + 1])
             assert icon_match, f"{svg_path.name}:{index + 1} card is missing an icon"
+            icon_left = float(icon_match.group("x"))
             icon_right = float(icon_match.group("x")) + (40 * float(icon_match.group("scale")))
+            icon_bottom = float(icon_match.group("y")) + (40 * float(icon_match.group("scale")))
 
             for text_line in lines[index + 2 : index + 8]:
                 if 'font-weight="700"' not in text_line and "cardTitle" not in text_line:
@@ -79,12 +81,25 @@ def test_svg_card_icons_do_not_collide_with_titles() -> None:
                 text_match = TEXT_PATTERN.search(text_line)
                 assert text_match, f"{svg_path.name}:{index + 1} title is not parseable"
                 text_x = float(text_match.group("x"))
+                font_size = float(text_match.group("size") or 14)
+                text_y_match = re.search(r'y="(?P<y>[0-9.]+)"', text_line)
+                assert text_y_match, f"{svg_path.name}:{index + 1} title y is not parseable"
+                title_top = float(text_y_match.group("y")) - font_size
+
+                if title_top - icon_bottom >= 4:
+                    break
+
+                title = re.sub(r"<[^>]+>", "", text_match.group("label"))
+                estimated_title_width = len(title) * font_size * 0.55
                 if 'text-anchor="start"' in text_line:
                     title_left = text_x
+                    title_right = text_x + estimated_title_width
                 else:
-                    title = re.sub(r"<[^>]+>", "", text_match.group("label"))
-                    font_size = float(text_match.group("size") or 14)
-                    title_left = text_x - (len(title) * font_size * 0.55 / 2)
+                    title_left = text_x - (estimated_title_width / 2)
+                    title_right = text_x + (estimated_title_width / 2)
+
+                if icon_left - title_right >= 8:
+                    break
 
                 assert title_left - icon_right >= 24, (
                     f"{svg_path.name}:{index + 1} icon/title gap is too small"

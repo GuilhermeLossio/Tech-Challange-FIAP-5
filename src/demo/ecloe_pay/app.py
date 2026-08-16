@@ -1,38 +1,84 @@
 from __future__ import annotations
 
 import hmac
+import ipaddress
 import logging
 import os
 import secrets
-import time
 from dataclasses import asdict
 from pathlib import Path
+from urllib.parse import urlencode, urlsplit
 
-from flask import Flask, jsonify, make_response, redirect, render_template, request
+from flask import (
+    Flask,
+    jsonify,
+    make_response,
+    redirect,
+    render_template,
+    request,
+    send_from_directory,
+    session,
+)
+from werkzeug.middleware.proxy_fix import ProxyFix
+from werkzeug.security import generate_password_hash
 
 from src.core.config import Settings, load_settings
+from src.core.rate_limit import RateLimitBackendUnavailable, SharedRateLimiter
 from src.demo.ecloe_pay.i18n import (
     LOCALE_COOKIE_NAME,
     load_messages,
     resolve_locale,
     translate,
 )
+from src.demo.ecloe_pay.identity import EntraExternalIdentity, OAuthClient, safe_return_to
 from src.demo.ecloe_pay.repositories import (
     PayRepository,
+    SignupEmailAlreadyExists,
     create_pay_repository,
+)
+from src.demo.ecloe_pay.services.auth import (
+    cookie_secure as service_cookie_secure,
+)
+from src.demo.ecloe_pay.services.auth import (
+    csrf_matches,
+    csrf_token,
+    rotate_csrf_token,
+)
+from src.recommendation import (
+    Candidate,
+    CandidateType,
+    RecommendationRequest,
+    RecommendationService,
+    Surface,
 )
 
 DEMO_DIR = Path(__file__).resolve().parent
+SHARED_DEMO_DIR = DEMO_DIR.parent / "shared"
 AUTH_COOKIE_NAME = "ecloe_pay_session"
 CSRF_COOKIE_NAME = "ecloe_pay_csrf"
 CSRF_HEADER_NAME = "X-CSRF-Token"
+OIDC_FLOW_COOKIE_NAME = "ecloe_oidc_flow"
 LOGIN_RATE_LIMIT_ATTEMPTS = 5
 LOGIN_RATE_LIMIT_WINDOW_SECONDS = 300
 LOGGER = logging.getLogger(__name__)
+PAY_BENEFITS = {
+    "cashback_recurring_purchase": (
+        "Cashback for recurring purchases",
+        "Earn cashback on your recurring purchases.",
+    ),
+    "savings_goal": (
+        "Savings goal boost",
+        "Keep progress visible with a savings-goal benefit.",
+    ),
+    "financial_education": (
+        "Financial education",
+        "Open a short learning path selected for this wallet moment.",
+    ),
+}
 
 
 def _cookie_secure(settings: Settings) -> bool:
-    return settings.app_environment != "local"
+    return service_cookie_secure(settings.app_environment)
 
 
 def _set_auth_cookie(response, token: str, settings: Settings) -> None:
@@ -57,7 +103,21 @@ def _clear_auth_cookie(response, settings: Settings) -> None:
 
 
 def _set_csrf_cookie(response, settings: Settings) -> str:
-    token = secrets.token_urlsafe(32)
+    token = csrf_token(session)
+    response.set_cookie(
+        CSRF_COOKIE_NAME,
+        token,
+        httponly=False,
+        secure=_cookie_secure(settings),
+        samesite="Lax",
+        path="/",
+        max_age=settings.ecloe_pay_session_ttl_seconds,
+    )
+    return token
+
+
+def _rotate_csrf_token(response, settings: Settings) -> str:
+    token = rotate_csrf_token(session)
     response.set_cookie(
         CSRF_COOKIE_NAME,
         token,
@@ -73,7 +133,7 @@ def _set_csrf_cookie(response, settings: Settings) -> str:
 def _csrf_valid() -> bool:
     cookie_token = request.cookies.get(CSRF_COOKIE_NAME, "")
     header_token = request.headers.get(CSRF_HEADER_NAME, "")
-    return bool(cookie_token and header_token) and hmac.compare_digest(cookie_token, header_token)
+    return csrf_matches(cookie_token, header_token)
 
 
 def _csrf_error():
@@ -89,11 +149,29 @@ def _auth_json(payload: dict[str, object], status: int = 200):
     return response
 
 
-def _localized_login_url(locale: str) -> str:
-    return f"/pay/login?lang={locale}"
+def _localized_login_url(locale: str, return_to: str | None = None) -> str:
+    query = {"lang": locale}
+    if return_to and return_to != "/pay":
+        query["return_to"] = return_to
+    return f"/pay/login?{urlencode(query)}"
 
 
-def _render_demo_template(template_name: str, settings: Settings):
+def _redirect_to_safe_return(value: str | None):
+    """Map validated local return paths to Flask routes without redirecting to raw input."""
+    target = safe_return_to(value)
+    route = {
+        "/": "/",
+        "/pay": "/pay",
+        "/market": "/market",
+        "/market/cart": "/market/cart",
+        "/market/checkout": "/market/checkout",
+        "/market/orders": "/market/orders",
+        "/demo/summary": "/demo/summary",
+    }.get(urlsplit(target).path, "/pay")
+    return redirect(route)
+
+
+def _render_demo_template(template_name: str, settings: Settings, **context):
     locale = resolve_locale(request)
     messages = load_messages(locale)
     response = make_response(
@@ -102,11 +180,14 @@ def _render_demo_template(template_name: str, settings: Settings):
             locale=locale,
             lang=locale,
             t=lambda key: translate(messages, key),
+            web_auth_mode=settings.ecloe_web_auth_mode,
+            **context,
         ),
     )
+    locale_cookie_value = "pt-BR" if locale == "pt-BR" else "en-US"
     response.set_cookie(
         LOCALE_COOKIE_NAME,
-        locale,
+        locale_cookie_value,
         httponly=False,
         secure=_cookie_secure(settings),
         samesite="Lax",
@@ -122,22 +203,37 @@ def _rate_limit_key(email: str) -> str:
     return f"{ip_address}:{email}"
 
 
+def _client_ip() -> str:
+    forwarded = request.headers.get("X-Forwarded-For", "")
+    candidate = forwarded.split(",", 1)[0].strip() or request.remote_addr or "unknown"
+    try:
+        return str(ipaddress.ip_address(candidate))
+    except ValueError:
+        return "unknown"
+
+
+def _signup_ip_hash(settings: Settings) -> str:
+    return hmac.new(
+        settings.subject_key_salt.encode("utf-8"),
+        f"signup-ip\x00{_client_ip()}".encode(),
+        "sha256",
+    ).hexdigest()
+
+
 def _login_rate_limited(app: Flask, email: str) -> bool:
-    now = time.monotonic()
-    attempts: dict[str, list[float]] = app.pay_login_attempts  # type: ignore[attr-defined]
     key = _rate_limit_key(email)
-    recent = [stamp for stamp in attempts.get(key, []) if now - stamp < LOGIN_RATE_LIMIT_WINDOW_SECONDS]
-    if len(recent) >= LOGIN_RATE_LIMIT_ATTEMPTS:
-        attempts[key] = recent
+    limiter: SharedRateLimiter = app.rate_limiter  # type: ignore[attr-defined]
+    try:
+        return not limiter.allow(
+            f"auth:{key}", LOGIN_RATE_LIMIT_ATTEMPTS, LOGIN_RATE_LIMIT_WINDOW_SECONDS
+        )
+    except RateLimitBackendUnavailable:
         return True
-    recent.append(now)
-    attempts[key] = recent
-    return False
 
 
 def _clear_login_attempts(app: Flask, email: str) -> None:
-    attempts: dict[str, list[float]] = app.pay_login_attempts  # type: ignore[attr-defined]
-    attempts.pop(_rate_limit_key(email), None)
+    limiter: SharedRateLimiter = app.rate_limiter  # type: ignore[attr-defined]
+    limiter.clear(f"auth:{_rate_limit_key(email)}")
 
 
 def _current_user(app: Flask) -> tuple[dict[str, object] | None, str | None]:
@@ -158,12 +254,63 @@ def _session_or_error(app: Flask):
     if user_id is None:
         return None, jsonify({"error": "ECloe Pay login is required."}), 401
     demo_session = repository.get_or_create_demo_session(user_id)
+    if not demo_session.selected_decision_id:
+        demo_session = _assign_pay_recommendation(app, repository, demo_session)
     return demo_session, None, None
+
+
+def _assign_pay_recommendation(app: Flask, repository: PayRepository, demo_session):
+    wallet = repository.wallet_snapshot(demo_session.session_id)
+    service: RecommendationService = app.recommendation_service  # type: ignore[attr-defined]
+    decision = service.decide(
+        RecommendationRequest(
+            request_id=f"req_pay_{demo_session.session_id}",
+            surface=Surface.pay,
+            decision_point="wallet_benefit",
+            context={
+                "channel": "Web",
+                "newbie": 0,
+                "wallet_engagement_band": "medium",
+                "benefit_response_band": "unknown",
+                "savings_goal_active": wallet.savings_goal_percent > 0,
+            },
+            candidates=(
+                Candidate(
+                    "cashback_recurring_purchase",
+                    CandidateType.benefit,
+                    priority=30,
+                    benefit_type="cashback",
+                ),
+                Candidate(
+                    "savings_goal",
+                    CandidateType.benefit,
+                    priority=20,
+                    benefit_type="savings",
+                ),
+                Candidate(
+                    "financial_education",
+                    CandidateType.benefit,
+                    priority=10,
+                    benefit_type="education",
+                ),
+            ),
+            limit=1,
+        )
+    )
+    selected = decision.ranked_candidates[0]
+    app.recommendation_decisions[decision.decision_id] = asdict(decision)  # type: ignore[attr-defined]
+    return repository.set_recommendation(
+        demo_session.session_id,
+        decision.decision_id,
+        selected.candidate_id,
+    )
 
 
 def create_app(
     settings: Settings | None = None,
     repository: PayRepository | None = None,
+    recommendation_service: RecommendationService | None = None,
+    identity_client: OAuthClient | None = None,
 ) -> Flask:
     settings = settings or load_settings(use_env_file=False)
     app = Flask(
@@ -173,22 +320,72 @@ def create_app(
         template_folder=str(DEMO_DIR),
     )
     app.config["JSON_SORT_KEYS"] = False
-    app.secret_key = settings.subject_key_salt
+    if settings.app_environment in {"cloud", "prod", "production", "azure"}:
+        if settings.ecloe_web_auth_mode not in {"entra_external", "local_signup"}:
+            raise ValueError(
+                "Cloud demo web must use ECLOE_WEB_AUTH_MODE=entra_external or local_signup."
+            )
+        if settings.ecloe_pay_database_mode != "azure_sql" or settings.ecloe_market_database_mode != "azure_sql":
+            raise ValueError("Cloud demo web must persist Pay and Market state in Azure SQL.")
+    if settings.app_environment in {"cloud", "prod", "production", "azure"}:
+        app.wsgi_app = ProxyFix(  # type: ignore[method-assign]
+            app.wsgi_app, x_for=1, x_proto=1, x_host=1
+        )
+    app.secret_key = settings.flask_secret_key
     app.pay_settings = settings  # type: ignore[attr-defined]
     app.pay_repository = repository or create_pay_repository(settings)  # type: ignore[attr-defined]
-    app.pay_login_attempts = {}  # type: ignore[attr-defined]
+    app.rate_limiter = SharedRateLimiter(settings)  # type: ignore[attr-defined]
+    app.recommendation_service = (  # type: ignore[attr-defined]
+        recommendation_service or RecommendationService.from_settings(settings)
+    )
+    app.recommendation_decisions = {}  # type: ignore[attr-defined]
+    app.external_identity = (  # type: ignore[attr-defined]
+        EntraExternalIdentity(settings, identity_client)
+        if settings.ecloe_web_auth_mode == "entra_external"
+        else None
+    )
 
     @app.after_request
     def harden_auth_responses(response):
         if request.path.startswith("/api/auth/"):
             response.headers["Cache-Control"] = "no-store"
-        if request.method == "GET" and request.path in {"/pay/login", "/pay"}:
+        if request.method == "GET" and request.path in {
+            "/pay/login",
+            "/pay/register",
+            "/pay",
+            "/market",
+            "/market/cart",
+            "/market/checkout",
+            "/market/orders",
+            "/demo/summary",
+        }:
             _set_csrf_cookie(response, settings)
+        if request.method == "GET" and request.path.startswith("/market/products/"):
+            _set_csrf_cookie(response, settings)
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline'; "
+            "script-src 'self'; connect-src 'self'; frame-ancestors 'none'; base-uri 'self'"
+        )
+        if _cookie_secure(settings):
+            response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
         return response
 
     @app.get("/")
     def landing():
         return _render_demo_template("landing.html", settings)
+
+    @app.get("/healthz")
+    def healthz():
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        if not repository.health_check():
+            return jsonify({"status": "unhealthy"}), 503
+        return jsonify({"status": "ok"})
+
+    @app.get("/shared/<path:filename>")
+    def shared_static(filename: str):
+        return send_from_directory(SHARED_DEMO_DIR, filename)
 
     @app.get("/pay")
     def pay():
@@ -198,18 +395,126 @@ def create_app(
             return redirect(_localized_login_url(locale))
         return _render_demo_template("index.html", settings)
 
+    @app.get("/pay/")
+    def pay_trailing_slash():
+        return redirect("/pay")
+
     @app.get("/pay/login")
     def login_page():
         repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
-        auth_session_id = request.cookies.get(AUTH_COOKIE_NAME)
-        if isinstance(auth_session_id, str):
-            repository.revoke_auth_session(auth_session_id)
-        response = _render_demo_template("login.html", settings)
-        _clear_auth_cookie(response, settings)
+        user, _ = _current_user(app)
+        return_to = safe_return_to(request.args.get("return_to"))
+        if user is not None and settings.ecloe_web_auth_mode in {"entra_external", "local_signup"}:
+            return _redirect_to_safe_return(return_to)
+        if settings.ecloe_web_auth_mode in {"local", "local_signup"}:
+            auth_session_id = request.cookies.get(AUTH_COOKIE_NAME)
+            if isinstance(auth_session_id, str):
+                repository.revoke_auth_session(auth_session_id)
+        external_login_url = "/auth/login?" + urlencode(
+            {"return_to": return_to}
+        )
+        external_signup_url = "/auth/signup?" + urlencode(
+            {"return_to": return_to}
+        )
+        response = _render_demo_template(
+            "login.html",
+            settings,
+            return_to=return_to,
+            external_login_url=external_login_url,
+            external_signup_url=external_signup_url,
+        )
+        if settings.ecloe_web_auth_mode in {"local", "local_signup"}:
+            _clear_auth_cookie(response, settings)
+        return response
+
+    @app.get("/auth/login")
+    def external_login():
+        return _begin_external_auth("login")
+
+    @app.get("/auth/signup")
+    def external_signup():
+        return _begin_external_auth("signup")
+
+    @app.get("/pay/register")
+    def register_page():
+        if settings.ecloe_web_auth_mode == "local_signup":
+            user, _ = _current_user(app)
+            return_to = safe_return_to(request.args.get("return_to"))
+            if user is not None:
+                return _redirect_to_safe_return(return_to)
+            return _render_demo_template("register.html", settings, return_to=return_to)
+        if settings.ecloe_web_auth_mode != "entra_external":
+            return redirect(
+                _localized_login_url(
+                    resolve_locale(request),
+                    safe_return_to(request.args.get("return_to")),
+                )
+            )
+        return redirect("/auth/signup?" + urlencode({"return_to": safe_return_to(request.args.get("return_to"))}))
+
+    def _begin_external_auth(intent: str):
+        if settings.ecloe_web_auth_mode != "entra_external":
+            return _auth_json({"error": "External authentication is not enabled."}, 404)
+        flow_id = secrets.token_urlsafe(32)
+        identity: EntraExternalIdentity = app.external_identity  # type: ignore[attr-defined]
+        auth_uri = identity.begin(
+            app.pay_repository,  # type: ignore[attr-defined]
+            flow_id,
+            safe_return_to(request.args.get("return_to")),
+            intent=intent,
+        )
+        response = redirect(auth_uri)
+        response.set_cookie(
+            OIDC_FLOW_COOKIE_NAME,
+            flow_id,
+            httponly=True,
+            secure=_cookie_secure(settings),
+            samesite="Lax",
+            path="/auth/callback",
+            max_age=settings.ecloe_web_oidc_flow_ttl_seconds,
+        )
+        return response
+
+    @app.get("/auth/callback")
+    def external_callback():
+        if settings.ecloe_web_auth_mode != "entra_external":
+            return _auth_json({"error": "External authentication is not enabled."}, 404)
+        flow_id = request.cookies.get(OIDC_FLOW_COOKIE_NAME, "")
+        identity: EntraExternalIdentity = app.external_identity  # type: ignore[attr-defined]
+        completed = identity.complete(app.pay_repository, flow_id, request.args.to_dict())  # type: ignore[attr-defined]
+        if completed is None:
+            app.pay_repository.record_audit_event(None, "login", "rejected")  # type: ignore[attr-defined]
+            response = _auth_json({"error": "External authentication could not be completed."}, 401)
+            response.delete_cookie(OIDC_FLOW_COOKIE_NAME, path="/auth/callback")
+            return response
+        external, return_to = completed
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        user = repository.provision_external_user(
+            external.issuer,
+            external.subject_key,
+            signup_ip_hash=_signup_ip_hash(settings),
+        )
+        if user is None:
+            repository.record_audit_event(None, "login", "disabled")
+            response = _auth_json({"error": "This account is not active."}, 403)
+            response.delete_cookie(OIDC_FLOW_COOKIE_NAME, path="/auth/callback")
+            return response
+        previous_token = request.cookies.get(AUTH_COOKIE_NAME)
+        if previous_token:
+            repository.revoke_auth_session(previous_token)
+        auth_session = repository.create_auth_session(user.user_id)
+        repository.get_or_create_demo_session(user.user_id)
+        repository.record_audit_event(user.user_id, "login", "success")
+        response = _redirect_to_safe_return(return_to)
+        _set_auth_cookie(response, auth_session.auth_session_id, settings)
+        _rotate_csrf_token(response, settings)
+        response.delete_cookie(OIDC_FLOW_COOKIE_NAME, path="/auth/callback")
         return response
 
     @app.post("/api/auth/login")
     def login():
+        if settings.ecloe_web_auth_mode not in {"local", "local_signup"}:
+            return _auth_json({"error": "Local credentials are disabled."}, 404)
         if not _csrf_valid():
             return _csrf_error()
         repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
@@ -228,8 +533,47 @@ def create_app(
         _clear_login_attempts(app, email)
         response = _auth_json({"authenticated": True, "user": asdict(user)})
         _set_auth_cookie(response, auth_session.auth_session_id, settings)
-        _set_csrf_cookie(response, settings)
+        _rotate_csrf_token(response, settings)
         LOGGER.info("ecloe_pay_login user_id=%s result=success", user.user_id)
+        return response
+
+    @app.post("/api/auth/register")
+    def register():
+        if settings.ecloe_web_auth_mode != "local_signup":
+            return _auth_json({"error": "Local signup is disabled."}, 404)
+        if not _csrf_valid():
+            return _csrf_error()
+        repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
+        payload = request.get_json(silent=True) or {}
+        email = str(payload.get("email", "")).strip().lower()
+        password = str(payload.get("password", ""))
+        password_confirm = str(payload.get("password_confirm", ""))
+        if "@" not in email or "." not in email.rsplit("@", 1)[-1]:
+            return _auth_json({"error": "Informe um e-mail valido."}, 400)
+        if len(email) > 254:
+            return _auth_json({"error": "Informe um e-mail valido."}, 400)
+        if len(password) < 12 or len(password) > 128:
+            return _auth_json({"error": "A senha deve ter entre 12 e 128 caracteres."}, 400)
+        if password != password_confirm:
+            return _auth_json({"error": "A confirmacao de senha nao confere."}, 400)
+        if _login_rate_limited(app, email):
+            LOGGER.info("ecloe_pay_register result=rate_limited")
+            return _auth_json({"error": "Too many registration attempts. Try again later."}, 429)
+        try:
+            user = repository.register_local_user(
+                email,
+                generate_password_hash(password, method="scrypt"),
+                signup_ip_hash=_signup_ip_hash(settings),
+            )
+        except SignupEmailAlreadyExists:
+            return _auth_json({"error": "Ja existe uma conta com este e-mail."}, 409)
+        auth_session = repository.create_auth_session(user.user_id)
+        repository.get_or_create_demo_session(user.user_id)
+        _clear_login_attempts(app, email)
+        response = _auth_json({"authenticated": True, "user": asdict(user)})
+        _set_auth_cookie(response, auth_session.auth_session_id, settings)
+        _rotate_csrf_token(response, settings)
+        LOGGER.info("ecloe_pay_register user_id=%s result=success", user.user_id)
         return response
 
     @app.post("/api/auth/logout")
@@ -239,10 +583,16 @@ def create_app(
         repository: PayRepository = app.pay_repository  # type: ignore[attr-defined]
         auth_session_id = request.cookies.get(AUTH_COOKIE_NAME)
         if isinstance(auth_session_id, str):
+            auth_session = repository.get_auth_session(auth_session_id)
             repository.revoke_auth_session(auth_session_id)
-        response = _auth_json({"authenticated": False})
+            if auth_session is not None:
+                repository.record_audit_event(auth_session.user_id, "logout", "success")
+        logout_url = None
+        if settings.ecloe_web_auth_mode == "entra_external":
+            logout_url = app.external_identity.logout_url()  # type: ignore[attr-defined]
+        response = _auth_json({"authenticated": False, "logout_url": logout_url})
         _clear_auth_cookie(response, settings)
-        _set_csrf_cookie(response, settings)
+        _rotate_csrf_token(response, settings)
         LOGGER.info("ecloe_pay_logout result=success")
         return response
 
@@ -256,6 +606,7 @@ def create_app(
                 "authenticated": True,
                 "user": user,
                 "requires_authentication": app.pay_repository.requires_authentication,  # type: ignore[attr-defined]
+                "auth_provider": user.get("auth_provider", settings.ecloe_web_auth_mode),
             }
         )
 
@@ -266,14 +617,27 @@ def create_app(
         if response is not None:
             return response, status
         wallet = repository.wallet_snapshot(demo_session.session_id)
+        profile = repository.synthetic_profile(demo_session.user_id)
+        account = repository.synthetic_account(demo_session.user_id)
+        loan_requests = repository.loan_requests(demo_session.user_id)
+        benefit_title, benefit_message = PAY_BENEFITS[demo_session.selected_offer_id]
+        decision = app.recommendation_decisions.get(demo_session.selected_decision_id, {})  # type: ignore[attr-defined]
         return jsonify(
             {
                 "session": asdict(demo_session),
                 "wallet": asdict(wallet),
+                "profile": asdict(profile) if profile else None,
+                "account": asdict(account) if account else None,
+                "loan_requests": [asdict(item) for item in loan_requests],
                 "benefit": {
-                    "title": "Cashback for recurring purchases",
-                    "message": "Earn cashback on your recurring purchases.",
+                    "title": benefit_title,
+                    "message": benefit_message,
                     "offer_id": demo_session.selected_offer_id,
+                },
+                "recommendation": {
+                    "decision_id": demo_session.selected_decision_id,
+                    "policy": decision.get("policy", "deterministic_baseline"),
+                    "policy_version": decision.get("policy_version", "recommendation-v2"),
                 },
                 "security": {
                     "user_creation_allowed": False,
@@ -314,9 +678,9 @@ def create_app(
         payload = request.get_json(silent=True) or {}
         action = str(payload.get("action", "")).strip().lower()
         mapping = {
-            "open": ("click", 0.2),
-            "dismiss": ("dismissal", 0.0),
-            "accept": ("conversion", 1.0),
+            "open": ("open", 0.0),
+            "dismiss": ("rejection", 0.0),
+            "accept": ("acceptance", 1.0),
         }
         if action not in mapping:
             return jsonify({"error": "Unsupported benefit action."}), 400
@@ -327,7 +691,7 @@ def create_app(
             event_type,
             reward,
         )
-        return jsonify({"reward_event": reward_event, "engine_endpoint": "POST /v1/rewards"})
+        return jsonify({"reward_event": reward_event, "engine_endpoint": "POST /v2/feedback"})
 
     @app.post("/api/payment-orders/<payment_order_id>/simulate")
     def simulate_payment(payment_order_id: str):

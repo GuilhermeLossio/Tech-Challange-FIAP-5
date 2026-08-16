@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="{{ lang }}">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{{ t("register.title") }}</title>
+    <link rel="stylesheet" href="../login.css" />
+  </head>
+  <body class="login-page">
+    <main class="login-shell" aria-label="{{ t("register.shellAria") }}">
+      <section class="card login-panel" aria-labelledby="registerTitle">
+        <div class="login-brand">
+          <span class="login-brand-sprite sprite-art sprite-brand-mark" aria-hidden="true"></span>
+          <span>ECloe<span>Pay</span></span>
+        </div>
+
+        <p class="login-eyebrow">{{ t("register.eyebrow") }}</p>
+        <h1 id="registerTitle">{{ t("register.heading") }}</h1>
+        <p class="login-badge">{{ t("register.badge") }}</p>
+        <p class="login-copy">{{ t("register.copy") }}</p>
+
+        <form
+          id="registerForm"
+          class="login-form"
+          method="post"
+          action="/api/auth/register"
+          autocomplete="on"
+          data-register-failed="{{ t('register.registerFailed') }}"
+          data-return-to="{{ return_to }}"
+        >
+          <label for="email">{{ t("login.email") }}</label>
+          <input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="{{ t("login.emailPlaceholder") }}"
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            required
+          />
+
+          <label for="password">{{ t("login.password") }}</label>
+          <input
+            id="password"
+            name="password"
+            type="password"
+            placeholder="{{ t("register.passwordPlaceholder") }}"
+            autocomplete="new-password"
+            minlength="12"
+            maxlength="128"
+            required
+          />
+
+          <label for="password_confirm">{{ t("register.passwordConfirm") }}</label>
+          <input
+            id="password_confirm"
+            name="password_confirm"
+            type="password"
+            placeholder="{{ t("register.passwordConfirmPlaceholder") }}"
+            autocomplete="new-password"
+            minlength="12"
+            maxlength="128"
+            required
+          />
+
+          <button class="login-submit-button" type="submit">
+            <span class="login-submit-label">{{ t("register.submit") }}</span>
+            <span class="login-loading-state" aria-hidden="true">
+              <span class="pixel-loader">
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+                <span></span><span></span><span></span>
+              </span>
+              <span class="loading-label">{{ t("register.loading") }}</span>
+            </span>
+          </button>
+          <a class="login-secondary" href="/pay/login?return_to={{ return_to | urlencode }}&lang={{ locale }}">{{ t("register.backToLogin") }}</a>
+          <p id="registerStatus" role="status"></p>
+        </form>
+
+        <ul class="login-safety-list" aria-label="{{ t("login.safetyAria") }}">
+          <li>{{ t("login.noBank") }}</li>
+          <li>{{ t("login.noMoney") }}</li>
+          <li>{{ t("register.azureSql") }}</li>
+        </ul>
+      </section>
+    </main>
+
+    <script type="module" src="../register.js"></script>
+  </body>
+</html>

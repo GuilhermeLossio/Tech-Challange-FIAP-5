@@ -2,7 +2,7 @@ param(
     [string]$ResourceGroupName = "FIAPTechChallange5",
     [string]$ServerName = "ecloe-sql-1266",
     [string]$RuleName = "AllowCurrentClientIp",
-    [string]$IpLookupUri = "https://api64.ipify.org?format=text",
+    [string]$IpLookupUri = "https://api.ipify.org?format=text",
     [switch]$EnablePublicNetworkAccess
 )
 
@@ -56,12 +56,7 @@ function Test-StrictIpAddress {
         return $true
     }
 
-    $parsed = [System.Net.IPAddress]::None
-    if (-not [System.Net.IPAddress]::TryParse($Value, [ref]$parsed)) {
-        return $false
-    }
-
-    return $parsed.AddressFamily -eq [System.Net.Sockets.AddressFamily]::InterNetworkV6
+    return $false
 }
 
 function Get-CurrentPublicIp {
@@ -72,7 +67,7 @@ function Get-CurrentPublicIp {
         throw "Could not detect current public IP address."
     }
     if (-not (Test-StrictIpAddress -Value $ip)) {
-        throw "Public IP lookup returned an invalid or non-single IP value: '$ip'."
+        throw "Public IP lookup must return one IPv4 address for Azure SQL firewall rules, but returned '$ip'."
     }
     if ($ip -eq "0.0.0.0" -or $ip -eq "::") {
         throw "Refusing to create an Azure SQL firewall rule for '$ip'."

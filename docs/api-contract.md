@@ -4,6 +4,13 @@
 
 This document defines the local Decision API payloads for ECloe. The target use case is an integrated marketplace and digital wallet channel where **ECloe Market** provides commerce behavior signals, **ECloe Pay** provides wallet context and eligible actions, and **ECloe Engine** selects the next best action. The MVP exposes these contracts through FastAPI and includes append-only reward ingestion linked to existing decisions.
 
+FastAPI owns technical Engine contracts and exposes interactive documentation at
+`/docs`, `/redoc`, and `/openapi.json`. Flask owns browser sessions, customer
+authentication, Market/Pay BFF routes, and HTML rendering; it does not replace
+the Engine API or own its decision contracts.
+
+Customer browser authentication is a separate Flask BFF contract. In Azure, `GET /auth/login` and `GET /auth/callback` use Microsoft Entra External ID, while `GET /api/auth/me` and `POST /api/auth/logout` operate on an opaque application session. Tokens and real identity claims are not exposed through these APIs. See [`azure-customer-authentication.md`](azure-customer-authentication.md).
+
 The dedicated ECloe Pay wallet surface documentation is maintained separately in [`ecloe-pay.md`](ecloe-pay.md). This contract remains focused on the implemented Engine API payloads that ECloe Pay will consume during the planned demo.
 
 ## Implemented Endpoints
@@ -13,6 +20,7 @@ The dedicated ECloe Pay wallet surface documentation is maintained separately in
 | `GET` | `/livez` | None | Returns liveness for the HTTP process. |
 | `GET` | `/readyz` | None | Returns readiness after serving artifacts are loaded. |
 | `GET` | `/v1/policies/current` | `policy:read` | Returns the serving strategy, serving artifact metadata, and promoted offline policy metadata. |
+| `POST` | `/v2/policies/reload` | `policy:reload` | Atomically reloads promoted Market/Pay artifacts while preserving the previous snapshot on failure. |
 | `POST` | `/v1/likelihood-estimates` | `decision:read` | Estimates purchase or conversion probability for eligible offers. |
 | `POST` | `/v1/purchase-likelihood` | `decision:read` | Deprecated alias for `/v1/likelihood-estimates`. |
 | `POST` | `/v1/decisions` | `decision:write` | Selects one eligible offer and returns likelihood, policy, and reason codes. |
@@ -26,6 +34,7 @@ Available scopes:
 - `decision:write` - create decisions.
 - `reward:write` - write future reward events.
 - `policy:read` - read active policy metadata.
+- `policy:reload` - reload promoted recommendation artifacts; administrative use only.
 
 `POST /v1/decisions` accepts the optional `Idempotency-Key` header, up to 128 characters. Repeating a decision request with the same authenticated subject and the same `Idempotency-Key` returns the original persisted decision response and does not create a second decision event.
 
@@ -99,7 +108,7 @@ The local serving strategy is currently `likelihood_ranker`, which ranks eligibl
   "estimates": [
     {
       "offer_id": "cashback_recurring_purchase",
-      "proxy_action": "womens_email",
+      "proxy_action": "legacy_variant_b",
       "purchase_likelihood": 0.1375,
       "confidence": "medium",
       "fallback_level": "action_rate",
@@ -171,3 +180,14 @@ Error payloads include a machine-readable `code` and a human-readable `message`.
 Payloads must not include direct identifiers, sensitive attributes, income, wealth, precise location, or raw browsing data. Upstream systems are responsible for eligibility filtering before calling the Decision API.
 
 Raw item-level purchase history should be transformed into coarse features before reaching ECloe. Examples include `frequent_grocery`, `high_value_cart`, or `recurring_checkout`, not full basket contents.
+
+## Recommendation API v2
+
+| Route | Scope | Status | Contract |
+|:---|:---|:---|:---|
+| `POST /v2/decisions` | `decision:write` | Implemented | Typed Market or Pay context and eligible candidates; creates an auditable decision. |
+| `POST /v2/likelihood-estimates` | `decision:read` | Implemented | Returns estimates without creating a decision. |
+| `POST /v2/feedback` | `reward:write` | Implemented | Validates decision, candidate, position, event time, and server-side reward mapping. |
+| `GET /v2/policies/current` | `policy:read` | Implemented | Returns the effective surface policy and shadow challengers. |
+
+V2 has no arbitrary context map. `MarketContext` and `PayContext` use strict allowlists, candidates use a discriminator, and Pay requires `limit=1`. Clients cannot submit numeric rewards. The complete request and response examples are in [`recommendation-system.md`](recommendation-system.md).

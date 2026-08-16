@@ -5,22 +5,39 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from dotenv import load_dotenv as _load_dotenv
+    from dotenv import dotenv_values as _dotenv_values
 except ModuleNotFoundError:
-    _load_dotenv = None
+    _dotenv_values = None
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 ECLOE_COSMOS_ACCOUNT = "ecloe5cosmos1266cl"
 DEFAULT_AZURE_COSMOS_ENDPOINT = f"https://{ECLOE_COSMOS_ACCOUNT}.documents.azure.com:443/"
 ECLOE_PAY_DATABASE_MODES = {"memory", "azure_sql"}
+ECLOE_MARKET_DATABASE_MODES = {"memory", "azure_sql"}
+ECLOE_MARKET_IMAGE_BACKENDS = {"zimage-local", "space", "local", "hunyuan-local", "catalog"}
+ECLOE_MARKET_IMAGE_OFFLOAD_MODES = {"model", "sequential", "none"}
 ECLOE_PAY_SQL_AUTH_MODES = {"entra_interactive", "azure_cli", "managed_identity"}
+ECLOE_WEB_AUTH_MODES = {"local", "local_signup", "entra_external"}
 CLOUD_ENVIRONMENTS = {"cloud", "prod", "production", "azure"}
+RECOMMENDATION_ACTIVE_POLICIES = {"deterministic_baseline", "likelihood_ranker"}
+PLACEHOLDER_MARKERS = ("<", ">", "seu-", "your-", "tenant-subdomain")
+LOCAL_FLASK_SECRET_KEY = "local-dev-flask-secret-key"
+
+
+_ENV_FILE_VALUES: dict[str, str] = {}
 
 
 def _load_env_file(path: Path) -> None:
-    if _load_dotenv is not None:
-        _load_dotenv(path)
+    _ENV_FILE_VALUES.clear()
+    if _dotenv_values is not None:
+        _ENV_FILE_VALUES.update(
+            {
+                str(key): str(value)
+                for key, value in _dotenv_values(path).items()
+                if value is not None
+            }
+        )
         return
 
     if not path.exists():
@@ -32,11 +49,11 @@ def _load_env_file(path: Path) -> None:
             continue
 
         key, value = stripped.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+        _ENV_FILE_VALUES[key.strip()] = value.strip().strip('"').strip("'")
 
 
 def _env(name: str, default: str = "") -> str:
-    return os.getenv(name, default).strip()
+    return os.getenv(name, _ENV_FILE_VALUES.get(name, default)).strip()
 
 
 def _split_csv(value: str) -> tuple[str, ...]:
@@ -70,6 +87,8 @@ class Settings:
     azure_blob_container_processed: str
     azure_blob_container_artifacts: str
     azure_artifact_promotion_blob: str
+    azure_artifact_promotion_blob_market: str
+    azure_artifact_promotion_blob_pay: str
     artifact_source: str
     artifact_cache_dir: Path
     azure_cosmos_endpoint: str
@@ -92,7 +111,10 @@ class Settings:
     max_concurrent_requests: int
     rate_limit_requests: int
     rate_limit_window_seconds: int
+    rate_limit_backend: str
+    rate_limit_redis_url: str
     azure_cosmos_auth_mode: str
+    flask_secret_key: str
     subject_key_salt: str
     decision_event_ttl_seconds: int
     decision_repository_mode: str
@@ -105,9 +127,36 @@ class Settings:
     ecloe_pay_sql_auth_mode: str
     ecloe_pay_sql_driver: str
     ecloe_pay_session_ttl_seconds: int
+    ecloe_pay_initial_balance_cents: int
     ecloe_pay_cookie_secure: bool
     ecloe_pay_demo_user_email: str
     ecloe_pay_demo_user_password: str
+    ecloe_web_auth_mode: str
+    ecloe_web_entra_authority: str
+    ecloe_web_entra_client_id: str
+    ecloe_web_entra_client_secret: str
+    ecloe_web_entra_redirect_uri: str
+    ecloe_web_entra_post_logout_redirect_uri: str
+    ecloe_web_session_idle_seconds: int
+    ecloe_web_oidc_flow_ttl_seconds: int
+    ecloe_market_database_mode: str
+    ecloe_market_catalog_path: Path
+    ecloe_market_catalog_seed: int
+    ecloe_market_blob_container: str
+    ecloe_market_blob_prefix: str
+    ecloe_market_catalog_azure_path: Path
+    ecloe_market_image_model_dir: Path
+    ecloe_market_image_backend: str
+    ecloe_market_image_space: str
+    ecloe_market_image_space_api_name: str
+    ecloe_market_image_space_extra_kwargs: str
+    ecloe_market_image_zimage_model: str
+    ecloe_market_image_height: int
+    ecloe_market_image_width: int
+    ecloe_market_image_steps: int
+    ecloe_market_image_offload_mode: str
+    recommendation_market_policy: str
+    recommendation_pay_policy: str
 
     @property
     def raw_file(self) -> Path:
@@ -119,6 +168,7 @@ class Settings:
 
 
 def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) -> Settings:
+    _ENV_FILE_VALUES.clear()
     if use_env_file:
         _load_env_file(env_file or ROOT_DIR / ".env")
 
@@ -150,6 +200,14 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
             "AZURE_ARTIFACT_PROMOTION_BLOB",
             "promoted/current.json",
         ),
+        azure_artifact_promotion_blob_market=_env(
+            "AZURE_ARTIFACT_PROMOTION_BLOB_MARKET",
+            "promoted/market/current.json",
+        ),
+        azure_artifact_promotion_blob_pay=_env(
+            "AZURE_ARTIFACT_PROMOTION_BLOB_PAY",
+            "promoted/pay/current.json",
+        ),
         artifact_source=_env("ARTIFACT_SOURCE", "file").lower(),
         artifact_cache_dir=ROOT_DIR / _env("ARTIFACT_CACHE_DIR", ".artifact_cache"),
         azure_cosmos_endpoint=_env("AZURE_COSMOS_ENDPOINT", DEFAULT_AZURE_COSMOS_ENDPOINT),
@@ -172,7 +230,10 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         max_concurrent_requests=int(_env("MAX_CONCURRENT_REQUESTS", "16")),
         rate_limit_requests=int(_env("RATE_LIMIT_REQUESTS", "120")),
         rate_limit_window_seconds=int(_env("RATE_LIMIT_WINDOW_SECONDS", "60")),
+        rate_limit_backend=_env("RATE_LIMIT_BACKEND", "memory").lower(),
+        rate_limit_redis_url=_env("RATE_LIMIT_REDIS_URL"),
         azure_cosmos_auth_mode=_env("AZURE_COSMOS_AUTH_MODE", "key").lower(),
+        flask_secret_key=_env("FLASK_SECRET_KEY", "local-dev-flask-secret-key"),
         subject_key_salt=_env("SUBJECT_KEY_SALT", "local-dev-subject-key-salt"),
         decision_event_ttl_seconds=int(_env("DECISION_EVENT_TTL_SECONDS", "157680000")),
         decision_repository_mode=_env("DECISION_REPOSITORY_MODE", "file").lower(),
@@ -187,7 +248,8 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
         ecloe_pay_sql_database=_env("ECLOE_PAY_SQL_DATABASE", "ecloe_validation"),
         ecloe_pay_sql_auth_mode=_env("ECLOE_PAY_SQL_AUTH_MODE", "entra_interactive").lower(),
         ecloe_pay_sql_driver=_env("ECLOE_PAY_SQL_DRIVER", "ODBC Driver 18 for SQL Server"),
-        ecloe_pay_session_ttl_seconds=int(_env("ECLOE_PAY_SESSION_TTL_SECONDS", "3600")),
+        ecloe_pay_session_ttl_seconds=int(_env("ECLOE_PAY_SESSION_TTL_SECONDS", "28800")),
+        ecloe_pay_initial_balance_cents=int(_env("ECLOE_PAY_INITIAL_BALANCE_CENTS", "50000")),
         ecloe_pay_cookie_secure=_bool_env("ECLOE_PAY_COOKIE_SECURE", False),
         ecloe_pay_demo_user_email=_env(
             "ECLOE_PAY_DEMO_USER_EMAIL",
@@ -197,18 +259,123 @@ def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) ->
             "ECLOE_PAY_DEMO_USER_PASSWORD",
             _env("ECLOE_DEMO_USER_PASSWORD", "change-this-demo-password"),
         ),
+        ecloe_web_auth_mode=_env("ECLOE_WEB_AUTH_MODE", "local").lower(),
+        ecloe_web_entra_authority=_env("ECLOE_WEB_ENTRA_AUTHORITY").rstrip("/"),
+        ecloe_web_entra_client_id=_env("ECLOE_WEB_ENTRA_CLIENT_ID"),
+        ecloe_web_entra_client_secret=_env("ECLOE_WEB_ENTRA_CLIENT_SECRET"),
+        ecloe_web_entra_redirect_uri=_env(
+            "ECLOE_WEB_ENTRA_REDIRECT_URI", "http://localhost:5000/auth/callback"
+        ),
+        ecloe_web_entra_post_logout_redirect_uri=_env(
+            "ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI", "http://localhost:5000/"
+        ),
+        ecloe_web_session_idle_seconds=int(_env("ECLOE_WEB_SESSION_IDLE_SECONDS", "1800")),
+        ecloe_web_oidc_flow_ttl_seconds=int(_env("ECLOE_WEB_OIDC_FLOW_TTL_SECONDS", "600")),
+        ecloe_market_database_mode=_env("ECLOE_MARKET_DATABASE_MODE", "memory").lower(),
+        ecloe_market_catalog_path=ROOT_DIR
+        / _env("ECLOE_MARKET_CATALOG_PATH", "data/demo/ecloe_market_catalog.json"),
+        ecloe_market_catalog_seed=int(_env("ECLOE_MARKET_CATALOG_SEED", "426")),
+        ecloe_market_blob_container=_env(
+            "ECLOE_MARKET_BLOB_CONTAINER",
+            "ecloe-market-demo-assets",
+        ),
+        ecloe_market_blob_prefix=_env("ECLOE_MARKET_BLOB_PREFIX", "catalog").strip("/"),
+        ecloe_market_catalog_azure_path=ROOT_DIR
+        / _env("ECLOE_MARKET_CATALOG_AZURE_PATH", "data/demo/ecloe_market_catalog.azure.json"),
+        ecloe_market_image_model_dir=ROOT_DIR
+        / _env("ECLOE_MARKET_IMAGE_MODEL_DIR", "data/external/HunyuanImage-3"),
+        ecloe_market_image_backend=_env("ECLOE_MARKET_IMAGE_BACKEND", "zimage-local").lower(),
+        ecloe_market_image_space=_env(
+            "ECLOE_MARKET_IMAGE_SPACE",
+            "mrfakename/Z-Image-Turbo",
+        ),
+        ecloe_market_image_space_api_name=_env("ECLOE_MARKET_IMAGE_SPACE_API_NAME", "/generate_image"),
+        ecloe_market_image_space_extra_kwargs=_env(
+            "ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS",
+            '{"height":1024,"width":1024,"num_inference_steps":9,"randomize_seed":false}',
+        ),
+        ecloe_market_image_zimage_model=_env(
+            "ECLOE_MARKET_IMAGE_ZIMAGE_MODEL",
+            "Tongyi-MAI/Z-Image-Turbo",
+        ),
+        ecloe_market_image_height=int(_env("ECLOE_MARKET_IMAGE_HEIGHT", "1024")),
+        ecloe_market_image_width=int(_env("ECLOE_MARKET_IMAGE_WIDTH", "1024")),
+        ecloe_market_image_steps=int(_env("ECLOE_MARKET_IMAGE_STEPS", "9")),
+        ecloe_market_image_offload_mode=_env("ECLOE_MARKET_IMAGE_OFFLOAD_MODE", "model").lower(),
+        recommendation_market_policy=_env(
+            "RECOMMENDATION_MARKET_POLICY", "deterministic_baseline"
+        ).lower(),
+        recommendation_pay_policy=_env(
+            "RECOMMENDATION_PAY_POLICY", "deterministic_baseline"
+        ).lower(),
     )
     _validate_ecloe_pay_settings(settings)
+    _validate_ecloe_market_settings(settings)
+    _validate_recommendation_settings(settings)
     return settings
 
 
 def _validate_ecloe_pay_settings(settings: Settings) -> None:
+    if settings.rate_limit_backend not in {"memory", "redis"}:
+        raise ValueError(f"Unsupported RATE_LIMIT_BACKEND: {settings.rate_limit_backend}")
+    if settings.rate_limit_backend == "redis" and not settings.rate_limit_redis_url:
+        raise ValueError("RATE_LIMIT_REDIS_URL is required when RATE_LIMIT_BACKEND=redis.")
     if settings.ecloe_pay_database_mode not in ECLOE_PAY_DATABASE_MODES:
         raise ValueError(f"Unsupported ECLOE_PAY_DATABASE_MODE: {settings.ecloe_pay_database_mode}")
     if settings.ecloe_pay_sql_auth_mode not in ECLOE_PAY_SQL_AUTH_MODES:
         raise ValueError(f"Unsupported ECLOE_PAY_SQL_AUTH_MODE: {settings.ecloe_pay_sql_auth_mode}")
     if settings.ecloe_pay_session_ttl_seconds <= 0:
         raise ValueError("ECLOE_PAY_SESSION_TTL_SECONDS must be greater than zero.")
+    if settings.ecloe_pay_initial_balance_cents < 0:
+        raise ValueError("ECLOE_PAY_INITIAL_BALANCE_CENTS must be zero or greater.")
+    if settings.ecloe_web_auth_mode not in ECLOE_WEB_AUTH_MODES:
+        raise ValueError(f"Unsupported ECLOE_WEB_AUTH_MODE: {settings.ecloe_web_auth_mode}")
+    if settings.ecloe_web_session_idle_seconds <= 0:
+        raise ValueError("ECLOE_WEB_SESSION_IDLE_SECONDS must be greater than zero.")
+    if settings.ecloe_web_session_idle_seconds > settings.ecloe_pay_session_ttl_seconds:
+        raise ValueError("ECLOE_WEB_SESSION_IDLE_SECONDS cannot exceed the session TTL.")
+    if settings.ecloe_web_oidc_flow_ttl_seconds <= 0:
+        raise ValueError("ECLOE_WEB_OIDC_FLOW_TTL_SECONDS must be greater than zero.")
+    if (
+        settings.ecloe_web_auth_mode == "local_signup"
+        and settings.app_environment in CLOUD_ENVIRONMENTS
+        and settings.ecloe_pay_database_mode != "azure_sql"
+    ):
+        raise ValueError("Cloud ECLOE_WEB_AUTH_MODE=local_signup requires ECLOE_PAY_DATABASE_MODE=azure_sql.")
+    if settings.ecloe_web_auth_mode == "entra_external":
+        missing = [
+            name
+            for name, value in (
+                ("ECLOE_WEB_ENTRA_AUTHORITY", settings.ecloe_web_entra_authority),
+                ("ECLOE_WEB_ENTRA_CLIENT_ID", settings.ecloe_web_entra_client_id),
+                ("ECLOE_WEB_ENTRA_CLIENT_SECRET", settings.ecloe_web_entra_client_secret),
+                ("ECLOE_WEB_ENTRA_REDIRECT_URI", settings.ecloe_web_entra_redirect_uri),
+                (
+                    "ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI",
+                    settings.ecloe_web_entra_post_logout_redirect_uri,
+                ),
+            )
+            if not value
+        ]
+        if missing:
+            raise ValueError(f"Missing ECloe web External ID settings: {missing}")
+        if not settings.ecloe_web_entra_authority.startswith("https://"):
+            raise ValueError("ECLOE_WEB_ENTRA_AUTHORITY must use HTTPS.")
+        placeholder_settings = [
+            name
+            for name, value in (
+                ("ECLOE_WEB_ENTRA_AUTHORITY", settings.ecloe_web_entra_authority),
+                ("ECLOE_WEB_ENTRA_CLIENT_ID", settings.ecloe_web_entra_client_id),
+                ("ECLOE_WEB_ENTRA_CLIENT_SECRET", settings.ecloe_web_entra_client_secret),
+            )
+            if _looks_like_placeholder(value)
+        ]
+        if placeholder_settings:
+            raise ValueError(
+                "ECloe web External ID settings contain placeholder values: "
+                f"{placeholder_settings}. Use ECLOE_WEB_AUTH_MODE=local for local demo runs "
+                "or replace the placeholders with real Microsoft Entra External ID values."
+            )
 
     if settings.ecloe_pay_database_mode == "azure_sql":
         missing = []
@@ -222,6 +389,12 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
             raise ValueError(f"Missing ECloe Pay Azure SQL settings: {missing}")
 
     if settings.app_environment in CLOUD_ENVIRONMENTS:
+        if not settings.flask_secret_key or settings.flask_secret_key == LOCAL_FLASK_SECRET_KEY or _looks_like_placeholder(settings.flask_secret_key):
+            raise ValueError("Cloud environments must configure a non-placeholder FLASK_SECRET_KEY.")
+        if not settings.subject_key_salt or settings.subject_key_salt == "local-dev-subject-key-salt":
+            raise ValueError("Cloud environments must configure a non-default SUBJECT_KEY_SALT.")
+        if settings.rate_limit_backend != "redis":
+            raise ValueError("Cloud environments must use RATE_LIMIT_BACKEND=redis.")
         if settings.ecloe_pay_sql_auth_mode == "entra_interactive":
             raise ValueError("ECLOE_PAY_SQL_AUTH_MODE=entra_interactive is local-only.")
         if (
@@ -229,6 +402,51 @@ def _validate_ecloe_pay_settings(settings: Settings) -> None:
             and settings.ecloe_pay_sql_auth_mode != "managed_identity"
         ):
             raise ValueError("Cloud ECloe Pay Azure SQL must use managed_identity.")
+
+
+def _looks_like_placeholder(value: str) -> bool:
+    normalized = value.strip().lower()
+    return any(marker in normalized for marker in PLACEHOLDER_MARKERS)
+
+
+def _validate_ecloe_market_settings(settings: Settings) -> None:
+    if settings.ecloe_market_database_mode not in ECLOE_MARKET_DATABASE_MODES:
+        raise ValueError(f"Unsupported ECLOE_MARKET_DATABASE_MODE: {settings.ecloe_market_database_mode}")
+    if settings.ecloe_market_image_backend not in ECLOE_MARKET_IMAGE_BACKENDS:
+        raise ValueError(f"Unsupported ECLOE_MARKET_IMAGE_BACKEND: {settings.ecloe_market_image_backend}")
+    if settings.ecloe_market_image_offload_mode not in ECLOE_MARKET_IMAGE_OFFLOAD_MODES:
+        raise ValueError(f"Unsupported ECLOE_MARKET_IMAGE_OFFLOAD_MODE: {settings.ecloe_market_image_offload_mode}")
+    if settings.ecloe_market_image_height <= 0:
+        raise ValueError("ECLOE_MARKET_IMAGE_HEIGHT must be greater than zero.")
+    if settings.ecloe_market_image_width <= 0:
+        raise ValueError("ECLOE_MARKET_IMAGE_WIDTH must be greater than zero.")
+    if settings.ecloe_market_image_steps <= 0:
+        raise ValueError("ECLOE_MARKET_IMAGE_STEPS must be greater than zero.")
+    if settings.ecloe_market_database_mode == "azure_sql":
+        missing = []
+        if not settings.ecloe_pay_sql_server:
+            missing.append("ECLOE_PAY_SQL_SERVER")
+        if not settings.ecloe_pay_sql_database:
+            missing.append("ECLOE_PAY_SQL_DATABASE")
+        if not settings.ecloe_pay_sql_driver:
+            missing.append("ECLOE_PAY_SQL_DRIVER")
+        if missing:
+            raise ValueError(f"Missing ECloe Market Azure SQL settings: {missing}")
+    if (
+        settings.app_environment in CLOUD_ENVIRONMENTS
+        and settings.ecloe_market_database_mode == "azure_sql"
+        and settings.ecloe_pay_sql_auth_mode != "managed_identity"
+    ):
+        raise ValueError("Cloud ECloe Market Azure SQL must use managed_identity.")
+
+
+def _validate_recommendation_settings(settings: Settings) -> None:
+    for name, value in (
+        ("RECOMMENDATION_MARKET_POLICY", settings.recommendation_market_policy),
+        ("RECOMMENDATION_PAY_POLICY", settings.recommendation_pay_policy),
+    ):
+        if value not in RECOMMENDATION_ACTIVE_POLICIES:
+            raise ValueError(f"Unsupported {name}: {value}")
 
 
 settings = load_settings(use_env_file=False)

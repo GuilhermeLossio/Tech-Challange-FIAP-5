@@ -93,13 +93,13 @@
   <text x="700" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">loads session</text>
   <text x="700" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">and context</text>
   <rect x="820" y="120" width="180" height="96" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" data-card="true"/>
-  <use href="#icon-api" transform="translate(828 130) scale(0.30)" color="#2563eb" aria-hidden="true"/>
-  <text x="868" y="152" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Pay API</text>
+  <use href="#icon-api" transform="translate(904 120) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <text x="910" y="152" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1f2328">Pay Transaction API</text>
   <text x="910" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">wallet ledger and</text>
   <text x="910" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">payment state</text>
   <rect x="1050" y="120" width="180" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-api" transform="translate(1058 130) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="1098" y="152" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Engine API</text>
+  <use href="#icon-api" transform="translate(1134 120) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="1140" y="152" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#1f2328">Engine Decision API</text>
   <text x="1140" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">checks decision</text>
   <text x="1140" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">and reward rules</text>
 
@@ -121,21 +121,21 @@
 
   <rect x="130" y="340" width="220" height="86" rx="12" fill="#eff6ff" stroke="#2563eb" data-card="true"/>
   <use href="#icon-wallet" transform="translate(138 350) scale(0.30)" color="#2563eb" aria-hidden="true"/>
-  <text x="178" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Pay Store</text>
+  <text x="174" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Pay SQL + Outbox</text>
   <text x="240" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Azure SQL transaction</text>
   <text x="240" y="412" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">wallet state + outbox</text>
   <rect x="460" y="340" width="190" height="86" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
   <use href="#icon-bus" transform="translate(468 350) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="508" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Publisher</text>
+  <text x="504" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Outbox Publisher</text>
   <text x="555" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">polls committed</text>
   <text x="555" y="412" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">outbox rows</text>
   <rect x="760" y="340" width="170" height="86" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
   <use href="#icon-decision" transform="translate(768 350) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="808" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Bus</text>
+  <text x="804" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Service Bus</text>
   <text x="845" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">domain events</text>
   <rect x="1040" y="340" width="190" height="86" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-decision" transform="translate(1048 350) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="1088" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Store</text>
+  <use href="#icon-decision" transform="translate(1129 342) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <text x="1135" y="372" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#1f2328">Decision/Reward Store</text>
   <text x="1135" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Cosmos evidence</text>
 
   <polyline points="910,216 910,292 240,292 240,340" fill="none" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>

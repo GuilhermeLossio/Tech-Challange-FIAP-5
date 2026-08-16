@@ -13,11 +13,9 @@ def processed_dataframe() -> pd.DataFrame:
             "row_id": [f"row_{index}" for index in range(12)],
             "recency": [1, 2, 3, 4] * 3,
             "history_segment": ["1) Low", "2) Medium", "3) High"] * 4,
-            "mens": [1, 0, 1, 0] * 3,
-            "womens": [0, 1, 1, 0] * 3,
             "newbie": [1, 0, 0, 1] * 3,
             "channel": ["Web", "Phone", "Multichannel", "Web"] * 3,
-            "action": ["mens_email", "womens_email", "no_email"] * 4,
+            "action": ["legacy_variant_a", "legacy_variant_b", "legacy_control"] * 4,
             "reward": [1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 0],
             "visit": [1, 0, 1, 1] * 3,
             "spend": [10.0, 0.0, 0.0, 20.0] * 3,
@@ -48,6 +46,9 @@ def test_run_evaluation_writes_expected_artifacts(tmp_path) -> None:
     assert expected_files == {path.name for path in output_dir.iterdir()}
 
     metrics = json.loads((output_dir / "metrics.json").read_text(encoding="utf-8"))
+    assert metrics["evaluation_mode"] == "synthetic_demo"
+    assert metrics["promotion_eligible"] is False
+    assert "simulated_reward" not in metrics
     assert {item["policy"] for item in metrics["metrics"]} == {
         "baseline",
         "epsilon_greedy",

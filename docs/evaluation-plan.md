@@ -70,3 +70,11 @@ Each evaluation run should produce:
 The implemented training workflow is documented in [`training-workflow.md`](training-workflow.md).
 
 Use `python -m src.evaluation.run --prepare-data` when the local processed dataset is missing. Use `--max-rows` for notebook checks or low-consumption experiments.
+
+## Recommendation v2 Evaluation
+
+Status: **Planned for demo**.
+
+Market and Pay are evaluated independently using temporal splits. Required metrics are verified conversion or acceptance, Brier score and calibration, NDCG@K where applicable, candidate coverage, exposure concentration, cumulative regret, and exploration rate. Eligibility violations, out-of-stock selections, and blocked fields must remain zero.
+
+Promotion requires at least 1,000 decisions and 100 positive outcomes per surface, a non-regressing 95 percent bootstrap interval on the primary objective, all safety guardrails, and manual approval. Shadow comparisons measure implementation stability and coverage, not causal uplift. See [`recommendation-system.md`](recommendation-system.md).

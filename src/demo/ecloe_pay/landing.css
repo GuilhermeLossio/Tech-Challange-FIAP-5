@@ -55,6 +55,16 @@
     text-decoration: none;
   }
 
+  .landing-body .primary-link {
+    background: var(--color-ink);
+    color: var(--color-paper);
+  }
+
+  .landing-body .secondary-link {
+    background: var(--color-paper);
+    color: var(--color-ink);
+  }
+
   .landing-hero {
     align-items: center;
     display: grid;
@@ -179,6 +189,46 @@
     grid-template-columns: repeat(3, 1fr);
   }
 
+  .landing-environments {
+    align-items: stretch;
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(220px, 0.8fr) repeat(2, minmax(0, 1fr));
+  }
+
+  .landing-environments h2 {
+    margin: 0;
+  }
+
+  .environment-option {
+    background: var(--color-paper);
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-md);
+    color: var(--color-ink);
+    display: grid;
+    gap: 8px;
+    min-height: 126px;
+    padding: 18px;
+    text-decoration: none;
+  }
+
+  .environment-option strong {
+    color: var(--color-heading);
+    font-size: 1.2rem;
+  }
+
+  .environment-option span {
+    color: #3c4d59;
+    line-height: 1.45;
+  }
+
+  .environment-option:hover,
+  .environment-option:focus-visible {
+    border-color: var(--color-heading);
+    box-shadow: var(--shadow-sm);
+    outline: 0;
+  }
+
   .landing-band .card,
   .landing-evidence,
   .landing-terms {
@@ -225,6 +275,7 @@
 
 @media (max-width: 1180px) {
   .landing-hero,
+  .landing-environments,
   .landing-band,
   .landing-evidence,
   .landing-evidence ol {

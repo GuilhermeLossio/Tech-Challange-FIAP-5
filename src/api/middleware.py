@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from collections import defaultdict, deque
 from time import monotonic
 from uuid import uuid4
 
@@ -13,12 +12,14 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.requests import Request
 
+from src.api.metrics import metrics_for
 from src.api.observability import LOGGER_NAME
-from src.core.config import load_settings
+from src.core.config import Settings, load_settings
+from src.core.rate_limit import RateLimitBackendUnavailable, SharedRateLimiter
 
 
-def register_middleware(app: FastAPI) -> None:
-    settings = load_settings()
+def register_middleware(app: FastAPI, settings: Settings | None = None) -> None:
+    settings = settings or load_settings(use_env_file=False)
     if settings.trusted_hosts:
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.trusted_hosts))
     if settings.cors_allowed_origins:
@@ -31,7 +32,7 @@ def register_middleware(app: FastAPI) -> None:
         )
 
     semaphore = asyncio.Semaphore(settings.max_concurrent_requests)
-    request_log: dict[str, deque[float]] = defaultdict(deque)
+    rate_limiter = SharedRateLimiter(settings)
     access_logger = logging.getLogger(LOGGER_NAME)
 
     @app.middleware("http")
@@ -44,28 +45,31 @@ def register_middleware(app: FastAPI) -> None:
         status_code = 500
 
         content_length = request.headers.get("content-length")
-        if content_length:
+        if content_length is not None:
             try:
                 payload_size = int(content_length)
             except ValueError:
                 response = _limit_response(400, "Invalid Content-Length header.")
                 _log_access(request, access_logger, request_id, trace_id, started, response.status_code)
                 return response
-            if payload_size > settings.max_payload_bytes:
+            if payload_size < 0 or payload_size > settings.max_payload_bytes:
                 response = _limit_response(413, "Payload is too large.")
                 _log_access(request, access_logger, request_id, trace_id, started, response.status_code)
                 return response
 
         client = request.client.host if request.client else "unknown"
-        now = monotonic()
-        timestamps = request_log[client]
-        while timestamps and now - timestamps[0] > settings.rate_limit_window_seconds:
-            timestamps.popleft()
-        if len(timestamps) >= settings.rate_limit_requests:
+        try:
+            allowed = rate_limiter.allow(
+                f"api:{client}", settings.rate_limit_requests, settings.rate_limit_window_seconds
+            )
+        except RateLimitBackendUnavailable:
+            response = _limit_response(503, "Rate limit protection is unavailable.")
+            _log_access(request, access_logger, request_id, trace_id, started, response.status_code)
+            return response
+        if not allowed:
             response = _limit_response(429, "Rate limit exceeded.")
             _log_access(request, access_logger, request_id, trace_id, started, response.status_code)
             return response
-        timestamps.append(now)
 
         if semaphore.locked():
             response = _limit_response(429, "Too many concurrent requests.")
@@ -74,12 +78,32 @@ def register_middleware(app: FastAPI) -> None:
 
         try:
             async with semaphore:
-                response = await call_next(request)
+                original_receive = request._receive
+                received_bytes = 0
+                payload_too_large = False
+
+                async def limited_receive():
+                    nonlocal received_bytes, payload_too_large
+                    message = await original_receive()
+                    if message.get("type") == "http.request":
+                        received_bytes += len(message.get("body", b""))
+                        if received_bytes > settings.max_payload_bytes:
+                            payload_too_large = True
+                            return {"type": "http.request", "body": b"", "more_body": False}
+                    return message
+
+                request._receive = limited_receive
+                try:
+                    response = await call_next(request)
+                finally:
+                    if payload_too_large:
+                        response = _limit_response(413, "Payload is too large.")
                 status_code = response.status_code
                 response.headers["X-Request-Id"] = request_id
                 response.headers["X-Trace-Id"] = trace_id
                 return response
         finally:
+            metrics_for(request.app).request(status_code, (monotonic() - started) * 1000)
             _log_access(request, access_logger, request_id, trace_id, started, status_code)
 
 

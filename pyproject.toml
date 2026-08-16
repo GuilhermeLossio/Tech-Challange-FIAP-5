@@ -5,13 +5,17 @@ description = "Adaptive experimentation platform for personalized financial offe
 readme = "README.md"
 requires-python = "==3.14.6"
 dependencies = [
+    "alembic>=1.13.0",
     "fastapi>=0.111.0",
     "flask>=3.1.0",
+    "gunicorn>=23.0.0",
     "kaggle>=1.6.17",
+    "msal>=1.31.0,<2",
     "openpyxl>=3.1.5",
     "pandas>=2.2.0",
     "PyJWT[crypto]>=2.8.0",
     "python-dotenv>=1.0.1",
+    "redis>=5.0.0",
     "uvicorn>=0.30.0",
 ]
 
@@ -38,6 +42,15 @@ azure-sql = [
     "pyodbc>=5.1.0",
     "sqlalchemy>=2.0.0",
 ]
+space-image = [
+    "gradio_client>=1.8.0",
+]
+zimage-local = [
+    "accelerate>=1.0.0",
+    "diffusers>=0.35.0",
+    "pillow>=10.0.0",
+    "transformers>=4.50.0",
+]
 
 [build-system]
 requires = ["setuptools>=69.0"]
@@ -46,6 +59,9 @@ build-backend = "setuptools.build_meta"
 [tool.setuptools.packages.find]
 where = ["."]
 include = ["src*"]
+
+[tool.setuptools.package-data]
+"src.engine" = ["baseline_artifacts/*.json"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]

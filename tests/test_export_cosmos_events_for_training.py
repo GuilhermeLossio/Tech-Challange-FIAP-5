@@ -53,11 +53,9 @@ def test_build_training_rows_joins_decisions_and_rewards() -> None:
             "row_id": "req_1",
             "recency": 0,
             "history_segment": "2) $100 - $200",
-            "mens": 0,
-            "womens": 1,
             "newbie": 0,
             "channel": "Web",
-            "action": "womens_email",
+            "action": "legacy_variant_b",
             "reward": 1,
             "decision_id": "dec_1",
             "event_id": "evt_1",
@@ -67,11 +65,9 @@ def test_build_training_rows_joins_decisions_and_rewards() -> None:
             "row_id": "req_2",
             "recency": 0,
             "history_segment": "unknown",
-            "mens": 0,
-            "womens": 0,
             "newbie": 1,
             "channel": "Phone",
-            "action": "no_email",
+            "action": "legacy_control",
             "reward": 0,
             "decision_id": "dec_2",
             "event_id": "evt_2",
@@ -116,5 +112,5 @@ def test_export_events_can_read_local_jsonl_fixture(tmp_path) -> None:
     assert result["training_rows"] == 1
     with output.open(encoding="utf-8", newline="") as file:
         rows = list(csv.DictReader(file))
-    assert rows[0]["action"] == "mens_email"
+    assert rows[0]["action"] == "legacy_variant_a"
     assert rows[0]["reward"] == "1"

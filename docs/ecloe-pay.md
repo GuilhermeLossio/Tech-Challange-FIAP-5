@@ -4,24 +4,24 @@
 
 | Area | Status | Notes |
 |:---|:---|:---|
-| ECloe Pay product surface | Planned for demo | Simulated wallet experience inside the ECloe Demo application. |
+| ECloe Pay product surface | Implemented | Simulated wallet experience inside the ECloe Demo application. |
 | Wallet summary and benefits UI | Implemented | First static demo slice in `src/demo/ecloe_pay/` shows demo balance, cashback, goals, benefits, and accepted-offer status. |
 | Offer interaction flow | Implemented | First static demo slice opens, accepts, dismisses, and records deterministic reward-event evidence. |
 | Terms of service and demo disclaimer | Implemented | The static demo requires explicit acceptance that no real money is processed and no real user is created. |
 | Simulated authentication | Implemented | Azure SQL mode protects the Pay wallet and APIs with a demo persona, HttpOnly token cookie, CSRF checks, logout revocation, and login attempt limits. |
 | Azure SQL Pay schema | Implemented | `src/demo/ecloe_pay/schema.sql` defines Pay-owned Azure SQL tables under the `ecloe_pay` schema. |
 | Real-ready Azure SQL account model | Planned for demo | Next implementation step separates identity, wallet, payments, rewards, audit, and integration schemas inside `ecloe_validation`. |
-| Reward registration | Implemented | Uses the existing `POST /v1/rewards` endpoint after a verified demo interaction. |
+| Reward registration | Implemented | Maps demo actions to the v2 feedback vocabulary and exposes `/v2/feedback` as the Engine contract. |
 | Real payment account integration | Future | Requires governed upstream wallet, identity, security, compliance, and consent controls. |
 | Credit, fraud, risk, compliance, and eligibility decisions | Out of scope | These decisions remain upstream and are not performed by ECloe Pay or ECloe Engine. |
 
 ## Purpose
 
-ECloe Pay is the planned digital wallet surface for the ECloe demo. It turns the recommendation returned by ECloe Engine into a customer-facing wallet benefit, then records the customer interaction as an append-only reward event.
+ECloe Pay is the implemented digital wallet surface for the ECloe demo. It obtains a recommendation from ECloe Engine, turns it into a customer-facing wallet benefit, and records the interaction as an append-only event.
 
-In the MVP, ECloe Pay is not a real wallet, bank account, credit product, payment processor, or risk system. It is a simulated experience that demonstrates how wallet context and marketplace behavior can support responsible next-best-action personalization after upstream systems have already decided which offers are eligible.
+In the MVP, ECloe Pay is not a bank account, credit product, external payment processor, or risk system. It is a synthetic wallet persisted in the `ecloe_pay` Azure SQL schema. The integrated Market checkout may debit that synthetic available balance with a row-locked, idempotent wallet payment and mark the synthetic order as paid; no bank or real-money rail is reached.
 
-The first implemented demo slice is available in [`../src/demo/ecloe_pay/`](../src/demo/ecloe_pay/). It is a runnable Flask frontend/API that can also be opened as a static fallback presentation. The static fallback is explicitly labeled `Presentation mode — data is not being persisted.` and must not imply that login, terms, or payment state was persisted in Azure SQL. It includes demo-persona authentication, mandatory demo terms, deterministic simulated-payment confirmation, transaction idempotency evidence, technical mode, and optional Azure SQL persistence for Pay-owned state.
+The first implemented demo slice is available in [`../src/demo/ecloe_pay/`](../src/demo/ecloe_pay/). It is a backend-backed Flask frontend/API. The browser does not provide a public static presentation fallback: login, terms, benefit interactions, and simulated payment require a live Flask backend and report an explicit unavailable state otherwise. It includes demo-persona authentication, mandatory demo terms, deterministic simulated-payment confirmation, transaction idempotency evidence, technical mode, and optional Azure SQL persistence for Pay-owned state.
 
 The Flask root route now serves the ECloe Pay landing page, while the runnable wallet demo is available at `/pay`.
 
@@ -62,11 +62,11 @@ ECloe Pay receives the selected eligible offer from the demo session, presents i
 
 | Responsibility | Owner | Status | Notes |
 |:---|:---|:---|:---|
-| Wallet UI presentation | ECloe Pay | Planned for demo | Displays simulated wallet balance, benefits, goals, and accepted-offer state. |
-| Session state | Demo Backend-for-Frontend | Planned for demo | Keeps persona, cart, decision, reward, and technical timeline state. |
-| Eligibility calculation | Upstream eligibility simulator | Planned for demo | Produces allowed `eligible_offers` before calling ECloe Engine. |
+| Wallet UI presentation | ECloe Pay | Implemented | Displays simulated wallet balance, benefits, goals, and accepted-offer state. |
+| Session state | Demo Backend-for-Frontend | Implemented | Keeps persona, Engine decision, reward, and technical timeline state. |
+| Eligibility calculation | Upstream eligibility simulator | Implemented | Produces typed eligible benefit candidates before calling ECloe Engine. |
 | Offer ranking | ECloe Engine | Implemented | Selects one action from the eligible offers sent in the request. |
-| Reward ingestion | ECloe Engine | Implemented | Persists append-only reward events through `POST /v1/rewards`. |
+| Reward ingestion | ECloe Engine | Implemented | Persists slate-bound append-only feedback through `POST /v2/feedback`; v1 remains compatible. |
 | Real account, credit, fraud, risk, compliance decisions | Upstream governed systems | Out of scope | Must not be simulated as Engine or Pay responsibilities. |
 
 ## Planned Screens
@@ -219,7 +219,7 @@ The current repository documents a low-consumption Azure target architecture for
 | Pay transactional state | Azure SQL Database | Dedicated `ecloe_pay` schema owns demo sessions, wallet snapshots, payment orders, benefit interactions, and outbox events. |
 | Pay artifact bucket | Azure Blob Storage | Dedicated `ecloe-pay-demo-artifacts` bucket stores only demo-safe Pay evidence such as simulated receipts or screenshots. |
 | Secrets | Azure Key Vault | Keeps API credentials and service configuration outside code. |
-| Observability | Application Insights | Tracks UI actions, Engine latency, failures, and fallback mode without logging sensitive context. |
+| Observability | Application Insights | Tracks UI actions, Engine latency, failures, and backend-unavailable state without logging sensitive context. |
 
 These are target architecture notes, not deployed infrastructure in the current repository.
 
@@ -309,7 +309,7 @@ ECloe Pay is ready for the planned demo when:
 - customer-facing mode hides internal policy and artifact details;
 - technical mode exposes request, decision, reward, and policy evidence;
 - the UI never claims credit approval, eligibility approval, fraud detection, risk decisions, or immediate online learning;
-- fallback presentation mode works when the local Engine API is unavailable.
+- backend-unavailable state is explicit when the local Flask API is unavailable.
 
 ## Implemented Static Demo Slice
 
@@ -327,7 +327,7 @@ Files:
 | `landing.html` | ECloe Pay landing page explaining the simulated product, secure demo flow, private bucket, and Azure SQL ownership. |
 | `index.html` | ECloe Pay wallet, benefit, activity, security, and terms UI. |
 | `styles.css` | Responsive kawaii-inspired visual system for the static demo. |
-| `app.js` | Browser client for Flask APIs, plus static fallback state, terms gate, simulated transaction validation, idempotency guard, and reward-event evidence. |
+| `app.js` | Browser client for Flask APIs, terms gate, simulated transaction validation, idempotency guard, and reward-event evidence. |
 | `schema.sql` | Pay-owned Azure SQL `ecloe_pay` schema and dedicated Pay bucket record. |
 | `repository.py` | Compatibility re-export for the Pay persistence package. |
 | `repositories/` | PayRepository contract plus memory, Azure SQL, and factory implementations for simulated Pay state. |
@@ -355,3 +355,16 @@ Create the dedicated private Azure Blob container:
 - [`ecloe-pay-overview.svg`](ecloe-pay-overview.svg) - ECloe Pay overview diagram.
 - [`ecloe-pay-transfer-flow.svg`](ecloe-pay-transfer-flow.svg) - ECloe Pay transfer flow diagram.
 - [`ecloe-pay-simplified-relationship.svg`](ecloe-pay-simplified-relationship.svg) - ECloe Pay simplified relationship diagram.
+- [`recommendation-system.md`](recommendation-system.md) - Implemented benefit ranking, feedback, privacy, and policy lifecycle.
+
+## Recommendation Integration
+
+| Area | Status | Current behavior |
+|:---|:---|:---|
+| Engine-selected benefit | Implemented | Pay sends three typed eligible benefits and persists the returned decision and selected offer. |
+| Single-benefit presentation | Implemented | Exactly one eligible benefit is returned for `surface=pay`. |
+| Backend outcome mapping | Implemented | `open` is telemetry, `acceptance` maps to 1, and `rejection` maps to 0. |
+| Adaptive online policy | Future | Requires shadow review, minimum evidence, and manual promotion. |
+| Credit, risk, fraud, or eligibility ranking | Out of scope | Pay and Engine do not perform these decisions. |
+
+The demo no longer uses a fixed decision ID or fixed selected benefit in runtime state. Technical mode receives the current `decision_id`, `offer_id`, and policy from `/api/session`.

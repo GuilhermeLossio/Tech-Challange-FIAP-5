@@ -1,0 +1,10 @@
+<svg viewBox="0 0 640 420" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Synthetic ECloe Market product image</title>
+  <desc id="desc">Pastel demo product placeholder for synthetic ECloe Market catalog items.</desc>
+  <rect width="640" height="420" rx="32" fill="#e3fbf3"/>
+  <circle cx="500" cy="100" r="72" fill="#ffe18a"/>
+  <circle cx="130" cy="310" r="88" fill="#ff7fab" opacity="0.74"/>
+  <rect x="195" y="105" width="250" height="210" rx="34" fill="#ffffff" stroke="#073f36" stroke-width="8"/>
+  <path d="M245 185h150M245 225h110M245 265h135" stroke="#073f36" stroke-width="14" stroke-linecap="round"/>
+  <path d="M425 126c38 18 62 54 62 94s-24 76-62 94" fill="none" stroke="#9ee7d4" stroke-width="12" stroke-linecap="round"/>
+</svg>

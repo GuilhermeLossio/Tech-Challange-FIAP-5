@@ -9,12 +9,14 @@ from src.api.security import validate_security_settings
 from src.engine import DecisionService
 from src.engine.artifact_sources import resolve_artifact_directory
 from src.engine.schemas import EngineRequest
+from src.recommendation import Candidate, RecommendationRequest, RecommendationService
 from src.storage.decision_repository import DecisionRepository, create_decision_repository
 
 
 def create_lifespan(
     decision_service: DecisionService | None = None,
     decision_repository: DecisionRepository | None = None,
+    recommendation_service: RecommendationService | None = None,
 ):
     @asynccontextmanager
     async def lifespan(app):
@@ -27,6 +29,9 @@ def create_lifespan(
         app.state.artifact_dir = artifact_dir
         app.state.decision_service = decision_service or DecisionService.from_directory(artifact_dir)
         app.state.decision_repository = decision_repository or create_decision_repository(settings)
+        app.state.recommendation_service = recommendation_service or RecommendationService.from_settings(
+            settings
+        )
         yield
 
     return lifespan
@@ -62,6 +67,20 @@ def get_decision_repository(request: Request) -> DecisionRepository:
     return repository
 
 
+def get_recommendation_service(request: Request) -> RecommendationService:
+    service = getattr(request.app.state, "recommendation_service", None)
+    if service is None:
+        settings = getattr(request.app.state, "settings", None)
+        if settings is None:
+            from src.core.config import load_settings
+
+            settings = load_settings()
+            request.app.state.settings = settings
+        service = RecommendationService.from_settings(settings)
+        request.app.state.recommendation_service = service
+    return service
+
+
 def get_request_context(request: Request) -> Request:
     return request
 
@@ -71,4 +90,18 @@ def to_engine_request(payload: DecisionRequest) -> EngineRequest:
         request_id=payload.request_id,
         customer_context=payload.customer_context.model_dump(exclude_none=True, mode="json"),
         eligible_offers=[offer.value for offer in payload.eligible_offers],
+    )
+
+
+def to_recommendation_request(payload) -> RecommendationRequest:
+    candidates = tuple(
+        Candidate(**candidate.model_dump(mode="python")) for candidate in payload.eligible_candidates
+    )
+    return RecommendationRequest(
+        request_id=payload.request_id,
+        surface=payload.surface,
+        decision_point=payload.decision_point,
+        context=payload.customer_context.model_dump(exclude_none=True, mode="json"),
+        candidates=candidates,
+        limit=payload.limit,
     )

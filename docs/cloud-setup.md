@@ -65,6 +65,9 @@ ENTRA_CLIENT_ID=<api-application-client-id>
 ENTRA_AUDIENCE=api://<api-application-client-id>
 CORS_ALLOWED_ORIGINS=https://<approved-client-host>
 TRUSTED_HOSTS=<approved-api-host>
+RATE_LIMIT_BACKEND=redis
+RATE_LIMIT_REDIS_URL=<key-vault-secret-reference>
+FLASK_SECRET_KEY=<key-vault-secret-reference>
 SUBJECT_KEY_SALT=<non-default-pseudonymization-secret>
 DECISION_EVENT_TTL_SECONDS=157680000
 DECISION_REPOSITORY_MODE=cosmos
@@ -78,6 +81,8 @@ ARTIFACT_SOURCE=azure_blob
 AZURE_STORAGE_ACCOUNT_URL=https://<storage-account>.blob.core.windows.net
 AZURE_BLOB_CONTAINER_ARTIFACTS=ecloe-artifacts
 AZURE_ARTIFACT_PROMOTION_BLOB=promoted/current.json
+AZURE_ARTIFACT_PROMOTION_BLOB_MARKET=promoted/market/current.json
+AZURE_ARTIFACT_PROMOTION_BLOB_PAY=promoted/pay/current.json
 ARTIFACT_CACHE_DIR=/tmp/ecloe/artifacts
 ```
 
@@ -158,7 +163,7 @@ The script does not read or write `.env`. It requires an active Azure CLI login 
 
 ECloe Pay can persist its simulated banking state in Azure SQL. The default local mode remains `memory`; Azure SQL is opt-in and stores only personas and synthetic wallet/session/payment evidence.
 
-For the browser demo, use Azure SQL mode so `/pay/login` validates the synthetic demo persona against `ecloe_pay.demo_users`. Memory mode remains useful for CI and local automated tests, but the wallet route and Pay APIs still start unauthenticated and require an explicit login session.
+For the deployed browser demo, use Azure SQL mode and Microsoft Entra External ID. External ID validates customer credentials; ECloe stores only a pseudonymized identity mapping and synthetic account state. Memory mode and the local credential form remain available only for local development and CI.
 
 Confirmed database:
 
@@ -187,6 +192,13 @@ ECLOE_PAY_SQL_DRIVER=ODBC Driver 18 for SQL Server
 ECLOE_PAY_DATABASE_MODE=azure_sql
 ECLOE_PAY_SQL_AUTH_MODE=managed_identity
 ECLOE_PAY_COOKIE_SECURE=true
+ECLOE_MARKET_DATABASE_MODE=azure_sql
+ECLOE_WEB_AUTH_MODE=entra_external
+ECLOE_WEB_ENTRA_AUTHORITY=https://<tenant-subdomain>.ciamlogin.com
+ECLOE_WEB_ENTRA_CLIENT_ID=<client-id>
+ECLOE_WEB_ENTRA_CLIENT_SECRET=<Key-Vault-backed-secret>
+ECLOE_WEB_ENTRA_REDIRECT_URI=https://<demo-host>/auth/callback
+ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI=https://<demo-host>/
 ```
 
 Open local firewall access only for the current client IP:
@@ -201,7 +213,7 @@ If `publicNetworkAccess` is currently `Disabled`, the script stops unless `-Enab
 .\scripts\allow_current_sql_client_ip.ps1 -EnablePublicNetworkAccess
 ```
 
-This script validates that the detected public IP is a single IPv4 or IPv6 value, creates or updates only the `AllowCurrentClientIp` rule with the same start and end IP, does not create a `0.0.0.0` rule, and does not enable broad "Allow Azure Services" access.
+This script queries an IPv4-only endpoint because Azure SQL firewall rules accept IPv4 addresses, creates or updates only the `AllowCurrentClientIp` rule with the same start and end IP, does not create a `0.0.0.0` rule, and does not enable broad "Allow Azure Services" access.
 
 Remove the local development firewall rule after use:
 
@@ -238,3 +250,159 @@ Azure SQL repository contract tests are opt-in. Common CI runs do not depend on 
 ```powershell
 python -m pytest tests/test_ecloe_pay_contract.py
 ```
+
+## ECloe Market Catalog Assets
+
+ECloe Market keeps the local app default in memory mode with the synthetic catalog JSON. For Azure validation, publish the catalog as two artifacts: product metadata in Azure SQL and catalog images plus the Azure-ready JSON snapshot in Azure Blob Storage.
+
+The image-generation step is separate and opt-in. The recommended generator runs `Tongyi-MAI/Z-Image-Turbo` locally on an NVIDIA GPU with PyTorch CUDA and `diffusers`, so it does not depend on the public Hugging Face Space quota. The normal app install stays lightweight and local memory mode does not need image-generation dependencies.
+
+Non-secret local settings:
+
+```text
+AZURE_STORAGE_ACCOUNT_URL=https://<storage-account>.blob.core.windows.net
+ECLOE_MARKET_BLOB_CONTAINER=ecloe-market-demo-assets
+ECLOE_MARKET_BLOB_PREFIX=catalog
+ECLOE_MARKET_CATALOG_AZURE_PATH=data/demo/ecloe_market_catalog.azure.json
+ECLOE_MARKET_IMAGE_MODEL_DIR=data/external/HunyuanImage-3
+ECLOE_MARKET_IMAGE_BACKEND=zimage-local
+ECLOE_MARKET_IMAGE_SPACE=mrfakename/Z-Image-Turbo
+ECLOE_MARKET_IMAGE_SPACE_API_NAME=/generate_image
+ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS={"height":1024,"width":1024,"num_inference_steps":9,"randomize_seed":false}
+ECLOE_MARKET_IMAGE_ZIMAGE_MODEL=Tongyi-MAI/Z-Image-Turbo
+ECLOE_MARKET_IMAGE_HEIGHT=768
+ECLOE_MARKET_IMAGE_WIDTH=768
+ECLOE_MARKET_IMAGE_STEPS=8
+ECLOE_MARKET_IMAGE_OFFLOAD_MODE=model
+```
+
+The image generator supports three backends:
+
+| Backend | Use |
+|:---|:---|
+| `zimage-local` | Loads `Tongyi-MAI/Z-Image-Turbo` locally with `diffusers` and CUDA. |
+| `local` / `hunyuan-local` | Loads `tencent/HunyuanImage-3.0` in the current machine from `ECLOE_MARKET_IMAGE_MODEL_DIR`. |
+| `space` | Calls a quota-limited Gradio Space API with `gradio_client`, using `ECLOE_MARKET_IMAGE_SPACE` and `ECLOE_MARKET_IMAGE_SPACE_API_NAME`. |
+| `catalog` | Generates deterministic placeholder PNGs with the repository's built-in renderer for offline fallback only. |
+
+Use a separate Python 3.12 image-generation environment for local GPU inference. The main repository `.venv` is pinned to Python 3.14.6, while PyTorch CUDA wheels on Windows may require an older supported Python version.
+
+```powershell
+py -3.12 -m venv .venv-image
+.venv-image\Scripts\python.exe -m pip install --upgrade pip
+.venv-image\Scripts\python.exe -m pip install torch torchvision --index-url https://download.pytorch.org/whl/cu130
+.venv-image\Scripts\python.exe -m pip install diffusers transformers accelerate pillow python-dotenv
+```
+
+Then generate images locally:
+
+```powershell
+$env:PYTHONPATH="."
+.venv-image\Scripts\python.exe -m scripts.generate_ecloe_market_catalog_images `
+  --backend zimage-local `
+  --height 768 `
+  --width 768 `
+  --steps 8 `
+  --offload-mode model `
+  --force
+```
+
+For 16 GB GPUs, `--offload-mode model` is the recommended default. If loading still fails with CUDA OOM, rerun with `--offload-mode sequential`; it is slower but uses less VRAM. Use `--offload-mode none` only when there is enough VRAM to keep the full pipeline on GPU.
+
+The Space fallback uses `/generate_image` and accepts explicit dimensions, inference steps, seed, and seed-randomization settings:
+
+```text
+ECLOE_MARKET_IMAGE_SPACE=mrfakename/Z-Image-Turbo
+ECLOE_MARKET_IMAGE_SPACE_API_NAME=/generate_image
+ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS={"height":1024,"width":1024,"num_inference_steps":9,"randomize_seed":false}
+```
+
+If you need the old Hunyuan local path, download the model outside the normal app dependency path, for example under `data/external/HunyuanImage-3/`, install the required GPU/image stack only in the generation environment, and run with `--backend hunyuan-local`.
+
+If using a different public Space, pass additional endpoint parameters as JSON in `ECLOE_MARKET_IMAGE_SPACE_EXTRA_KWARGS`.
+
+If a local `.env` still contains older image settings, pass the Space options explicitly on the command line. Command-line values override the loaded settings for that run.
+
+The repository includes a Hunyuan Space template in `spaces/hunyuan-image-3-demo/`. Create and upload it with the Hugging Face CLI after authenticating locally:
+
+```powershell
+hf auth login
+hf repo create GuilhermeL/ecloe-hunyuan-image-3-demo --type space --sdk gradio
+hf upload GuilhermeL/ecloe-hunyuan-image-3-demo spaces/hunyuan-image-3-demo . --repo-type space
+```
+
+Catalog operational sequence:
+
+```powershell
+az login
+.venv-image\Scripts\python.exe -m scripts.generate_ecloe_market_catalog_images `
+  --backend zimage-local `
+  --height 768 `
+  --width 768 `
+  --steps 8 `
+  --offload-mode model `
+  --force
+.venv\Scripts\python.exe -m scripts.publish_ecloe_market_catalog_to_azure
+```
+
+Then point the SQL seed to the Azure-ready JSON and initialize the Market schema:
+
+```text
+ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json
+ECLOE_MARKET_DATABASE_MODE=azure_sql
+ECLOE_PAY_SQL_AUTH_MODE=azure_cli
+```
+
+```powershell
+python -m scripts.init_ecloe_market_sql
+```
+
+Cloud runtime must use Managed Identity for both Blob access and Azure SQL. Do not store real customer, payment, CPF, card, bank, or credential data in the ECloe Market catalog assets.
+
+## Demo Market/Pay GitHub Actions Deployment
+
+Use `.github/workflows/deploy-demo-web.yml` to deploy the navigable ECloe Market/Pay demo through GitHub Actions. This workflow is intentionally separate from the ECloe Engine API deployment in `.github/workflows/deploy.yml`.
+
+Required GitHub environment secrets:
+
+```text
+AZURE_CLIENT_ID=<federated-credential-app-client-id>
+AZURE_TENANT_ID=<tenant-id>
+AZURE_SUBSCRIPTION_ID=<subscription-id>
+```
+
+Required GitHub environment variables:
+
+```text
+AZURE_RESOURCE_GROUP=FIAPTechChallange5
+ACR_NAME=<existing-acr-name>
+ACR_LOGIN_SERVER=<existing-acr-name>.azurecr.io
+```
+
+The demo workflow builds `Dockerfile.demo`, pushes `ecloe-demo-web:<tag>` to ACR, creates or updates the selected Container App, and smoke-tests:
+
+```text
+/market
+/pay/login
+```
+
+The first GitHub Actions deployment keeps the demo in local-memory mode inside the container:
+
+```text
+ECLOE_PAY_DATABASE_MODE=memory
+ECLOE_MARKET_DATABASE_MODE=memory
+ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json
+```
+
+This is deliberate for the first online run. Azure SQL seeding and managed-identity SQL runtime can be enabled in a later deployment after private networking or an explicitly approved temporary SQL access path is ready.
+
+When enabling the cloud customer login flow, configure Microsoft Entra External ID and switch the demo web runtime to:
+
+```text
+ECLOE_PAY_DATABASE_MODE=azure_sql
+ECLOE_PAY_SQL_AUTH_MODE=managed_identity
+ECLOE_PAY_INITIAL_BALANCE_CENTS=50000
+ECLOE_WEB_AUTH_MODE=local_signup
+```
+
+The ECloe UI exposes both `Entrar` and `Criar conta`. In the lightweight mode, ECloe stores only password hashes and synthetic wallet state in Azure SQL. Signup attempts are protected by shared Redis rate limiting; the pseudonymized signup IP may be retained for abuse investigation, but it is not used to impose a one-account-per-IP rule.

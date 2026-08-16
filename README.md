@@ -1,4 +1,11 @@
 # ECloe - Datathon 7MLET
+
+> Quickstart and navigation. Detailed architecture, operations, API, product,
+> security, and ML documentation is indexed in [`docs/index.md`](docs/index.md).
+
+ECloe has two explicit runtime surfaces: FastAPI is the authenticated Engine
+API; Flask is the web BFF for Market and Pay sessions. The browser demo requires
+the Flask backend and has no public static persistence fallback.
 > **Low-cost next-best-action engine for integrated marketplace and digital wallet ecosystems.**
 
 ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending the next best eligible action in a marketplace-finance journey. The product story is split into **ECloe Market**, a simulated marketplace, **ECloe Pay**, a simulated digital wallet, and **ECloe Engine**, the adaptive decision layer between them. It shows how marketplace behavior and wallet context can guide offers, messages, or benefits without making credit, fraud, or eligibility decisions. The active data-preparation foundation is the public Kaggle Hillstrom email-campaign dataset, processed into minimized context, action, and reward columns for offline bandit evaluation.
@@ -73,6 +80,7 @@ Supporting diagrams:
 - [`docs/decision-flow.svg`](./docs/decision-flow.svg) - decision and reward loop.
 - [`docs/demo-interface-flow.svg`](./docs/demo-interface-flow.svg) - planned demo interface layer.
 - [`docs/ecloe-market-overview.svg`](./docs/ecloe-market-overview.svg) - planned ECloe Market overview.
+- [`docs/ecloe-market-class-diagram.svg`](./docs/ecloe-market-class-diagram.svg) - ECloe Market domain and repository class diagram.
 - [`docs/ecloe-market-checkout-flow.svg`](./docs/ecloe-market-checkout-flow.svg) - planned ECloe Market checkout and order flow.
 - [`docs/ecloe-market-file-flow.svg`](./docs/ecloe-market-file-flow.svg) - planned ECloe Market file and data flow.
 - [`docs/ecloe-pay-overview.svg`](./docs/ecloe-pay-overview.svg) - planned ECloe Pay overview.
@@ -81,14 +89,21 @@ Supporting diagrams:
 - [`docs/azure-architecture-flow.svg`](./docs/azure-architecture-flow.svg) - target Azure service map.
 - [`docs/mlops-lifecycle.svg`](./docs/mlops-lifecycle.svg) - offline evaluation and promotion lifecycle.
 - [`docs/api-security-observability-flow.svg`](./docs/api-security-observability-flow.svg) - API security, telemetry, and CI gates.
+- [`docs/recommendation-system-overview.svg`](./docs/recommendation-system-overview.svg) - Market, Pay, Engine, and storage boundaries.
+- [`docs/recommendation-decision-flow.svg`](./docs/recommendation-decision-flow.svg) - typed eligibility-to-feedback decision flow.
+- [`docs/recommendation-training-lifecycle.svg`](./docs/recommendation-training-lifecycle.svg) - governed batch training and promotion lifecycle.
+- [`docs/recommendation-privacy-boundary.svg`](./docs/recommendation-privacy-boundary.svg) - feature allowlist and blocked-data boundary.
+- [`docs/choice-model-generation-pipeline.svg`](./docs/choice-model-generation-pipeline.svg) - choice model generation pipeline.
+- [`docs/choice-model-selection-flow.svg`](./docs/choice-model-selection-flow.svg) - runtime choice selection flow.
+- [`docs/choice-model-policy-comparison.svg`](./docs/choice-model-policy-comparison.svg) - policy comparison by evidence and role.
 
 ---
 
 ## Demo Interface
 
-Status: **Planned for demo**.
+Status: **Implemented**.
 
-The planned ECloe Demo is one simulated web application with three areas: **ECloe Market** for marketplace browsing and checkout, **ECloe Pay** for wallet benefits and accepted-offer status, and **ECloe Control Room** for the technical journey. The interface will consume the existing **ECloe Engine** API through a planned demo backend-for-frontend that aggregates context, simulates upstream eligibility, calls the decision endpoint, and registers reward events.
+The ECloe Demo is one simulated web application with **ECloe Market** for marketplace browsing and checkout and **ECloe Pay** for wallet benefits and accepted-offer status. The Flask application builds minimized context, sends typed eligible candidates to ECloe Engine, and records domain interactions without processing real money.
 
 Short journey:
 
@@ -102,9 +117,9 @@ Eligibility, risk, compliance, and business rules remain upstream. ECloe Engine 
 
 ## ECloe Market
 
-Status: **Planned for demo**.
+Status: **Implemented**.
 
-ECloe Market is documented as the simulated marketplace surface for catalog browsing, cart management, checkout, order creation, and behavior-signal aggregation. It uses Azure SQL as the planned transactional source of truth, writes outbox rows in the same transaction as Market state, and relies on an Outbox Publisher to publish committed events asynchronously. ECloe Engine is called only after eligible offers have already been determined upstream.
+ECloe Market implements public catalog browsing, cart management, a recommendation shelf, checkout creation, pending-order creation, and behavior-signal aggregation. Its memory and Azure SQL repositories share one contract. SQL checkout and order writes revalidate price and stock and write outbox evidence transactionally.
 
 Detailed ECloe Market scope, data model, checkout transaction, event flow, Azure direction, implementation sequence, and SVG diagrams are documented separately in [`docs/ecloe-market.md`](./docs/ecloe-market.md).
 
@@ -112,9 +127,9 @@ Detailed ECloe Market scope, data model, checkout transaction, event flow, Azure
 
 ## ECloe Pay
 
-Status: **Planned for demo**.
+Status: **Implemented**.
 
-ECloe Pay is documented as the simulated wallet surface for the demo. It displays wallet benefits, reuses the checkout decision returned by ECloe Engine, lets the user open, dismiss, or accept the selected eligible offer, and registers the interaction through the implemented reward endpoint. The next Azure SQL implementation step prepares login validation, wallet ledger control, payment-order state, audit evidence, and tokenized account references inside `ecloe_validation`; the Pay surface still does not approve credit, calculate eligibility, process real payments, store raw banking credentials, or trigger immediate model learning.
+ECloe Pay implements the simulated wallet surface, asks ECloe Engine to select one benefit from a typed eligible set, persists the returned decision, and maps open, rejection, and acceptance actions on the backend. It does not approve credit, calculate eligibility, process real money, store raw banking credentials, or trigger immediate model learning.
 
 Detailed ECloe Pay scope, screens, data boundaries, reward flow, Azure direction, real-ready SQL plan, and SVG diagrams are documented separately in [`docs/ecloe-pay.md`](./docs/ecloe-pay.md).
 
@@ -126,7 +141,7 @@ The main dataset is Kaggle [`kevin-hillstrom-minethatdata-e-mailanalytics` by bo
 
 Data-preparation usage rules:
 
-- `segment` is mapped to the decision action: `mens_email`, `womens_email`, or `no_email`.
+- The source-only `segment` treatment is mapped by an isolated adapter to `legacy_variant_a`, `legacy_variant_b`, or `legacy_control`.
 - `conversion` is mapped to the binary reward used by the offline policies.
 - `history_segment` is retained as a coarse context field.
 - Raw monetary `history` and `zip_code` are excluded from the processed modeling dataset.
@@ -200,7 +215,7 @@ reports/policy_training/purchase_likelihood_model.json
 reports/policy_training/artifact_manifest.json
 ```
 
-See [`docs/training-workflow.md`](./docs/training-workflow.md) for the full offline training flow.
+See [`docs/training-workflow.md`](./docs/training-workflow.md) for the full offline training flow and [`docs/choice-model-generation.md`](./docs/choice-model-generation.md) for how each choice model is generated, evaluated, selected, and constrained.
 
 Validate generated artifacts before publishing or deploying:
 
@@ -488,11 +503,11 @@ The Golden Set contains 5 deterministic cases used to validate explainability of
 
 | Case | Context snapshot | Recommended action | Policy | Reason codes |
 |:---|:---|:---|:---|:---|
-| 1 | `channel=Web`, `history_segment=4) $350 - $500`, `newbie=1` | `mens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
-| 2 | `channel=Phone`, `history_segment=5) $500 - $750`, `newbie=1` | `mens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
-| 3 | `channel=Phone`, `history_segment=3) $200 - $350`, `newbie=0` | `mens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
-| 4 | `channel=Phone`, `history_segment=1) $0 - $100`, `newbie=0` | `mens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
-| 5 | `channel=Web`, `history_segment=2) $100 - $200`, `newbie=0` | `mens_email` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 1 | `channel=Web`, `history_segment=4) $350 - $500`, `newbie=1` | `legacy_variant_a` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 2 | `channel=Phone`, `history_segment=5) $500 - $750`, `newbie=1` | `legacy_variant_a` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 3 | `channel=Phone`, `history_segment=3) $200 - $350`, `newbie=0` | `legacy_variant_a` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 4 | `channel=Phone`, `history_segment=1) $0 - $100`, `newbie=0` | `legacy_variant_a` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
+| 5 | `channel=Web`, `history_segment=2) $100 - $200`, `newbie=0` | `legacy_variant_a` | `baseline` | `offline_reward_evidence`, `policy_comparison_winner` |
 
 These are simulated recommendations for demonstration. They are not approvals for credit, loans, limits, eligibility, fraud, risk, or regulated financial products.
 
@@ -531,10 +546,21 @@ Cloud deployment assets are present in `Dockerfile`, `.github/workflows/deploy.y
 ## Related Docs
 
 - [`Architecture.md`](./Architecture.md) - Architecture, components, pipeline, and trade-offs.
+- [`docs/azure-customer-authentication.md`](./docs/azure-customer-authentication.md) - Entra External ID customer login, synthetic account provisioning, and operational controls.
+- [`docs/recommendation-system.md`](./docs/recommendation-system.md) - Recommendation architecture, algorithms, contracts, privacy, training, promotion, and Azure seed runbook.
+- [`docs/choice-model-generation.md`](./docs/choice-model-generation.md) - How each choice model is generated, evaluated, selected, and constrained.
+- [`docs/recommendation-system-overview.svg`](./docs/recommendation-system-overview.svg) - Recommendation system overview.
+- [`docs/recommendation-decision-flow.svg`](./docs/recommendation-decision-flow.svg) - Decision and verified-feedback flow.
+- [`docs/recommendation-training-lifecycle.svg`](./docs/recommendation-training-lifecycle.svg) - Batch training and promotion lifecycle.
+- [`docs/recommendation-privacy-boundary.svg`](./docs/recommendation-privacy-boundary.svg) - Privacy and feature boundary.
+- [`docs/choice-model-generation-pipeline.svg`](./docs/choice-model-generation-pipeline.svg) - Choice model generation pipeline.
+- [`docs/choice-model-selection-flow.svg`](./docs/choice-model-selection-flow.svg) - Runtime choice selection flow.
+- [`docs/choice-model-policy-comparison.svg`](./docs/choice-model-policy-comparison.svg) - Choice policy comparison.
 - [`docs/api-contract.md`](./docs/api-contract.md) - Implemented ECloe Engine API contracts and reward payloads.
 - [`docs/demo-interface.md`](./docs/demo-interface.md) - Planned ECloe Market, ECloe Pay, and ECloe Control Room interface.
 - [`docs/ecloe-market.md`](./docs/ecloe-market.md) - Dedicated ECloe Market marketplace surface documentation.
 - [`docs/ecloe-market-overview.svg`](./docs/ecloe-market-overview.svg) - ECloe Market overview diagram.
+- [`docs/ecloe-market-class-diagram.svg`](./docs/ecloe-market-class-diagram.svg) - ECloe Market domain and repository class diagram.
 - [`docs/ecloe-market-checkout-flow.svg`](./docs/ecloe-market-checkout-flow.svg) - ECloe Market checkout and order flow diagram.
 - [`docs/ecloe-market-file-flow.svg`](./docs/ecloe-market-file-flow.svg) - ECloe Market file and data flow diagram.
 - [`docs/ecloe-pay.md`](./docs/ecloe-pay.md) - Dedicated ECloe Pay wallet surface documentation.

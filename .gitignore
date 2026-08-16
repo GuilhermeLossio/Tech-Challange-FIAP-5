@@ -9,6 +9,7 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+.build/
 develop-eggs/
 dist/
 downloads/
@@ -132,6 +133,7 @@ celerybeat.pid
 # Environments
 .env
 .venv
+.venv-image
 env/
 venv/
 ENV/
@@ -188,9 +190,13 @@ data/raw/*
 data/processed/*
 data/golden_set/*
 data/demo/*.local.xlsx
+data/external/*
 reports/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/golden_set/.gitkeep
 !data/demo/.gitkeep
+!data/external/.gitkeep
 !reports/.gitkeep
+/src/demo/ecloe_market/assets
+/.playwright-cli

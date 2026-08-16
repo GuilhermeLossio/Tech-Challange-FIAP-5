@@ -4,8 +4,14 @@ import json
 from uuid import UUID
 
 import pandas as pd
+import pytest
 
-from src.engine.likelihood import PurchaseLikelihoodService, train_likelihood_model
+from src.engine.artifacts import ArtifactValidationError
+from src.engine.likelihood import (
+    PurchaseLikelihoodService,
+    load_likelihood_artifact,
+    train_likelihood_model,
+)
 from src.engine.schemas import EngineRequest
 from src.engine.service import DecisionService
 
@@ -16,11 +22,9 @@ def processed_dataframe() -> pd.DataFrame:
             "row_id": [f"row_{index}" for index in range(18)],
             "recency": [1, 2, 3] * 6,
             "history_segment": ["1) Low", "2) Medium", "3) High"] * 6,
-            "mens": [1, 0, 1] * 6,
-            "womens": [0, 1, 1] * 6,
             "newbie": [1, 0, 0] * 6,
             "channel": ["Web", "Phone", "Multichannel"] * 6,
-            "action": ["mens_email", "womens_email", "no_email"] * 6,
+            "action": ["legacy_variant_a", "legacy_variant_b", "legacy_control"] * 6,
             "reward": [1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0, 1, 0, 0, 1, 1, 0],
             "visit": [1, 0, 1] * 6,
             "spend": [10.0, 0.0, 0.0] * 6,
@@ -38,7 +42,11 @@ def test_train_likelihood_model_writes_expected_artifact(tmp_path) -> None:
     payload = json.loads(output_file.read_text(encoding="utf-8"))
     assert model.global_count == 18
     assert payload["version"] == "likelihood-v1"
-    assert set(payload["action_rates"]) == {"mens_email", "womens_email", "no_email"}
+    assert set(payload["action_rates"]) == {
+        "legacy_variant_a",
+        "legacy_variant_b",
+        "legacy_control",
+    }
     assert payload["context_rates"]
 
 
@@ -53,7 +61,7 @@ def test_purchase_likelihood_uses_context_then_action_fallback(tmp_path) -> None
         EngineRequest(
             request_id="req_1",
             customer_context={"channel": "Web", "history_segment": "1) Low", "newbie": 1},
-            eligible_offers=["mens_email"],
+            eligible_offers=["savings_goal"],
         )
     )
     fallback = service.estimate(
@@ -129,3 +137,46 @@ def test_decision_service_recommends_only_eligible_offer(tmp_path) -> None:
     assert response.decision_id.startswith("dec_")
     UUID(response.decision_id.removeprefix("dec_"))
     assert response.created_at
+
+
+def test_decision_service_falls_back_to_embedded_baseline_when_artifacts_are_missing(
+    tmp_path,
+) -> None:
+    service = DecisionService.from_directory(tmp_path / "missing-artifacts")
+
+    response = service.decide(
+        EngineRequest(
+            request_id="req_baseline",
+            customer_context={"channel": "Web"},
+            eligible_offers=["financial_education", "cashback_recurring_purchase"],
+        )
+    )
+    policy = service.current_policy()
+
+    assert response.offer_id == "financial_education"
+    assert response.artifact_version == "deterministic-baseline-v1"
+    assert "context_or_action_has_limited_evidence" in response.warnings
+    assert policy["promoted_offline_policy"]["policy"] == "deterministic_baseline"
+
+
+def test_likelihood_training_rejects_blocked_columns(tmp_path) -> None:
+    input_file = tmp_path / "processed.csv"
+    dataframe = processed_dataframe()
+    dataframe["gender"] = "blocked"
+    dataframe.to_csv(input_file, index=False)
+
+    with pytest.raises(ValueError, match="Blocked columns"):
+        train_likelihood_model(input_file=input_file, output_file=tmp_path / "model.json")
+
+
+def test_likelihood_artifact_rejects_blocked_feature_manifest(tmp_path) -> None:
+    input_file = tmp_path / "processed.csv"
+    output_file = tmp_path / "purchase_likelihood_model.json"
+    processed_dataframe().to_csv(input_file, index=False)
+    train_likelihood_model(input_file=input_file, output_file=output_file)
+    payload = json.loads(output_file.read_text(encoding="utf-8"))
+    payload["context_columns"].append("gender")
+    output_file.write_text(json.dumps(payload), encoding="utf-8")
+
+    with pytest.raises(ArtifactValidationError, match="blocked or non-allowlisted"):
+        load_likelihood_artifact(output_file)

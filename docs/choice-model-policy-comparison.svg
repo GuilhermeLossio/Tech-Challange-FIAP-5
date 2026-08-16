@@ -1,0 +1,82 @@
+<svg viewBox="0 0 1180 520" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">ECloe choice model policy comparison</title>
+  <desc id="desc">A comparison matrix showing the role and evidence source for deterministic, likelihood, content affinity, epsilon-greedy, UCB1, and Thompson Sampling policies.</desc>
+  <defs>
+    <g id="icon-web" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="6" width="32" height="24" rx="3"/>
+      <line x1="4" y1="13" x2="36" y2="13"/>
+      <circle cx="10" cy="10" r="1"/>
+      <circle cx="15" cy="10" r="1"/>
+    </g>
+    <g id="icon-rule" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 9h22v22H9z"/>
+      <path d="M14 16h12M14 22h12M14 28h7"/>
+    </g>
+    <g id="icon-context" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 13h24M8 21h24M8 29h24"/>
+      <circle cx="15" cy="13" r="3"/>
+      <circle cx="25" cy="21" r="3"/>
+      <circle cx="18" cy="29" r="3"/>
+    </g>
+    <g id="icon-rate" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 29l7-8 6 4 9-14"/>
+      <path d="M9 33h24"/>
+    </g>
+    <g id="icon-random" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M8 13h6c8 0 10 14 18 14h2"/>
+      <path d="M8 27h6c8 0 10-14 18-14h2"/>
+      <path d="M29 8l5 5-5 5M29 22l5 5-5 5"/>
+    </g>
+    <g id="icon-upper" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M9 30c7-16 15-18 22-18"/>
+      <path d="M24 11h8v8"/>
+      <path d="M9 30h24"/>
+    </g>
+    <g id="icon-beta" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M14 31V9h8c5 0 8 3 8 7s-3 7-8 7h-8"/>
+      <path d="M22 23c5 0 8 2 8 6"/>
+    </g>
+  </defs>
+  <rect width="1180" height="520" fill="#ffffff"/>
+  <text x="40" y="46" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#1f2328">Choice Policy Comparison</text>
+  <text x="40" y="72" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#57606a">Each model is generated from a different evidence shape and has a different serving role.</text>
+
+  <rect x="40" y="108" width="340" height="112" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="2" data-card="true"/>
+  <use href="#icon-rule" transform="translate(62 131) scale(.7)" color="#2563eb"/>
+  <text x="130" y="142" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328" text-anchor="start">Deterministic Baseline</text>
+  <text x="130" y="166" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Priority, popularity, stock</text>
+  <text x="130" y="185" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Default serving and fallback policy</text>
+
+  <rect x="420" y="108" width="340" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-context" transform="translate(442 131) scale(.7)" color="#57606a"/>
+  <text x="510" y="142" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328" text-anchor="start">Content Affinity</text>
+  <text x="510" y="166" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Neutral category matches</text>
+  <text x="510" y="185" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Cold-start Market support</text>
+
+  <rect x="800" y="108" width="340" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-rate" transform="translate(822 131) scale(.7)" color="#57606a"/>
+  <text x="890" y="142" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328" text-anchor="start">Likelihood Ranker</text>
+  <text x="890" y="166" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Smoothed conversion evidence</text>
+  <text x="890" y="185" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Promotable only after guardrails</text>
+
+  <rect x="40" y="260" width="340" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-random" transform="translate(62 283) scale(.7)" color="#57606a"/>
+  <text x="130" y="294" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328" text-anchor="start">Epsilon-Greedy</text>
+  <text x="130" y="318" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Exploit best or explore randomly</text>
+  <text x="130" y="337" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Shadow challenger, epsilon 0.10</text>
+
+  <rect x="420" y="260" width="340" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-upper" transform="translate(442 283) scale(.7)" color="#57606a"/>
+  <text x="510" y="294" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328" text-anchor="start">UCB1</text>
+  <text x="510" y="318" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Mean reward plus uncertainty</text>
+  <text x="510" y="337" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Sparse candidates get exploration</text>
+
+  <rect x="800" y="260" width="340" height="112" rx="10" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2" data-card="true"/>
+  <use href="#icon-beta" transform="translate(822 283) scale(.7)" color="#57606a"/>
+  <text x="890" y="294" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#1f2328" text-anchor="start">Thompson Sampling</text>
+  <text x="890" y="318" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Beta posterior sampling</text>
+  <text x="890" y="337" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a" text-anchor="start">Primary adaptive candidate</text>
+
+  <rect x="40" y="424" width="1100" height="44" rx="8" fill="#f6f8fa" stroke="#d0d7de"/>
+  <text x="60" y="451" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">Serving default: deterministic baseline. Runtime promotion is independent per surface and requires evidence, privacy, eligibility, and manual review gates.</text>
+</svg>

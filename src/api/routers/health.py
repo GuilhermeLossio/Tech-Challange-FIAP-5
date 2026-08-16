@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 
 from src.api.dependencies import get_decision_service
 from src.api.errors import API_ERROR_RESPONSES
@@ -20,3 +20,9 @@ def livez() -> dict[str, str]:
 @router.get("/readyz", response_model=HealthResponse, responses=API_ERROR_RESPONSES)
 def readyz(_: Annotated[DecisionService, Depends(get_decision_service)]) -> dict[str, str]:
     return {"status": "ready", "service": "ecloe-engine"}
+
+
+@router.get("/metrics", tags=["operations"])
+def metrics(request: Request) -> dict[str, object]:
+    registry = getattr(request.app.state, "platform_metrics", None)
+    return registry.snapshot() if registry is not None else {}

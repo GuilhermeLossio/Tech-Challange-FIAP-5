@@ -7,7 +7,9 @@ from pathlib import Path
 from typing import Any
 
 from src.core.config import Settings, load_settings
+from src.data.legacy_hillstrom import normalize_legacy_action
 from src.engine.offers import resolve_offer_action
+from src.recommendation.privacy import assert_safe_payload
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT_FILE = ROOT_DIR / "data" / "processed" / "cosmos_training_events.csv"
@@ -15,8 +17,6 @@ TRAINING_FIELDNAMES = [
     "row_id",
     "recency",
     "history_segment",
-    "mens",
-    "womens",
     "newbie",
     "channel",
     "action",
@@ -86,14 +86,6 @@ def _read_jsonl_events(path: Path) -> tuple[list[dict[str, Any]], list[dict[str,
     return decisions, rewards
 
 
-def _action_flags(action: str) -> tuple[int, int]:
-    if action == "mens_email":
-        return 1, 0
-    if action == "womens_email":
-        return 0, 1
-    return 0, 0
-
-
 def _reward_by_decision(
     rewards: list[dict[str, Any]],
     positive_event_type: str,
@@ -139,17 +131,15 @@ def build_training_rows(
             continue
 
         selected_offer_id = str(decision.get("selected_offer_id") or decision.get("offer_id") or "")
-        action = resolve_offer_action(selected_offer_id)
-        mens, womens = _action_flags(action)
+        action = normalize_legacy_action(resolve_offer_action(selected_offer_id))
         context = decision.get("minimized_context") or {}
+        assert_safe_payload(context, path="minimized_context")
 
         rows.append(
             {
                 "row_id": decision.get("request_id") or f"cosmos_{index}",
                 "recency": context.get("recency", 0),
                 "history_segment": context.get("history_segment", "unknown"),
-                "mens": context.get("mens", mens),
-                "womens": context.get("womens", womens),
                 "newbie": context.get("newbie", 0),
                 "channel": context.get("channel", "Web"),
                 "action": action,
@@ -163,6 +153,7 @@ def build_training_rows(
 
 
 def write_training_csv(rows: list[dict[str, Any]], output_file: Path) -> None:
+    assert_safe_payload(rows, path="training_rows")
     output_file.parent.mkdir(parents=True, exist_ok=True)
     with output_file.open("w", newline="", encoding="utf-8") as file:
         writer = csv.DictWriter(file, fieldnames=TRAINING_FIELDNAMES)

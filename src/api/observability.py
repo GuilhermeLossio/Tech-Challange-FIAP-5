@@ -4,6 +4,7 @@ import logging
 
 from fastapi import FastAPI
 
+from src.api.metrics import PlatformMetrics
 from src.core.config import Settings
 
 LOGGER_NAME = "ecloe.api.access"
@@ -11,6 +12,7 @@ LOGGER_NAME = "ecloe.api.access"
 
 def configure_observability(app: FastAPI, settings: Settings) -> None:
     app.state.observability_enabled = settings.observability_enabled
+    app.state.platform_metrics = PlatformMetrics()
     if not settings.observability_enabled:
         return
 

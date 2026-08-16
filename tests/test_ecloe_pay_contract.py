@@ -135,7 +135,7 @@ def test_pay_contract_terms_interaction_payment_idempotency_and_reset(repository
     assert before_terms.status_code == 403
     assert terms.status_code == 200
     assert interaction.status_code == 200
-    assert interaction.get_json()["reward_event"]["event_type"] == "click"
+    assert interaction.get_json()["reward_event"]["event_type"] == "open"
     assert payment.status_code == 200
     assert payment.get_json()["status"] == "verified"
     assert duplicate.status_code == 409

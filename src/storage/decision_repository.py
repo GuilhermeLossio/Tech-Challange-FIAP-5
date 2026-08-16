@@ -35,6 +35,18 @@ class DecisionRecord:
     ttl: int | None = None
     id: str = field(default_factory=lambda: str(uuid4()))
     event_type: str = "decision"
+    surface: str = "pay"
+    decision_point: str = "legacy_offer"
+    selected_candidate_id: str | None = None
+    candidate_type: str = "benefit"
+    eligible_candidate_ids: list[str] = field(default_factory=list)
+    ranked_candidates: list[dict[str, Any]] = field(default_factory=list)
+    selection_probability: float = 1.0
+    behavior_policy: str = ""
+    behavior_policy_version: str = ""
+    behavior_propensity: float | None = None
+    propensity_source: str = "missing"
+    candidate_propensities: dict[str, float] = field(default_factory=dict)
 
     @property
     def partition_key(self) -> str:
@@ -51,9 +63,14 @@ class RewardRecord:
     occurred_at: str
     created_at: str
     response: dict[str, Any]
+    request_hash: str = ""
     ttl: int | None = None
     id: str = field(default_factory=lambda: str(uuid4()))
     record_type: str = "reward"
+    surface: str = "pay"
+    candidate_id: str | None = None
+    position: int | None = None
+    terminal: bool = True
 
     @property
     def partition_key(self) -> str:
@@ -90,6 +107,10 @@ class DecisionRepository(Protocol):
 
     def save_reward(self, record: RewardRecord) -> RewardRecord:
         pass
+
+
+class IdempotencyConflict(ValueError):
+    """An idempotency key was reused with a different request payload."""
 
 
 class InMemoryDecisionRepository:
@@ -139,6 +160,10 @@ class InMemoryDecisionRepository:
                 key = (record.subject_key, record.idempotency_key)
                 existing = self._idempotency.get(key)
                 if existing is not None:
+                    if existing.request_hash and existing.request_hash != record.request_hash:
+                        raise IdempotencyConflict(
+                            "Idempotency-Key was already used with a different request."
+                        )
                     return existing
                 self._idempotency[key] = record
             self._decisions[(record.subject_key, record.decision_id)] = record
@@ -159,6 +184,10 @@ class InMemoryDecisionRepository:
             key = (record.subject_key, record.event_id)
             existing = self._reward_idempotency.get(key)
             if existing is not None:
+                if existing.request_hash and existing.request_hash != record.request_hash:
+                    raise IdempotencyConflict(
+                        "Event id was already used with a different request."
+                    )
                 return existing
             self._reward_idempotency[key] = record
             self._reward_records.append(record)
@@ -292,8 +321,31 @@ class CosmosDecisionRepository:
                 idempotency_key=record.idempotency_key,
             )
             if existing is not None:
+                if existing.request_hash and existing.request_hash != record.request_hash:
+                    raise IdempotencyConflict(
+                        "Idempotency-Key was already used with a different request."
+                    )
                 return existing
-        self.container.create_item(_record_to_dict(record))
+        payload = _record_to_dict(record)
+        payload["id"] = _cosmos_id("decision", record.subject_key, record.idempotency_key or record.decision_id)
+        try:
+            self.container.create_item(payload)
+        except Exception as error:
+            if _is_cosmos_conflict(error):
+                existing = self.get_by_idempotency_key(
+                    subject_key=record.subject_key,
+                    idempotency_key=record.idempotency_key,
+                ) if record.idempotency_key else self.get_decision(
+                    subject_key=record.subject_key,
+                    decision_id=record.decision_id,
+                )
+                if existing is not None:
+                    if existing.request_hash and existing.request_hash != record.request_hash:
+                        raise IdempotencyConflict(
+                            "Idempotency-Key was already used with a different request."
+                        ) from error
+                    return existing
+            raise
         return record
 
     def get_reward_by_event_id(
@@ -324,8 +376,28 @@ class CosmosDecisionRepository:
             event_id=record.event_id,
         )
         if existing is not None:
+            if existing.request_hash and existing.request_hash != record.request_hash:
+                raise IdempotencyConflict(
+                    "Event id was already used with different feedback."
+                )
             return existing
-        self.reward_container.create_item(_reward_to_dict(record))
+        payload = _reward_to_dict(record)
+        payload["id"] = _cosmos_id("reward", record.subject_key, record.event_id)
+        try:
+            self.reward_container.create_item(payload)
+        except Exception as error:
+            if _is_cosmos_conflict(error):
+                existing = self.get_reward_by_event_id(
+                    subject_key=record.subject_key,
+                    event_id=record.event_id,
+                )
+                if existing is not None:
+                    if existing.request_hash and existing.request_hash != record.request_hash:
+                        raise IdempotencyConflict(
+                            "Event id was already used with a different request."
+                        ) from error
+                    return existing
+            raise
         return record
 
 
@@ -342,6 +414,15 @@ def create_decision_repository(settings: Settings) -> DecisionRepository:
 def request_hash(payload: dict[str, Any]) -> str:
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _cosmos_id(kind: str, subject_key: str, key: str) -> str:
+    digest = hashlib.sha256(f"{kind}\x00{subject_key}\x00{key}".encode()).hexdigest()
+    return f"{kind}_{digest}"
+
+
+def _is_cosmos_conflict(error: Exception) -> bool:
+    return getattr(error, "status_code", None) == 409 or getattr(error, "status_code", None) == "409"
 
 
 def _record_to_dict(record: DecisionRecord) -> dict[str, Any]:
@@ -364,6 +445,18 @@ def _record_to_dict(record: DecisionRecord) -> dict[str, Any]:
         "ttl": record.ttl,
         "id": record.id,
         "event_type": record.event_type,
+        "surface": record.surface,
+        "decision_point": record.decision_point,
+        "selected_candidate_id": record.selected_candidate_id,
+        "candidate_type": record.candidate_type,
+        "eligible_candidate_ids": record.eligible_candidate_ids,
+        "ranked_candidates": record.ranked_candidates,
+        "selection_probability": record.selection_probability,
+        "behavior_policy": record.behavior_policy,
+        "behavior_policy_version": record.behavior_policy_version,
+        "behavior_propensity": record.behavior_propensity,
+        "propensity_source": record.propensity_source,
+        "candidate_propensities": record.candidate_propensities,
     }
 
 
@@ -385,9 +478,14 @@ def _reward_to_dict(record: RewardRecord) -> dict[str, Any]:
         "occurred_at": record.occurred_at,
         "created_at": record.created_at,
         "response": record.response,
+        "request_hash": record.request_hash,
         "ttl": record.ttl,
         "id": record.id,
         "record_type": record.record_type,
+        "surface": record.surface,
+        "candidate_id": record.candidate_id,
+        "position": record.position,
+        "terminal": record.terminal,
     }
 
 

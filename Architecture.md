@@ -10,17 +10,17 @@ Author: Guilherme Lossio, Senior ML Engineer. Academic context: project for the 
 
 The system starts with the public Kaggle Hillstrom email-campaign dataset, processes it into a minimized local dataset, evaluates multiple recommendation policies offline, and prepares the selected policy for a small demonstrable interface. Hillstrom is used as a public proxy for the pattern ECloe needs: context, action, and reward. In the target product, ECloe Market produces commerce behavior signals, ECloe Pay provides wallet context and eligible actions, ECloe Engine selects one next best action, the decision is logged, and later rewards are linked back to the original `decision_id`.
 
-## Planned Demo Interface Layer
+## Demo Interface Layer
 
 ![Demo interface flow](docs/demo-interface-flow.svg)
 
-The planned interface layer is documentation-only at this stage. It should demonstrate the ECloe journey as one simulated web application composed of ECloe Market, ECloe Pay, and ECloe Control Room, with traffic crossing an API Gateway/Auth boundary before the Demo BFF orchestrates the web journey. ECloe Engine remains an independent implemented API, and the BFF is not the only possible channel integration pattern.
+The implemented Flask demo exposes ECloe Market and ECloe Pay as one simulated application. It builds minimized context and eligible candidates before invoking the shared recommendation service. ECloe Engine remains an independent FastAPI boundary for external channels.
 
 | Layer | Status | Responsibility |
 |:---|:---|:---|
-| Demo frontend | Planned for demo | Presents the launcher, marketplace, checkout recommendation, wallet, summary, and technical Control Room screens. |
-| Demo Backend-for-Frontend | Planned for demo | Holds demo session state, aggregates raw UI events into minimized context, simulates upstream eligibility, and orchestrates the web demo through domain APIs. |
-| Context aggregation | Planned for demo | Converts raw marketplace actions into coarse fields such as `channel`, `history_segment`, and `newbie`. |
+| Demo frontend | Implemented | Presents the launcher, marketplace, cart, recommendation shelf, wallet, and technical state. |
+| Demo Backend-for-Frontend | Implemented | Holds demo session state, builds minimized context, supplies eligible candidates, and orchestrates domain APIs. |
+| Context aggregation | Implemented | Converts domain state into allowlisted coarse bands and neutral categories. |
 | Eligibility simulation | Planned for demo | Produces eligible offers before the decision request. ECloe Engine must not invent eligibility. |
 | ECloe Engine | Implemented | Serves health, policy metadata, likelihood estimates, decisions, and reward ingestion through `src/api/`. |
 | Decision and reward persistence | Implemented | Persists decisions and reward events through the configured repository mode. |
@@ -30,17 +30,35 @@ Current implemented architecture is the local ECloe Engine API, offline evaluati
 
 The planned interface is detailed in [`docs/demo-interface.md`](docs/demo-interface.md), with the marketplace-specific ECloe Market scope separated in [`docs/ecloe-market.md`](docs/ecloe-market.md) and the wallet-specific ECloe Pay scope separated in [`docs/ecloe-pay.md`](docs/ecloe-pay.md). These documents explicitly separate the current online serving strategy from the offline promoted policy and future adaptive strategies.
 
+## Recommendation System
+
+![Recommendation system overview](docs/recommendation-system-overview.svg)
+
+Market and Pay have independent policies and objectives behind one typed Engine API. The serving default is the deterministic baseline. The likelihood ranker is guarded by minimum evidence, while Epsilon-Greedy, UCB1, and Thompson Sampling run in shadow mode. Azure SQL owns operational state and aggregate feature snapshots, Cosmos DB owns decisions and outcomes, and Blob Storage owns versioned artifacts.
+
+The complete contracts, feature catalog, algorithm calculations, LGPD controls, training gates, rollback process, and Azure population preflight are defined in [`docs/recommendation-system.md`](docs/recommendation-system.md). The generation path for each choice model is documented in [`docs/choice-model-generation.md`](docs/choice-model-generation.md).
+
+Supporting diagrams:
+
+- [`docs/recommendation-system-overview.svg`](docs/recommendation-system-overview.svg) - system and storage ownership.
+- [`docs/recommendation-decision-flow.svg`](docs/recommendation-decision-flow.svg) - eligibility, ranking, presentation, and feedback.
+- [`docs/recommendation-training-lifecycle.svg`](docs/recommendation-training-lifecycle.svg) - batch evaluation and promotion.
+- [`docs/recommendation-privacy-boundary.svg`](docs/recommendation-privacy-boundary.svg) - blocked and approved data boundaries.
+- [`docs/choice-model-generation-pipeline.svg`](docs/choice-model-generation-pipeline.svg) - choice model generation pipeline.
+- [`docs/choice-model-selection-flow.svg`](docs/choice-model-selection-flow.svg) - runtime choice selection flow.
+- [`docs/choice-model-policy-comparison.svg`](docs/choice-model-policy-comparison.svg) - policy comparison by evidence source and serving role.
+
 ## ECloe Market Surface
 
 ![ECloe Market overview](docs/ecloe-market-overview.svg)
 
-ECloe Market is the planned marketplace surface inside the demo application. It should own catalog browsing, cart state, checkout, order creation, marketplace events, and the aggregation of commerce signals before the Demo BFF or another authorized channel calls ECloe Pay and ECloe Engine.
+ECloe Market is the implemented marketplace surface inside the demo application. It owns catalog browsing, cart state, checkout creation, pending orders, recommendation telemetry, and aggregation of commerce signals before an authorized channel calls ECloe Engine.
 
 | Concern | Status | Architecture boundary |
 |:---|:---|:---|
-| Catalog and cart presentation | Planned for demo | Simulated products, categories, product details, cart state, and checkout entry. |
-| Transactional source of truth | Planned for demo | Azure SQL stores catalog, inventory, carts, checkout sessions, orders, order items, and outbox rows. |
-| Checkout consistency | Planned for demo | Market revalidates price, stock, idempotency, and order state before committing. |
+| Catalog and cart presentation | Implemented | Simulated products, categories, product details, cart state, and checkout entry. |
+| Transactional source of truth | Implemented | Azure SQL stores catalog, inventory, carts, checkout sessions, orders, order items, interactions, and outbox rows. |
+| Checkout consistency | Implemented | Memory and SQL repositories revalidate price, stock, idempotency, and order state before committing. |
 | Event publication | Planned for demo | Market writes domain state and an outbox row in the same Azure SQL transaction; the Outbox Publisher polls committed rows and publishes to Azure Service Bus. |
 | Recommendation handoff | Planned for demo | Authorized orchestration sends minimized context and eligible offers to ECloe Engine after upstream eligibility. |
 | Real payment, fraud, risk, credit, pricing automation, and eligibility decisions | Out of scope | These must not be presented as ECloe Market or ECloe Engine responsibilities. |
@@ -50,6 +68,7 @@ Detailed data model, checkout transaction, events, file flow, and Azure directio
 Supporting ECloe Market diagrams:
 
 - [`docs/ecloe-market-overview.svg`](docs/ecloe-market-overview.svg) - planned ECloe Market overview.
+- [`docs/ecloe-market-class-diagram.svg`](docs/ecloe-market-class-diagram.svg) - ECloe Market domain and repository class diagram.
 - [`docs/ecloe-market-checkout-flow.svg`](docs/ecloe-market-checkout-flow.svg) - planned checkout and order flow.
 - [`docs/ecloe-market-file-flow.svg`](docs/ecloe-market-file-flow.svg) - planned file and data flow.
 
@@ -57,14 +76,14 @@ Supporting ECloe Market diagrams:
 
 ![ECloe Pay overview](docs/ecloe-pay-overview.svg)
 
-ECloe Pay is the planned wallet surface inside the demo application. It should reuse the checkout decision returned by ECloe Engine, present the selected eligible offer as a wallet benefit, register the user interaction through the implemented reward endpoint, and persist Pay-owned state through the Pay Transaction API boundary.
+ECloe Pay is the implemented wallet surface inside the demo application. It obtains a real recommendation from ECloe Engine, presents one selected eligible benefit, records backend-mapped interactions, and persists Pay-owned state through the repository boundary.
 
 | Concern | Status | Architecture boundary |
 |:---|:---|:---|
-| Wallet presentation | Planned for demo | Simulated UI state for balance, cashback, savings goals, benefits, and accepted-offer status. |
-| Decision reuse | Planned for demo | Pay screens reuse the `decision_id` created at checkout instead of creating duplicate decisions. |
+| Wallet presentation | Implemented | Simulated UI state for balance, cashback, savings goals, benefits, and accepted-offer status. |
+| Engine decision | Implemented | Pay stores the `decision_id` and selected benefit returned by the shared Engine service. |
 | Real-ready Azure SQL account model | Planned for demo | The next Pay implementation step uses `ecloe_validation` schemas for identity, wallet ledger, payments, rewards, audit, and integration while keeping `master` free of application tables. |
-| Reward registration | Implemented | `POST /v1/rewards` records click, dismissal, or conversion events linked to the original decision. |
+| Reward registration | Implemented | `POST /v2/feedback` records slate-bound telemetry and backend-mapped terminal outcomes; v1 remains compatible. |
 | Technical evidence | Planned for demo | Technical mode may show request ID, decision ID, event ID, policy, artifact, latency, and excluded fields. |
 | Real payment account integration | Future | Requires governed wallet, identity, consent, security, and operations systems. |
 | Credit, fraud, risk, compliance, and eligibility decisions | Out of scope | These remain upstream and must not be presented as ECloe Pay or ECloe Engine responsibilities. |
@@ -82,8 +101,8 @@ Supporting ECloe Pay diagrams:
 | Component | Responsibility | Key files/paths |
 |:---|:---|:---|
 | Configuration | Loads local `.env` settings, data paths, Kaggle dataset slug, file names, seed, and Azure placeholders. | `src/core/config.py`, `.env.example` |
-| ECloe Market | Planned simulated marketplace surface for product browsing, catalog, cart, checkout, orders, inventory, and purchase-habit signals. | `docs/ecloe-market.md`, planned `src/market/`, planned `src/demo/` |
-| ECloe Pay | Planned simulated digital wallet surface for payment context, benefits, eligible financial actions, accepted-offer status, and reward interaction. | `docs/ecloe-pay.md`, planned `src/demo/` |
+| ECloe Market | Implemented simulated marketplace for product browsing, catalog, cart, checkout, pending orders, inventory, and recommendation signals. | `src/market/`, `src/demo/ecloe_market/`, `docs/ecloe-market.md` |
+| ECloe Pay | Implemented simulated digital wallet for payment context, Engine-selected benefits, accepted-offer status, and interactions. | `src/demo/ecloe_pay/`, `docs/ecloe-pay.md` |
 | ECloe Engine | Adaptive decision layer that ranks eligible offers using marketplace-finance context and simulated conversion likelihood. | `src/bandits/`, `src/evaluation/`, `src/engine/` |
 | Local Engine API | Exposes the implemented health, policy, purchase-likelihood, and decision endpoints. | `src/api/` |
 | Data ingestion | Downloads the configured Hillstrom Kaggle dataset into `data/raw/hillstrom.csv`. | `src/data/download.py` |
@@ -111,11 +130,15 @@ The MVP pipeline is intentionally small:
 7. Train the lightweight purchase-likelihood validator.
 8. Select the policy for the Golden Set and local Engine API.
 
+The detailed model-by-model generation flow is described in [`docs/choice-model-generation.md`](docs/choice-model-generation.md), including baseline ranking, content affinity, likelihood smoothing, Epsilon-Greedy, UCB1, and Thompson Sampling.
+
 ## API Security and Observability
 
 ![API security and observability flow](docs/api-security-observability-flow.svg)
 
 The API runtime now has an explicit operational perimeter. Business routes validate Microsoft Entra ID bearer tokens and route scopes in cloud environments, while local disabled authentication is limited to loopback execution. The middleware applies trusted host checks, explicit CORS origins, payload limits, request rate limits, and concurrency limits before the route handler executes.
+
+The customer-facing Flask BFF uses a separate Microsoft Entra External ID registration. It completes Authorization Code with PKCE server-side, maps `(issuer, sub)` to an HMAC identity key, and issues only an opaque application session. First login transactionally provisions a deterministic synthetic profile, wallet account, and transaction history in Azure SQL; no token, password, real e-mail address, or real financial identifier is stored. Setup and operations are documented in [`docs/azure-customer-authentication.md`](docs/azure-customer-authentication.md).
 
 Every request emits structured telemetry with `request_id`, `trace_id`, route, status, latency, and safe decision metadata such as `decision_id` and `policy_version` when available. Full `customer_context` payloads are intentionally excluded from access logs. OpenTelemetry instrumentation can export traces to Application Insights when the optional observability dependencies and connection string are configured.
 

@@ -1,0 +1,184 @@
+name: Deploy Demo Web
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Container image tag to deploy. Defaults to the current commit SHA."
+        required: false
+        default: ""
+      environment:
+        description: "GitHub environment used for Azure OIDC."
+        required: true
+        default: "mvp"
+      container_app_name:
+        description: "Azure Container App name for the ECloe Market/Pay demo."
+        required: true
+        default: "ecloe-demo-web"
+      containerapp_environment:
+        description: "Azure Container Apps environment name."
+        required: true
+        default: "ecloe-demo-aca-env"
+      location:
+        description: "Azure region for the Container Apps environment when it must be created."
+        required: true
+        default: "chilecentral"
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy-demo-web:
+    name: Build, push, and deploy Demo Market/Pay
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Azure login
+        uses: azure/login@v3
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Resolve image tag
+        id: image
+        shell: bash
+        run: |
+          TAG="${{ inputs.image_tag }}"
+          if [ -z "$TAG" ]; then
+            TAG="${GITHUB_SHA}"
+          fi
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "image=${{ vars.ACR_LOGIN_SERVER }}/ecloe-demo-web:${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build demo image
+        run: |
+          docker build \
+            --file Dockerfile.demo \
+            --build-arg VCS_REF="${GITHUB_SHA}" \
+            --build-arg VERSION="${{ steps.image.outputs.tag }}" \
+            --tag "${{ steps.image.outputs.image }}" \
+            .
+
+      - name: Smoke local demo image
+        shell: bash
+        run: |
+          docker run -d --rm --name ecloe-demo-web-smoke -p 8000:8000 \
+            -e APP_ENVIRONMENT=local \
+            -e ECLOE_WEB_AUTH_MODE=local \
+            -e ECLOE_PAY_DATABASE_MODE=memory \
+            -e ECLOE_MARKET_DATABASE_MODE=memory \
+            -e ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json \
+            -e ECLOE_PAY_COOKIE_SECURE=true \
+            "${{ steps.image.outputs.image }}"
+          trap 'docker stop ecloe-demo-web-smoke' EXIT
+          for i in {1..30}; do
+            if curl --fail --silent --show-error --output /dev/null http://127.0.0.1:8000/market; then
+              break
+            fi
+            sleep 2
+          done
+          curl --fail --silent --show-error --output /dev/null http://127.0.0.1:8000/market
+          curl --fail --silent --show-error --output /dev/null http://127.0.0.1:8000/pay/login
+
+      - name: Push image
+        run: |
+          az acr login --name "${{ vars.ACR_NAME }}"
+          docker push "${{ steps.image.outputs.image }}"
+
+      - name: Ensure Container Apps environment exists
+        shell: bash
+        run: |
+          if ! az containerapp env show \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ inputs.containerapp_environment }}" >/dev/null 2>&1; then
+            az containerapp env create \
+              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --name "${{ inputs.containerapp_environment }}" \
+              --location "${{ inputs.location }}"
+          fi
+
+      - name: Deploy Container App
+        shell: bash
+        run: |
+          ENV_VARS=(
+            APP_ENVIRONMENT=cloud
+            ECLOE_PAY_DATABASE_MODE=azure_sql
+            ECLOE_MARKET_DATABASE_MODE=azure_sql
+            ECLOE_PAY_SQL_SERVER=${{ vars.ECLOE_PAY_SQL_SERVER }}
+            ECLOE_PAY_SQL_DATABASE=${{ vars.ECLOE_PAY_SQL_DATABASE }}
+            ECLOE_PAY_SQL_AUTH_MODE=managed_identity
+            ECLOE_PAY_SQL_DRIVER="ODBC Driver 18 for SQL Server"
+            ECLOE_WEB_AUTH_MODE=entra_external
+            ECLOE_WEB_ENTRA_AUTHORITY=${{ vars.ECLOE_WEB_ENTRA_AUTHORITY }}
+            ECLOE_WEB_ENTRA_CLIENT_ID=${{ vars.ECLOE_WEB_ENTRA_CLIENT_ID }}
+            ECLOE_WEB_ENTRA_CLIENT_SECRET=secretref:entra-client-secret
+            ECLOE_WEB_ENTRA_REDIRECT_URI=${{ vars.ECLOE_DEMO_WEB_BASE_URL }}/auth/callback
+            ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI=${{ vars.ECLOE_DEMO_WEB_BASE_URL }}/
+            ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json
+            ECLOE_PAY_COOKIE_SECURE=true
+          )
+
+          if ! az containerapp show \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ inputs.container_app_name }}" >/dev/null 2>&1; then
+            az containerapp create \
+              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --name "${{ inputs.container_app_name }}" \
+              --environment "${{ inputs.containerapp_environment }}" \
+              --image "${{ steps.image.outputs.image }}" \
+              --ingress external \
+              --target-port 8000 \
+              --min-replicas 1 \
+              --max-replicas 2 \
+              --cpu 0.25 \
+              --memory 0.5Gi \
+              --system-assigned \
+              --registry-server "${{ vars.ACR_LOGIN_SERVER }}" \
+              --registry-identity system \
+              --env-vars "${ENV_VARS[@]}"
+          fi
+
+          PRINCIPAL_ID="$(az containerapp show \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ inputs.container_app_name }}" \
+            --query identity.principalId -o tsv)"
+          if [ "$(az role assignment list \
+            --assignee-object-id "${PRINCIPAL_ID}" \
+            --scope "${{ vars.ECLOE_KEY_VAULT_ID }}" \
+            --role "Key Vault Secrets User" \
+            --query 'length(@)' -o tsv)" = "0" ]; then
+            az role assignment create \
+              --assignee-object-id "${PRINCIPAL_ID}" \
+              --assignee-principal-type ServicePrincipal \
+              --scope "${{ vars.ECLOE_KEY_VAULT_ID }}" \
+              --role "Key Vault Secrets User"
+          fi
+          az containerapp secret set \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ inputs.container_app_name }}" \
+            --secrets "entra-client-secret=keyvaultref:${{ vars.ECLOE_WEB_ENTRA_CLIENT_SECRET_URI }},identityref:system"
+          az containerapp update \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ inputs.container_app_name }}" \
+            --image "${{ steps.image.outputs.image }}" \
+            --set-env-vars "${ENV_VARS[@]}"
+
+      - name: Smoke deployed demo
+        shell: bash
+        run: |
+          FQDN="$(az containerapp show \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ inputs.container_app_name }}" \
+            --query "properties.configuration.ingress.fqdn" \
+            -o tsv)"
+          echo "Demo URL: https://${FQDN}"
+          curl --retry 12 --retry-delay 10 --retry-connrefused --fail --silent --show-error --output /dev/null "https://${FQDN}/healthz"
+          curl --retry 12 --retry-delay 10 --retry-connrefused --fail --silent --show-error --output /dev/null "https://${FQDN}/market"
+          curl --retry 12 --retry-delay 10 --retry-connrefused --fail --silent --show-error --output /dev/null "https://${FQDN}/pay/login"

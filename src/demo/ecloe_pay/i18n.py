@@ -12,6 +12,10 @@ LOCALE_COOKIE_NAME = "ecloe_pay_locale"
 SUPPORTED_LOCALES = ("pt-BR", "en-US")
 
 I18N_DIR = Path(__file__).resolve().parent / "i18n"
+MESSAGE_FILES = {
+    "pt-BR": I18N_DIR / "pt-BR.json",
+    "en-US": I18N_DIR / "en-US.json",
+}
 
 
 def normalize_locale(value: str | None) -> str | None:
@@ -23,6 +27,10 @@ def normalize_locale(value: str | None) -> str | None:
     if normalized.startswith("en"):
         return "en-US"
     return normalized if normalized in SUPPORTED_LOCALES else None
+
+
+def canonical_locale(value: str | None) -> str:
+    return normalize_locale(value) or DEFAULT_LOCALE
 
 
 def resolve_locale(request: Request) -> str:
@@ -41,7 +49,7 @@ def resolve_locale(request: Request) -> str:
 @lru_cache(maxsize=len(SUPPORTED_LOCALES))
 def load_messages(locale: str) -> dict[str, Any]:
     effective_locale = normalize_locale(locale) or DEFAULT_LOCALE
-    path = I18N_DIR / f"{effective_locale}.json"
+    path = MESSAGE_FILES[effective_locale]
     with path.open(encoding="utf-8") as source:
         data = json.load(source)
     return data if isinstance(data, dict) else {}

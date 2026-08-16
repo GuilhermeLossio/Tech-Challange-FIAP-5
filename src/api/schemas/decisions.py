@@ -15,9 +15,6 @@ class Channel(StrEnum):
 
 
 class OfferId(StrEnum):
-    mens_email = "mens_email"
-    womens_email = "womens_email"
-    no_email = "no_email"
     cashback_recurring_purchase = "cashback_recurring_purchase"
     savings_goal = "savings_goal"
     financial_education = "financial_education"
@@ -46,7 +43,7 @@ class CustomerContext(StrictApiModel):
 class DecisionRequest(StrictApiModel):
     request_id: str = Field(min_length=1, max_length=64)
     customer_context: CustomerContext
-    eligible_offers: list[OfferId] = Field(min_length=1, max_length=10)
+    eligible_offers: list[OfferId] = Field(min_length=1, max_length=8)
 
     @field_validator("eligible_offers")
     @classmethod

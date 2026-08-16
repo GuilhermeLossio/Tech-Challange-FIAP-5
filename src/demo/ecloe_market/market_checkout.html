@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="{{ lang }}">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{{ t("market.checkoutTitle") }} - ECloe Market</title>
+  <link rel="stylesheet" href="/market/assets/market.css" />
+</head>
+<body class="market-body marketplace-body">
+  <header class="marketplace-header">
+    <div class="marketplace-header-main">
+      <a class="marketplace-logo" href="/market" aria-label="ECloe Market">
+        <span class="brand-sprite sprite-art sprite-brand-mark" aria-hidden="true"></span>
+        <strong>ECloe Market</strong>
+      </a>
+      <nav class="marketplace-actions" aria-label="{{ t('market.navAria') }}">
+        <a href="/market">{{ t("market.continueShopping") }}</a>
+        <a class="cart-link" href="/market/cart">{{ t("market.cart") }} <span data-cart-count>0</span></a>
+        <span class="identity-chip">{{ t("market.loggedInAs") }} {{ user.display_name }}</span>
+      </nav>
+    </div>
+  </header>
+
+  <main
+    class="cart-page checkout-page"
+    data-local-checkout-page
+    data-quantity-label="{{ t('market.quantity') }}"
+    data-cart-changed-label="{{ t('market.cartChanged') }}"
+    data-stock-label="{{ t('market.stockReview') }}"
+  >
+    <section class="purchase-confirmation" data-purchase-confirmation hidden aria-live="polite">
+      <div class="purchase-confirmation-icon" aria-hidden="true">✓</div>
+      <h1>{{ t("market.purchaseThankYou") }}</h1>
+      <p>{{ t("market.purchaseCompleteCopy") }}</p>
+      <div class="purchase-confirmation-details">
+        <div><span>{{ t("market.purchaseOrder") }}</span><strong data-confirmation-order></strong></div>
+        <div><span>{{ t("market.purchaseAmount") }}</span><strong data-confirmation-total></strong></div>
+        <div><span>{{ t("market.purchaseDate") }}</span><strong data-confirmation-date></strong></div>
+      </div>
+      <a class="primary-link" href="/market">{{ t("market.backToMarket") }}</a>
+    </section>
+    <section class="cart-items-panel checkout-items-panel" aria-labelledby="checkout-title">
+      <div class="results-header">
+        <div>
+          <p class="eyebrow">{{ t("market.demoOnly") }}</p>
+          <h1 id="checkout-title">{{ t("market.checkoutTitle") }}</h1>
+        </div>
+        <a class="secondary-link" href="/market/cart">{{ t("market.backToCart") }}</a>
+      </div>
+      <p class="checkout-lead">{{ t("market.checkoutCopy") }}</p>
+      <div class="checkout-items-heading" aria-hidden="true">
+        <span>{{ t("market.items") }}</span>
+        <span>{{ t("market.total") }}</span>
+      </div>
+      <div class="cart-item-list checkout-item-list" data-local-checkout-items></div>
+    </section>
+
+    <aside class="cart-summary-panel checkout-summary" aria-labelledby="summary-title">
+      <div class="checkout-summary-heading">
+        <p class="eyebrow">{{ t("market.demoOnly") }}</p>
+        <h2 id="summary-title">{{ t("market.summary") }}</h2>
+      </div>
+      <dl>
+        <div>
+          <dt>{{ t("market.items") }}</dt>
+          <dd data-cart-count>0</dd>
+        </div>
+        <div>
+          <dt>{{ t("market.total") }}</dt>
+          <dd data-cart-total>R$ 0,00</dd>
+        </div>
+      </dl>
+      <p class="synthetic-note checkout-note">{{ t("market.checkoutDemoCopy") }}</p>
+      <button class="primary-link full-width" type="button" data-start-checkout>{{ t("market.payWithWallet") }}</button>
+      <p class="checkout-status" data-checkout-status role="status" aria-live="polite"></p>
+      <a class="secondary-link full-width" href="/market/cart">{{ t("market.backToCart") }}</a>
+    </aside>
+  </main>
+  <script src="/market/assets/market.js?v=4"></script>
+</body>
+</html>

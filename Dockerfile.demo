@@ -1,0 +1,48 @@
+FROM python:3.14.6-slim
+
+ARG VCS_REF=unknown
+ARG VERSION=0.1.0
+
+LABEL org.opencontainers.image.title="ecloe-demo-web" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.revision="${VCS_REF}"
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PORT=8000 \
+    APP_ENVIRONMENT=cloud \
+    ECLOE_PAY_DATABASE_MODE=azure_sql \
+    ECLOE_MARKET_DATABASE_MODE=azure_sql \
+    ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json \
+    ECLOE_PAY_COOKIE_SECURE=true
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates curl gcc g++ unixodbc-dev \
+    && curl -sSL -o /tmp/packages-microsoft-prod.deb \
+      "https://packages.microsoft.com/config/debian/$(. /etc/os-release && echo ${VERSION_ID%%.*})/packages-microsoft-prod.deb" \
+    && dpkg -i /tmp/packages-microsoft-prod.deb \
+    && apt-get update \
+    && ACCEPT_EULA=Y apt-get install -y --no-install-recommends msodbcsql18 \
+    && rm -rf /var/lib/apt/lists/* /tmp/packages-microsoft-prod.deb \
+    && addgroup --system ecloe \
+    && adduser --system --ingroup ecloe ecloe
+
+COPY pyproject.toml requirements.lock README.md ./
+COPY src ./src
+COPY data/demo ./data/demo
+
+RUN python -m pip install --upgrade pip \
+    && python -m pip install --no-cache-dir --requirement requirements.lock \
+    && python -m pip install --no-cache-dir --no-deps . \
+    && apt-get purge -y --auto-remove gcc g++ unixodbc-dev
+
+USER ecloe
+
+EXPOSE 8000
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD python -c "import os,urllib.request; urllib.request.urlopen('http://127.0.0.1:%s/healthz' % os.getenv('PORT','8000'), timeout=3).read()"
+
+CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:${PORT:-8000} src.demo.app:app --workers 1 --threads 4 --timeout 60"]

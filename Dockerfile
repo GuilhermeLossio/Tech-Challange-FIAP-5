@@ -22,7 +22,8 @@ COPY scripts ./scripts
 COPY reports ./reports
 
 RUN python -m pip install --upgrade pip \
-    && python -m pip install --no-cache-dir -e ".[azure,observability]"
+    && python -m pip install --no-cache-dir --requirement requirements.lock \
+    && python -m pip install --no-cache-dir --no-deps .
 
 USER ecloe
 

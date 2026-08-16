@@ -49,7 +49,12 @@ def test_pay_wallet_markup_uses_accessible_semantics() -> None:
     assert '<nav class="quick-actions" aria-label="{{ t("wallet.quickActionsAria") }}">' in html
     assert 'class="nav-link active"' in html
     assert 'role="progressbar"' in html
-    assert 'aria-valuenow="64"' in html
+    assert 'aria-valuenow="0"' in html
+    assert 'id="balanceAmount" class="wallet-loading-value" aria-busy="true"' in html
+    assert 'id="cashbackAmount" class="wallet-loading-value" aria-busy="true"' in html
+    assert 'id="paymentAmount" class="wallet-loading-value" aria-busy="true"' in html
+    assert 'id="loanAmount" class="wallet-loading-value" aria-busy="true"' in html
+    assert 't("wallet.loading")' in html
     assert 'role="status"' in html
     assert 'aria-live="polite"' in html
     assert 'formmethod="dialog">{{ t("wallet.cancel") }}' in html
@@ -66,6 +71,7 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
 
     assert "CREATE SCHEMA ecloe_pay" in schema
     assert "ecloe_pay.payment_orders" in schema
+    assert "ecloe_pay.loan_requests" in schema
     assert "ecloe_pay.benefit_interactions" in schema
     assert "ecloe_pay.demo_users" in schema
     assert "ecloe_pay.demo_user_profiles" in schema
@@ -94,14 +100,19 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
     assert "ix_demo_user_profiles_country" in schema
     assert "ix_demo_sessions_user" in schema
     assert "ix_payment_orders_session" in schema
+    assert "ix_loan_requests_user" in schema
     assert "ix_benefit_interactions_session" in schema
     assert "ix_outbox_events_unpublished" in schema
+    assert "ix_signup_registrations_success_ip" in schema
+    assert "CREATE UNIQUE INDEX ux_signup_registrations_success_ip" not in schema
     assert "TIMESTAMPTZ" not in schema
     assert "JSONB" not in schema
     assert "ON CONFLICT" not in schema
     assert "CREATE TABLE IF NOT EXISTS" not in schema
     assert "DATETIME2" not in schema
     assert "now()" not in schema_lower
+    assert "ck_loan_requests_status CHECK (status IN (N'requested', N'under_review', N'cancelled'))" in schema
+    assert "loan_requests_status CHECK (status IN (N'approved" not in schema_lower
     for forbidden_column in [
         "cpf",
         "document_number",
@@ -112,6 +123,9 @@ def test_pay_demo_has_dedicated_azure_sql_schema_and_bucket() -> None:
         "agency",
         "routing_number",
         "account_number",
+        "credit_score",
+        "income",
+        "wealth",
     ]:
         assert forbidden_column not in schema_lower
 
@@ -132,6 +146,7 @@ def test_pay_repositories_expose_shared_contract_and_hide_sqlalchemy_from_routes
         "accept_terms",
         "record_benefit_interaction",
         "get_payment_order",
+        "loan_requests",
         "simulate_payment",
         "reset_demo_state",
         "health_check",
@@ -147,6 +162,7 @@ def test_pay_repositories_expose_shared_contract_and_hide_sqlalchemy_from_routes
 def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
     app_source = (PAY_DEMO / "app.py").read_text(encoding="utf-8")
     script = (PAY_DEMO / "app.js").read_text(encoding="utf-8")
+    login_script = (PAY_DEMO / "login.js").read_text(encoding="utf-8")
     login = (PAY_DEMO / "login.html").read_text(encoding="utf-8")
     azure_source = (PAY_DEMO / "repositories" / "azure_sql.py").read_text(encoding="utf-8")
 
@@ -157,16 +173,31 @@ def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
     assert "samesite=\"Lax\"" in app_source
     assert "path=\"/\"" in app_source
     assert "max_age=settings.ecloe_pay_session_ttl_seconds" in app_source
-    assert "settings.app_environment != \"local\"" in app_source
-    assert "hmac.compare_digest" in app_source
+    assert "service_cookie_secure" in app_source
+    assert "csrf_matches" in app_source
     assert "request.cookies.get(CSRF_COOKIE_NAME) or secrets.token_urlsafe" not in app_source
     assert "LOGIN_RATE_LIMIT_ATTEMPTS" in app_source
     assert "Cache-Control" in app_source
     assert "redirect(_localized_login_url(locale))" in app_source
     assert "make_response" in app_source
-    assert "session[" not in app_source
+    assert "csrf_token(session)" in app_source
+    assert "_rotate_csrf_token" in app_source
+    assert "SharedRateLimiter" in app_source
+    assert "app.secret_key = settings.flask_secret_key" in app_source
+    assert "SignupIpLimitExceeded" not in app_source
     assert "X-CSRF-Token" in script
-    assert "X-CSRF-Token" in login
+    assert "X-CSRF-Token" in login_script
+    assert 'src="../login.js"' in login
+    assert "login-loading-state" in login
+    assert "pixel-loader" in login
+    assert 'method="post"' in login
+    assert 'action="/api/auth/login"' in login
+    assert 'autocomplete="username"' in login
+    assert 'autocomplete="current-password"' in login
+    assert "setPending(true)" in login_script
+    assert "aria-busy" in login_script
+    assert "input.readOnly = pending" in login_script
+    assert "input.disabled = pending" not in login_script
     assert "token_hash(raw_token)" in azure_source
     logger_lines = [line.lower() for line in app_source.splitlines() if "LOGGER.info" in line]
     assert logger_lines
@@ -192,11 +223,12 @@ def test_pay_azure_sql_repository_uses_explicit_transactions_and_conditional_pay
 def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     script = (PAY_DEMO / "app.js").read_text(encoding="utf-8")
     index = (PAY_DEMO / "index.html").read_text(encoding="utf-8")
+    wallet_styles = (PAY_DEMO / "wallet.css").read_text(encoding="utf-8")
 
     assert "transactionLocked" in script
-    assert "Previa duplicada ignorada" in script
+    assert "Tentativa duplicada ignorada" in script
     assert "confirmationCode" in script
-    assert "pre-visualizado" in script
+    assert "backend Flask" in script
     assert "localStorage" not in script
     assert "/api/auth/me" in script
     assert "/api/auth/logout" in script
@@ -204,8 +236,17 @@ def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     assert "sql_schema" not in script
     assert "database_provider" in script
     assert "database_schema" in script
-    assert "Modo apresentacao" in script
-    assert 't("wallet.presentationMode")' in index
+    assert "Backend indisponivel" in script
+    assert "formatMoney" in script
+    assert "renderSession(body)" in script
+    assert "setLoadedText" in script
+    assert "wallet-loading-value" in script
+    assert ".pixel-loader" in wallet_styles
+    assert "@keyframes pixel-on" in wallet_styles
+    assert "@keyframes shimmer-text" in wallet_styles
+    for fixed_value in ("R$ 428,70", "R$ 18,40", "64%", "R$ 127,90"):
+        assert fixed_value not in index
+    assert 't("wallet.loading")' in index
     assert "postgres_schema" not in index
     assert "PostgreSQL" not in index
 
@@ -214,6 +255,7 @@ def test_pay_login_page_matches_demo_identity_and_csrf_flow() -> None:
     login = (PAY_DEMO / "login.html").read_text(encoding="utf-8")
     core_styles = (PAY_DEMO / "core.css").read_text(encoding="utf-8")
     login_styles = (PAY_DEMO / "login.css").read_text(encoding="utf-8")
+    login_script = (PAY_DEMO / "login.js").read_text(encoding="utf-8")
     pt = i18n_messages("pt-BR")
 
     assert 't("login.badge")' in login
@@ -222,7 +264,7 @@ def test_pay_login_page_matches_demo_identity_and_csrf_flow() -> None:
     assert pt["login"]["eyebrow"] == "Carteira 100% simulada"
     assert "Azure SQL" in pt["login"]["copy"]
     assert 'href="../login.css"' in login
-    assert "X-CSRF-Token" in login
+    assert "X-CSRF-Token" in login_script
     assert 'id="loginForm"' in login
     assert 'id="email"' in login
     assert 'id="password"' in login
@@ -240,6 +282,25 @@ def test_pay_login_page_matches_demo_identity_and_csrf_flow() -> None:
     assert "--color-mint-soft: #e3fbf3" in core_styles
     assert ".login-eyebrow" in login_styles
     assert ".login-safety-list" in login_styles
+    assert ".pixel-loader" in login_styles
+    assert "@keyframes pixel-on" in login_styles
+    assert "@keyframes shimmer-text" in login_styles
+
+
+def test_pay_register_page_uses_pending_submit_state() -> None:
+    register = (PAY_DEMO / "register.html").read_text(encoding="utf-8")
+    register_script = (PAY_DEMO / "register.js").read_text(encoding="utf-8")
+
+    assert "login-loading-state" in register
+    assert "pixel-loader" in register
+    assert 't("register.loading")' in register
+    assert 'action="/api/auth/register"' in register
+    assert 'autocomplete="new-password"' in register
+    assert "setPending(true)" in register_script
+    assert "aria-busy" in register_script
+    assert "input.readOnly = pending" in register_script
+    assert "input.disabled = pending" not in register_script
+    assert "form.querySelectorAll(\"input\")" in register_script
 
 
 def test_pay_demo_css_is_split_by_page_and_uses_shared_utilities() -> None:
@@ -321,6 +382,7 @@ def test_pay_sql_firewall_scripts_keep_local_ip_rule_narrow() -> None:
     assert "Type ENABLE" in allow_script
     assert "--enable-public-network" in allow_script
     assert '$ip -eq "0.0.0.0"' in allow_script
+    assert "https://api.ipify.org?format=text" in allow_script
     assert "--start-ip-address" in allow_script
     assert "--end-ip-address" in allow_script
     assert ".\\scripts\\remove_current_sql_client_ip.ps1" in allow_script

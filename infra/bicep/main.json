@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.45.15.27210",
-      "templateHash": "11169623932283566832"
+      "templateHash": "13313891041002299277"
     }
   },
   "parameters": {
@@ -27,6 +27,20 @@
       "type": "string",
       "metadata": {
         "description": "Container image tag to deploy, for example <acr>.azurecr.io/ecloe-engine:<git-sha>."
+      }
+    },
+    "acrName": {
+      "type": "string",
+      "defaultValue": "ecloedemo1266",
+      "metadata": {
+        "description": "Existing Azure Container Registry name that contains the deployed image."
+      }
+    },
+    "containerAppsEnvironmentName": {
+      "type": "string",
+      "defaultValue": "ecloe-demo-aca-env",
+      "metadata": {
+        "description": "Existing Azure Container Apps environment name reused by the Engine runtime."
       }
     },
     "cosmosAccountName": {
@@ -76,10 +90,31 @@
         "description": "Microsoft Entra client/application ID for the API."
       }
     },
-    "subjectKeySalt": {
-      "type": "securestring",
+    "keyVaultName": {
+      "type": "string",
       "metadata": {
-        "description": "Subject-key salt should come from a secure deployment parameter or Key Vault reference."
+        "description": "Existing Key Vault containing runtime secrets."
+      }
+    },
+    "flaskSecretName": {
+      "type": "string",
+      "defaultValue": "ecloe-flask-secret-key",
+      "metadata": {
+        "description": "Key Vault secret name for the Flask signing key."
+      }
+    },
+    "subjectKeySaltSecretName": {
+      "type": "string",
+      "defaultValue": "ecloe-subject-key-salt",
+      "metadata": {
+        "description": "Key Vault secret name for the subject pseudonymization salt."
+      }
+    },
+    "rateLimitRedisSecretName": {
+      "type": "string",
+      "defaultValue": "ecloe-rate-limit-redis-url",
+      "metadata": {
+        "description": "Key Vault secret name containing the Redis URL."
       }
     },
     "targetPort": {
@@ -92,27 +127,13 @@
   },
   "variables": {
     "unique": "[uniqueString(resourceGroup().id, parameters('environmentName'))]",
-    "acrName": "[toLower(format('ecloeacr{0}', variables('unique')))]",
     "storageName": "[toLower(format('ecloeart{0}', variables('unique')))]",
-    "logName": "[format('ecloe-log-{0}', parameters('environmentName'))]",
     "appInsightsName": "[format('ecloe-ai-{0}', parameters('environmentName'))]",
-    "envName": "[format('ecloe-aca-env-{0}', parameters('environmentName'))]",
     "appName": "[format('ecloe-engine-{0}', parameters('environmentName'))]",
-    "artifactContainerName": "ecloe-artifacts"
+    "artifactContainerName": "ecloe-artifacts",
+    "keyVaultSecretIdentity": "system"
   },
   "resources": [
-    {
-      "type": "Microsoft.ContainerRegistry/registries",
-      "apiVersion": "2023-11-01-preview",
-      "name": "[variables('acrName')]",
-      "location": "[parameters('location')]",
-      "sku": {
-        "name": "Basic"
-      },
-      "properties": {
-        "adminUserEnabled": false
-      }
-    },
     {
       "type": "Microsoft.Storage/storageAccounts",
       "apiVersion": "2023-05-01",
@@ -139,48 +160,14 @@
       ]
     },
     {
-      "type": "Microsoft.OperationalInsights/workspaces",
-      "apiVersion": "2023-09-01",
-      "name": "[variables('logName')]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "sku": {
-          "name": "PerGB2018"
-        },
-        "retentionInDays": 30
-      }
-    },
-    {
       "type": "Microsoft.Insights/components",
       "apiVersion": "2020-02-02",
       "name": "[variables('appInsightsName')]",
       "location": "[parameters('location')]",
       "kind": "web",
       "properties": {
-        "Application_Type": "web",
-        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logName'))]"
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logName'))]"
-      ]
-    },
-    {
-      "type": "Microsoft.App/managedEnvironments",
-      "apiVersion": "2024-03-01",
-      "name": "[variables('envName')]",
-      "location": "[parameters('location')]",
-      "properties": {
-        "appLogsConfiguration": {
-          "destination": "log-analytics",
-          "logAnalyticsConfiguration": {
-            "customerId": "[reference(resourceId('Microsoft.OperationalInsights/workspaces', variables('logName')), '2023-09-01').customerId]",
-            "sharedKey": "[listKeys(resourceId('Microsoft.OperationalInsights/workspaces', variables('logName')), '2023-09-01').primarySharedKey]"
-          }
-        }
-      },
-      "dependsOn": [
-        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logName'))]"
-      ]
+        "Application_Type": "web"
+      }
     },
     {
       "type": "Microsoft.App/containerApps",
@@ -191,7 +178,7 @@
         "type": "SystemAssigned"
       },
       "properties": {
-        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('envName'))]",
+        "managedEnvironmentId": "[resourceId('Microsoft.App/managedEnvironments', parameters('containerAppsEnvironmentName'))]",
         "configuration": {
           "activeRevisionsMode": "Multiple",
           "ingress": {
@@ -201,12 +188,23 @@
           "secrets": [
             {
               "name": "subject-key-salt",
-              "value": "[parameters('subjectKeySalt')]"
+              "identity": "[variables('keyVaultSecretIdentity')]",
+              "keyVaultUrl": "[format('{0}secrets/{1}', reference(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), '2023-07-01').vaultUri, parameters('subjectKeySaltSecretName'))]"
+            },
+            {
+              "name": "flask-secret-key",
+              "identity": "[variables('keyVaultSecretIdentity')]",
+              "keyVaultUrl": "[format('{0}secrets/{1}', reference(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), '2023-07-01').vaultUri, parameters('flaskSecretName'))]"
+            },
+            {
+              "name": "rate-limit-redis-url",
+              "identity": "[variables('keyVaultSecretIdentity')]",
+              "keyVaultUrl": "[format('{0}secrets/{1}', reference(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), '2023-07-01').vaultUri, parameters('rateLimitRedisSecretName'))]"
             }
           ],
           "registries": [
             {
-              "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2023-11-01-preview').loginServer]",
+              "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), '2023-11-01-preview').loginServer]",
               "identity": "system"
             }
           ]
@@ -246,6 +244,18 @@
                   "value": "[format('api://{0}', parameters('entraClientId'))]"
                 },
                 {
+                  "name": "RATE_LIMIT_BACKEND",
+                  "value": "redis"
+                },
+                {
+                  "name": "RATE_LIMIT_REDIS_URL",
+                  "secretRef": "rate-limit-redis-url"
+                },
+                {
+                  "name": "FLASK_SECRET_KEY",
+                  "secretRef": "flask-secret-key"
+                },
+                {
                   "name": "SUBJECT_KEY_SALT",
                   "secretRef": "subject-key-salt"
                 },
@@ -280,6 +290,14 @@
                 {
                   "name": "AZURE_ARTIFACT_PROMOTION_BLOB",
                   "value": "promoted/current.json"
+                },
+                {
+                  "name": "AZURE_ARTIFACT_PROMOTION_BLOB_MARKET",
+                  "value": "promoted/market/current.json"
+                },
+                {
+                  "name": "AZURE_ARTIFACT_PROMOTION_BLOB_PAY",
+                  "value": "promoted/pay/current.json"
                 },
                 {
                   "name": "ARTIFACT_CACHE_DIR",
@@ -323,10 +341,104 @@
         }
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
         "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
-        "[resourceId('Microsoft.App/managedEnvironments', variables('envName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('ecloe-{0}-failed-requests', parameters('environmentName'))]",
+      "location": "global",
+      "properties": {
+        "description": "Alert when Engine failed requests exceed the 1% SLO budget.",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+        ],
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "failed-requests",
+              "criterionType": "StaticThresholdCriterion",
+              "metricName": "requests/failed",
+              "operator": "GreaterThan",
+              "threshold": 1,
+              "timeAggregation": "Count"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('ecloe-{0}-latency', parameters('environmentName'))]",
+      "location": "global",
+      "properties": {
+        "description": "Alert when request latency breaches the 500 ms p95 SLO.",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+        ],
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "latency",
+              "criterionType": "StaticThresholdCriterion",
+              "metricName": "requests/duration",
+              "operator": "GreaterThan",
+              "threshold": 500,
+              "timeAggregation": "Average"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('ecloe-{0}-availability', parameters('environmentName'))]",
+      "location": "global",
+      "properties": {
+        "description": "Alert when availability falls below the 99.5% SLO.",
+        "severity": 1,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+        ],
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "availability",
+              "criterionType": "StaticThresholdCriterion",
+              "metricName": "availabilityResults/availabilityPercentage",
+              "operator": "LessThan",
+              "threshold": "[div(995, 10)]",
+              "timeAggregation": "Average"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
       ]
     },
     {
@@ -347,15 +459,28 @@
     {
       "type": "Microsoft.Authorization/roleAssignments",
       "apiVersion": "2022-04-01",
-      "scope": "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
-      "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), variables('appName'), 'AcrPull')]",
+      "scope": "[resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName'))]",
+      "name": "[guid(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), variables('appName'), 'AcrPull')]",
       "properties": {
         "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '7f951dda-4ed3-4680-a7ca-43fe172d538d')]",
         "principalId": "[reference(resourceId('Microsoft.App/containerApps', variables('appName')), '2024-03-01', 'full').identity.principalId]",
         "principalType": "ServicePrincipal"
       },
       "dependsOn": [
-        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+        "[resourceId('Microsoft.App/containerApps', variables('appName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), variables('appName'), 'Key Vault Secrets User')]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+        "principalId": "[reference(resourceId('Microsoft.App/containerApps', variables('appName')), '2024-03-01', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
         "[resourceId('Microsoft.App/containerApps', variables('appName'))]"
       ]
     }
@@ -371,7 +496,7 @@
     },
     "acrLoginServer": {
       "type": "string",
-      "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2023-11-01-preview').loginServer]"
+      "value": "[reference(resourceId('Microsoft.ContainerRegistry/registries', parameters('acrName')), '2023-11-01-preview').loginServer]"
     },
     "storageAccountName": {
       "type": "string",
