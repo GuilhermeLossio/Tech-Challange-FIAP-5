@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 permissions:
   actions: read
@@ -94,6 +95,9 @@ jobs:
 
   sql-integration:
     name: Azure SQL integration contracts
+    # Pull-request jobs cannot assume that the protected Azure environment is
+    # configured. Run the real Azure SQL gate explicitly or after merge.
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: ci-sql
     permissions:
@@ -116,7 +120,7 @@ jobs:
           python -m pip install --no-deps -e .
 
       - name: Azure login
-        uses: azure/login@v2
+        uses: azure/login@v3
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
