@@ -16,6 +16,11 @@ jobs:
   test:
     name: Ruff, tests, coverage, audit
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
+      security-events: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7

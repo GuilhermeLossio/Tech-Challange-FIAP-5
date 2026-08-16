@@ -6,6 +6,14 @@ id = "generic-api-key"
 
   [[rules.allowlists]]
   description = "Pseudonymous subject key passed as a repository lookup parameter"
+  condition = "AND"
   regexTarget = "line"
   regexes = [ '''subject_key\s*=\s*subject_key''' ]
   paths = [ '''src/api/routers/recommendations\.py''' ]
+
+  [[rules.allowlists]]
+  description = "Synthetic signup password used only by the Flask test fixture"
+  condition = "AND"
+  regexTarget = "secret"
+  regexes = [ '''^strong-pass-1234$''' ]
+  paths = [ '''^tests/test_ecloe_pay_flask\.py$''' ]
