@@ -354,6 +354,18 @@ Confidence is low below 10 samples, medium from 10 to 49, and high from 50 sampl
 
 **Risks:** selection bias, delayed outcomes, small cohorts, and poor calibration. Use temporal evaluation, propensity metadata, smoothing, and baseline guardrails.
 
+### Reliable offline evaluation
+
+Market and Pay are evaluated as independent bandit datasets. Each row contains the minimized context, eligible candidates, logged action, terminal observed outcome, behavior policy/version, behavior propensity, artifact version/checksum, timestamp, and an origin marker (`observed` or `synthetic`). Subject keys and technical IDs are lineage fields only and are excluded from features.
+
+The temporal split is 70% train, 15% validation, and 15% test. The reward model `q(x,a)` is fitted only on train; policy selection uses validation DR; the test split is read once after the policy is frozen. The primary estimator is:
+
+`DR = q(x,π(x)) + I(a_log = π(x)) / max(p_log, 0.01) * (r - q(x,a_log))`
+
+IPS and SNIPS are required diagnostics. Reports include clipping rate, overlap/support, coverage, effective sample size, grouped bootstrap confidence intervals, and excluded invalid-propensity rows. Missing, non-finite, zero, or greater-than-one propensities are not causally evaluable. Deterministic actions may record propensity `1.0`, but their limited counterfactual support is reported.
+
+Observed terminal events are surface-specific: Market uses purchase/conversion versus expired; Pay uses acceptance/conversion versus rejection/dismissal/expired. Synthetic simulator data is labeled `synthetic_demo` and is never eligible for selection or promotion. Observed and synthetic metrics cannot be compared directly.
+
 **Market role:** estimates probability of verified product purchase.
 
 **Pay role:** estimates probability of eligible benefit acceptance.

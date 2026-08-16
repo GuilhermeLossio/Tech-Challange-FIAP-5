@@ -93,6 +93,18 @@ def create_recommendation(
                 eligible_candidate_ids=[candidate.candidate_id for candidate in request.candidates],
                 ranked_candidates=ranked,
                 selection_probability=float(selected["selection_probability"]),
+                behavior_policy=decision.policy,
+                behavior_policy_version=decision.policy_version,
+                behavior_propensity=float(selected["selection_probability"]),
+                propensity_source=(
+                    "deterministic"
+                    if decision.policy == "deterministic_baseline"
+                    else "runtime_policy"
+                ),
+                candidate_propensities={
+                    item["candidate_id"]: float(item["selection_probability"])
+                    for item in ranked
+                },
             )
         )
         return saved.response

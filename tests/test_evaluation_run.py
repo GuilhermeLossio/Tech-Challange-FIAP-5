@@ -46,6 +46,9 @@ def test_run_evaluation_writes_expected_artifacts(tmp_path) -> None:
     assert expected_files == {path.name for path in output_dir.iterdir()}
 
     metrics = json.loads((output_dir / "metrics.json").read_text(encoding="utf-8"))
+    assert metrics["evaluation_mode"] == "synthetic_demo"
+    assert metrics["promotion_eligible"] is False
+    assert "simulated_reward" not in metrics
     assert {item["policy"] for item in metrics["metrics"]} == {
         "baseline",
         "epsilon_greedy",

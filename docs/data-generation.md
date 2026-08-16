@@ -60,4 +60,4 @@ Generated data should pass these checks before use:
 
 ## Limitations
 
-Synthetic offer and reward data is useful for demonstration and engineering validation, but it does not prove real-world financial performance. Results derived from this data must be labeled as offline or simulated and must not be presented as production evidence.
+Synthetic offer, interaction, and reward data is useful for demonstration and engineering validation only. It is explicitly labeled `synthetic_demo`, cannot be used for causal metrics, policy selection, or promotion, and must not be presented as production evidence. Observed terminal outcomes and synthetic simulator results are separate datasets and must not be compared directly.

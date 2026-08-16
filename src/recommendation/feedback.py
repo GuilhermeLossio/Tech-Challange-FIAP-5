@@ -24,6 +24,11 @@ class RecommendationFeedbackEvent:
     subject_key: str = ""
     artifact_version: str = ""
     artifact_checksum: str = ""
+    behavior_policy: str = ""
+    behavior_policy_version: str = ""
+    behavior_propensity: float | None = None
+    propensity_source: str = "missing"
+    candidate_propensities: dict[str, float] | None = None
     context: dict[str, Any] | None = None
     category_id: str | None = None
 
@@ -47,6 +52,18 @@ def canonical_event(payload: dict[str, Any]) -> RecommendationFeedbackEvent:
         subject_key=str(payload.get("subject_key", "")),
         artifact_version=str(payload.get("artifact_version", "")),
         artifact_checksum=str(payload.get("artifact_checksum", "")),
+        behavior_policy=str(payload.get("behavior_policy", "")),
+        behavior_policy_version=str(payload.get("behavior_policy_version", "")),
+        behavior_propensity=(
+            float(payload["behavior_propensity"])
+            if payload.get("behavior_propensity") is not None
+            else None
+        ),
+        propensity_source=str(payload.get("propensity_source", "missing")),
+        candidate_propensities={
+            str(key): float(value)
+            for key, value in (payload.get("candidate_propensities") or {}).items()
+        },
         context=dict(payload.get("context") or {}),
         category_id=str(payload["category_id"]) if payload.get("category_id") else None,
     )
@@ -79,6 +96,13 @@ def adapt_engine_feedback(
             "artifact_checksum": decision.get("artifact_checksum", ""),
             "context": decision.get("minimized_context", {}),
             "category_id": feedback.get("category_id"),
+            "behavior_policy": decision.get("behavior_policy", decision.get("policy", "")),
+            "behavior_policy_version": decision.get(
+                "behavior_policy_version", decision.get("policy_version", "")
+            ),
+            "behavior_propensity": decision.get("behavior_propensity"),
+            "propensity_source": decision.get("propensity_source", "missing"),
+            "candidate_propensities": decision.get("candidate_propensities", {}),
         }
     )
 
@@ -126,6 +150,13 @@ def events_from_engine_records(
                     "artifact_checksum": decision.get("artifact_checksum", ""),
                     "context": decision.get("minimized_context", {}),
                     "category_id": reward.get("category_id"),
+                    "behavior_policy": decision.get("behavior_policy", decision.get("policy", "")),
+                    "behavior_policy_version": decision.get(
+                        "behavior_policy_version", decision.get("policy_version", "")
+                    ),
+                    "behavior_propensity": decision.get("behavior_propensity"),
+                    "propensity_source": decision.get("propensity_source", "missing"),
+                    "candidate_propensities": decision.get("candidate_propensities", {}),
                 }
             )
         )

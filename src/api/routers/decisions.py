@@ -88,6 +88,11 @@ def create_decision(
                 idempotency_key=idempotency_key,
                 request_hash=payload_hash,
                 ttl=settings.decision_event_ttl_seconds,
+                behavior_policy=response.policy,
+                behavior_policy_version=response.policy_version,
+                behavior_propensity=1.0,
+                propensity_source="deterministic",
+                candidate_propensities={response.offer_id: 1.0},
             )
         )
         if hasattr(request_context, "state"):

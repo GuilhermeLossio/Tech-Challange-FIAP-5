@@ -42,6 +42,14 @@ METRIC_FIELDS = (
     "cumulative_regret",
     "exploration_rate",
 )
+CAUSAL_METRIC_FIELDS = (
+    "dr_value",
+    "ips_value",
+    "snips_value",
+    "conversion_rate",
+    "support_rate",
+    "effective_sample_size",
+)
 
 
 class ArtifactValidationFailure(ValueError):
@@ -93,7 +101,11 @@ def validate_artifacts(
     _validate_metrics(metrics_json, metrics_csv_rows, errors)
     _validate_selected_policy(selected_policy, metrics_json, errors)
     _validate_likelihood_model(likelihood_model, errors)
-    _validate_golden_set(golden_set, errors)
+    _validate_golden_set(
+        golden_set,
+        errors,
+        allow_short=metrics_json.get("evaluation_mode") == "synthetic_demo",
+    )
 
     if errors:
         raise ArtifactValidationFailure("; ".join(errors))
@@ -133,7 +145,8 @@ def _validate_metrics(
         if csv_row is None:
             errors.append(f"metrics.csv is missing policy {policy}.")
             continue
-        for field in METRIC_FIELDS:
+        fields_to_validate = CAUSAL_METRIC_FIELDS if "dr_value" in item else METRIC_FIELDS
+        for field in fields_to_validate:
             value = item.get(field)
             if not isinstance(value, int | float) or not math.isfinite(float(value)):
                 errors.append(f"Metric {policy}.{field} must be finite numeric.")
@@ -144,8 +157,15 @@ def _validate_metrics(
                 errors.append(f"Metric {policy}.{field} must be between 0 and 1.")
             if field == "cumulative_regret" and float(value) < 0:
                 errors.append(f"Metric {policy}.cumulative_regret must be non-negative.")
+            if field == "support_rate" and not 0 <= float(value) <= 1:
+                errors.append(f"Metric {policy}.support_rate must be between 0 and 1.")
             if field in csv_row and _to_number(csv_row[field]) != float(value):
                 errors.append(f"metrics.csv does not match metrics.json for {policy}.{field}.")
+    evaluation_mode = metrics_json.get("evaluation_mode")
+    if evaluation_mode not in {None, "observed_offline", "synthetic_demo"}:
+        errors.append("metrics.json has an unsupported evaluation_mode.")
+    if evaluation_mode == "synthetic_demo" and metrics_json.get("promotion_eligible") is True:
+        errors.append("Synthetic metrics cannot be promotion eligible.")
 
 
 def _validate_selected_policy(
@@ -155,7 +175,12 @@ def _validate_selected_policy(
 ) -> None:
     if selected_policy.get("schema_version") != SELECTED_POLICY_SCHEMA:
         errors.append("selected_policy.json has an incompatible schema_version.")
-    if selected_policy.get("artifact_status") != ARTIFACT_STATUS_ACTIVE:
+    allowed_statuses = {ARTIFACT_STATUS_ACTIVE}
+    if metrics_json.get("evaluation_mode") == "synthetic_demo" and metrics_json.get(
+        "promotion_eligible"
+    ) is False:
+        allowed_statuses.add("pending_review")
+    if selected_policy.get("artifact_status") not in allowed_statuses:
         errors.append("selected_policy.json must be active.")
     policy = selected_policy.get("policy")
     metrics = metrics_json.get("metrics", [])
@@ -167,7 +192,8 @@ def _validate_selected_policy(
     if not isinstance(selected_metrics, dict):
         errors.append("selected_policy.json must include metrics.")
         return
-    for field in METRIC_FIELDS:
+    selected_fields = CAUSAL_METRIC_FIELDS if "dr_value" in selected_metrics else METRIC_FIELDS
+    for field in selected_fields:
         if _to_number(selected_metrics.get(field)) != _to_number(by_policy[policy].get(field)):
             errors.append(f"selected_policy.json metrics do not match metrics.json for {field}.")
     if not selected_policy.get("version"):
@@ -201,8 +227,10 @@ def _validate_likelihood_model(model: dict[str, Any], errors: list[str]) -> None
         errors.append("purchase_likelihood_model.json must include context_columns.")
 
 
-def _validate_golden_set(golden_set: list[Any], errors: list[str]) -> None:
-    if len(golden_set) != 5:
+def _validate_golden_set(
+    golden_set: list[Any], errors: list[str], *, allow_short: bool = False
+) -> None:
+    if (allow_short and not 1 <= len(golden_set) <= 5) or (not allow_short and len(golden_set) != 5):
         errors.append("golden_set_recommendations.json must contain exactly five cases.")
     sensitive = {"history", "zip_code", "customer_id", "email", "income", "wealth"}
     for index, item in enumerate(golden_set, start=1):

@@ -10,7 +10,7 @@ ECloe treats "choice model" as the ranking policy used to select one or more eli
 
 The generation flow starts with the public Hillstrom email-campaign dataset. The local data process maps source treatment labels into neutral actions, maps observed conversion into binary reward, and removes blocked fields before training or evaluation. The output is a minimized sequence of rows with context, action, and reward.
 
-Offline evaluation then splits the processed rows into training and evaluation windows. The training window estimates reward rates per action. The evaluation window runs each policy over the same row order and a seeded reward table so policy metrics are reproducible. The runner writes metrics, policy versions, selected policy metadata, the Golden Set, Thompson state, and the purchase-likelihood artifact under `reports/policy_training/`.
+Offline evaluation uses logged outcomes and behavior propensities, not rewards generated from the model being evaluated. Data is ordered by decision time and split into 70% train, 15% validation, and 15% test. Doubly Robust is the primary estimator; IPS and SNIPS are diagnostics. The seeded simulator remains available only for synthetic demonstrations and can never authorize promotion.
 
 Important generation files:
 
@@ -85,7 +85,7 @@ The implementation uses deterministic seeds for reproducibility in local evaluat
 
 ## Selection and Constraints
 
-Offline selection uses `src/evaluation/run.py` and chooses the policy with maximum cumulative reward, then lower cumulative regret, then lower exploration rate. The selected offline policy is written to `selected_policy.json` for review; it is not automatic production approval.
+Offline selection uses `src/evaluation/run.py` and chooses the policy with the highest validation DR value, subject to overlap, propensity, calibration, and coverage gates. The frozen policy is evaluated once on the final test window. The selected policy is written to `selected_policy.json` for human review; it is not automatic production approval.
 
 Runtime policy selection is independent per surface through configuration. Only `deterministic_baseline` and guarded `likelihood_ranker` are serving candidates in the current implementation. Bandit challengers are used for shadow rankings until a reviewed batch release approves a new serving strategy.
 
@@ -95,4 +95,3 @@ Hard constraints:
 - ECloe Engine must not create eligibility, approve credit, change prices, or process real money.
 - Blocked attributes such as sex, gender, direct identifiers, balance, income, credit score, precise location, and raw histories must not enter features or artifacts.
 - Feedback is recorded immediately, but serving state changes only through reviewed batch releases.
-

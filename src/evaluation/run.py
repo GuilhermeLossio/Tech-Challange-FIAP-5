@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import csv
 import json
-import random
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +15,7 @@ from src.data.legacy_hillstrom import normalize_legacy_action
 from src.data.schemas import BLOCKED_COLUMNS
 from src.engine.artifacts import ARTIFACT_STATUS_ACTIVE, SELECTED_POLICY_SCHEMA
 from src.engine.likelihood import train_likelihood_model
+from src.evaluation.causal import CausalEvaluation, evaluate_logged_policy, validate_propensity
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
 DEFAULT_INPUT_FILE = ROOT_DIR / "data" / "processed" / "hillstrom_processed.csv"
@@ -57,6 +58,51 @@ def split_dataset(df: pd.DataFrame, train_ratio: float = 0.7) -> tuple[pd.DataFr
     return df.iloc[:split_index].reset_index(drop=True), df.iloc[split_index:].reset_index(drop=True)
 
 
+def split_dataset_temporal(
+    dataframe: pd.DataFrame,
+    *,
+    train_ratio: float = 0.7,
+    validation_ratio: float = 0.15,
+) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame, dict[str, Any]]:
+    if len(dataframe) < 3:
+        raise ValueError("Temporal evaluation requires at least 3 rows.")
+    frame = dataframe.copy()
+    split_method = "row_order_proxy"
+    if "decision_timestamp" in frame.columns:
+        parsed = pd.to_datetime(frame["decision_timestamp"], utc=True, errors="coerce")
+        if parsed.notna().all():
+            frame = frame.assign(_decision_timestamp=parsed).sort_values(
+                "_decision_timestamp", kind="stable"
+            )
+            split_method = "chronological_timestamp"
+    n_train = max(1, int(len(frame) * train_ratio))
+    n_validation = max(n_train + 1, int(len(frame) * (train_ratio + validation_ratio)))
+    n_validation = min(n_validation, len(frame) - 1)
+    train = frame.iloc[:n_train].drop(columns=["_decision_timestamp"], errors="ignore")
+    validation = frame.iloc[n_train:n_validation].drop(
+        columns=["_decision_timestamp"], errors="ignore"
+    )
+    test = frame.iloc[n_validation:].drop(columns=["_decision_timestamp"], errors="ignore")
+    boundaries = {
+        "method": split_method,
+        "train_rows": len(train),
+        "validation_rows": len(validation),
+        "test_rows": len(test),
+    }
+    if "decision_timestamp" in frame.columns:
+        boundaries.update(
+            {
+                "train_start": str(train["decision_timestamp"].iloc[0]) if len(train) else None,
+                "train_end": str(train["decision_timestamp"].iloc[-1]) if len(train) else None,
+                "validation_start": str(validation["decision_timestamp"].iloc[0]) if len(validation) else None,
+                "validation_end": str(validation["decision_timestamp"].iloc[-1]) if len(validation) else None,
+                "test_start": str(test["decision_timestamp"].iloc[0]) if len(test) else None,
+                "test_end": str(test["decision_timestamp"].iloc[-1]) if len(test) else None,
+            }
+        )
+    return train.reset_index(drop=True), validation.reset_index(drop=True), test.reset_index(drop=True), boundaries
+
+
 def train_reward_rates(train_df: pd.DataFrame) -> dict[str, float]:
     global_rate = float(train_df["reward"].mean()) if len(train_df) else 0.0
     rates: dict[str, float] = {}
@@ -64,23 +110,6 @@ def train_reward_rates(train_df: pd.DataFrame) -> dict[str, float]:
         action_rewards = train_df.loc[train_df["action"] == action, "reward"]
         rates[action] = float(action_rewards.mean()) if len(action_rewards) else global_rate
     return rates
-
-
-def build_reward_table(
-    evaluation_df: pd.DataFrame,
-    reward_rates: dict[str, float],
-    seed: int,
-) -> list[dict[str, int]]:
-    rng = random.Random(seed)
-    table: list[dict[str, int]] = []
-    for _ in evaluation_df.itertuples(index=False):
-        table.append(
-            {
-                action: int(rng.random() < reward_rates[action])
-                for action in ACTIONS
-            }
-        )
-    return table
 
 
 def build_policies(reward_rates: dict[str, float], seed: int) -> list[BanditPolicy]:
@@ -95,56 +124,43 @@ def build_policies(reward_rates: dict[str, float], seed: int) -> list[BanditPoli
 def evaluate_policy(
     policy: BanditPolicy,
     evaluation_df: pd.DataFrame,
-    reward_table: list[dict[str, int]],
     reward_rates: dict[str, float],
+    *,
+    seed: int = DEFAULT_SEED,
 ) -> dict[str, Any]:
-    decisions: list[dict[str, Any]] = []
-    cumulative_reward = 0
-    cumulative_regret = 0.0
-    exploration_count = 0
-    baseline_action = max(ACTIONS, key=lambda action: reward_rates[action])
-    optimal_expected_reward = max(reward_rates.values())
-
-    for index, row in enumerate(evaluation_df.itertuples(index=False)):
-        action = policy.select_action()
-        reward = reward_table[index][action]
-        policy.update(action, reward)
-
-        cumulative_reward += reward
-        cumulative_regret += optimal_expected_reward - reward_rates[action]
-        if action != baseline_action:
-            exploration_count += 1
-
-        decisions.append(
-            {
-                "row_id": row.row_id,
-                "selected_action": action,
-                "simulated_reward": reward,
-                "cumulative_reward": cumulative_reward,
-                "cumulative_regret": round(cumulative_regret, 6),
-            }
-        )
-
-    total = len(evaluation_df)
+    result: CausalEvaluation = evaluate_logged_policy(
+        policy,
+        evaluation_df,
+        reward_rates,
+        seed=seed,
+    )
     return {
         "policy": policy.name,
-        "rounds": total,
-        "cumulative_reward": cumulative_reward,
-        "conversion_rate": round(cumulative_reward / total, 6) if total else 0.0,
-        "cumulative_regret": round(cumulative_regret, 6),
-        "exploration_rate": round(exploration_count / total, 6) if total else 0.0,
-        "decisions": decisions,
+        "rounds": len(evaluation_df),
+        "dr_value": round(result.value, 6),
+        "ips_value": round(result.ips, 6),
+        "snips_value": round(result.snips, 6),
+        "conversion_rate": round(result.observed_rate, 6),
+        "support_rate": round(result.support_rate, 6),
+        "valid_rows": result.valid_rows,
+        "excluded_rows": result.excluded_rows,
+        "clipped_rows": result.clipped_rows,
+        "effective_sample_size": round(result.effective_sample_size, 6),
+        "propensity_mean": result.propensity_mean,
+        "confidence_interval": list(result.confidence_interval),
+        "decisions": result.decisions,
         "state": policy.snapshot(),
     }
 
 
 def select_policy(metrics: list[dict[str, Any]]) -> dict[str, Any]:
+    if not any(item["valid_rows"] for item in metrics):
+        return next(item for item in metrics if item["policy"] == "baseline")
     return max(
         metrics,
         key=lambda item: (
-            item["cumulative_reward"],
-            -item["cumulative_regret"],
-            -item["exploration_rate"],
+            item["dr_value"] if item["valid_rows"] else float("-inf"),
+            item["support_rate"],
             item["policy"] == "thompson_sampling",
         ),
     )
@@ -162,7 +178,7 @@ def build_golden_set(
     }
 
     for case_number, row in enumerate(evaluation_df.head(5).itertuples(index=False), start=1):
-        decision = decision_by_row[row.row_id]
+        decision = decision_by_row.get(row.row_id, {})
         cases.append(
             {
                 "case": case_number,
@@ -174,9 +190,16 @@ def build_golden_set(
                     "newbie": getattr(row, "newbie", None),
                 },
                 "eligible_actions": list(ACTIONS),
-                "recommended_action": decision["selected_action"],
+                "recommended_action": decision.get(
+                    "target_action", decision.get("selected_action", row.action)
+                ),
                 "policy": selected_policy,
-                "reason_codes": ["offline_reward_evidence", "policy_comparison_winner"],
+                "reason_codes": [
+                    "observed_offline" if decision else "unsupported_logged_row",
+                    "policy_comparison_winner",
+                ],
+                "dataset_origin": "observed" if decision else "synthetic_demo",
+                "split": "test",
             }
         )
 
@@ -189,6 +212,8 @@ def write_outputs(
     selected: dict[str, Any],
     reward_rates: dict[str, float],
     golden_set: list[dict[str, Any]],
+    *,
+    metadata: dict[str, Any],
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -200,6 +225,7 @@ def write_outputs(
     (output_dir / "metrics.json").write_text(
         json.dumps(
             {
+                **metadata,
                 "reward_rates": reward_rates,
                 "metrics": metrics_summary,
             },
@@ -218,6 +244,10 @@ def write_outputs(
             "policy_name": item["policy"],
             "version": "offline-v1",
             "status": "selected" if item["policy"] == selected["policy"] else "evaluated",
+            "dataset_origin": metadata.get("dataset_origin"),
+            "evaluation_mode": metadata.get("evaluation_mode"),
+            "estimator": metadata.get("estimator"),
+            "propensity_method": metadata.get("propensity_method"),
             "metrics": {key: item[key] for key in metrics_summary[0] if key != "policy"},
         }
         for item in metrics_summary
@@ -231,10 +261,15 @@ def write_outputs(
         json.dumps(
             {
                 "schema_version": SELECTED_POLICY_SCHEMA,
-                "artifact_status": ARTIFACT_STATUS_ACTIVE,
+                "artifact_status": (
+                    ARTIFACT_STATUS_ACTIVE
+                    if metadata.get("promotion_eligible") is True
+                    else "pending_review"
+                ),
+                **metadata,
                 "policy": selected["policy"],
                 "version": "offline-v1",
-                "selection_rule": "max cumulative_reward, then min cumulative_regret, then min exploration_rate",
+                "selection_rule": "max validation doubly_robust value with support gate",
                 "metrics": {key: selected[key] for key in metrics_summary[0] if key != "policy"},
             },
             indent=2,
@@ -272,29 +307,83 @@ def run_evaluation(
             lambda value: normalize_legacy_action(str(value)) if pd.notna(value) else value
         )
     _validate_processed_dataset(dataframe)
+    if "behavior_propensity" not in dataframe.columns:
+        dataframe["behavior_propensity"] = float("nan")
+    if "subject_key" not in dataframe.columns:
+        dataframe["subject_key"] = dataframe["row_id"].astype(str)
 
-    train_df, evaluation_df = split_dataset(dataframe)
+    train_df, validation_df, test_df, split_metadata = split_dataset_temporal(dataframe)
     reward_rates = train_reward_rates(train_df)
-    reward_table = build_reward_table(evaluation_df, reward_rates, seed)
-
-    metrics = [
-        evaluate_policy(policy, evaluation_df, reward_table, reward_rates)
+    validation_metrics = [
+        evaluate_policy(policy, validation_df, reward_rates, seed=seed)
         for policy in build_policies(reward_rates, seed)
     ]
-    selected = select_policy(metrics)
-    golden_set = build_golden_set(selected["policy"], evaluation_df, selected)
-
-    write_outputs(output_dir, metrics, selected, reward_rates, golden_set)
-    train_likelihood_model(
-        input_file=input_file,
-        output_file=output_dir / "purchase_likelihood_model.json",
+    selected = select_policy(validation_metrics)
+    selected_test = evaluate_policy(
+        next(policy for policy in build_policies(reward_rates, seed) if policy.name == selected["policy"]),
+        test_df,
+        reward_rates,
+        seed=seed,
     )
+    metrics = [
+        {
+            **item,
+            "validation": True,
+            "test": item["policy"] == selected["policy"],
+            "test_dr_value": selected_test["dr_value"] if item["policy"] == selected["policy"] else None,
+            "test_ips_value": selected_test["ips_value"] if item["policy"] == selected["policy"] else None,
+            "test_snips_value": selected_test["snips_value"] if item["policy"] == selected["policy"] else None,
+            "test_support_rate": selected_test["support_rate"] if item["policy"] == selected["policy"] else None,
+        }
+        for item in validation_metrics
+    ]
+    selected_output = next(item for item in metrics if item["policy"] == selected["policy"])
+    golden_set = build_golden_set(selected["policy"], test_df, {**selected_test, "decisions": selected_test["decisions"]})
+    observed_rows = sum(
+        validate_propensity(value) is not None
+        for value in dataframe["behavior_propensity"].tolist()
+    )
+    metadata = {
+        "dataset_origin": "observed" if observed_rows else "synthetic_demo",
+        "evaluation_mode": "observed_offline" if observed_rows else "synthetic_demo",
+        "estimator": "doubly_robust",
+        "diagnostic_estimators": ["ips", "snips"],
+        "propensity_method": "logged_behavior_propensity",
+        "observed_row_count": observed_rows,
+        "synthetic_row_count": len(dataframe) - observed_rows,
+        "excluded_row_count": len(dataframe) - observed_rows,
+        "split_boundaries": split_metadata,
+        "promotion_eligible": bool(
+            observed_rows
+            and selected["valid_rows"] >= 1000
+            and selected["support_rate"] > 0
+            and split_metadata["method"] == "chronological_timestamp"
+        ),
+    }
+
+    write_outputs(
+        output_dir,
+        metrics,
+        selected_output,
+        reward_rates,
+        golden_set,
+        metadata=metadata,
+    )
+    with tempfile.NamedTemporaryFile(suffix=".csv", delete=False) as temporary:
+        train_file = Path(temporary.name)
+    try:
+        train_df.to_csv(train_file, index=False)
+        train_likelihood_model(input_file=train_file, output_file=output_dir / "purchase_likelihood_model.json")
+    finally:
+        train_file.unlink(missing_ok=True)
 
     return {
         "input_file": str(input_file),
         "output_dir": str(output_dir),
         "train_rows": len(train_df),
-        "evaluation_rows": len(evaluation_df),
+        "validation_rows": len(validation_df),
+        "test_rows": len(test_df),
+        "evaluation_rows": len(validation_df) + len(test_df),
         "max_rows": max_rows,
         "selected_policy": selected["policy"],
     }

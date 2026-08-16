@@ -26,7 +26,14 @@ def build_surface_run(
     surface: Surface,
     run_id: str,
     version: str | None = None,
+    dataset_origin: str = "observed",
+    evaluation_mode: str = "observed_offline",
+    causal_metrics: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    if dataset_origin not in {"observed", "synthetic"}:
+        raise ValueError("dataset_origin must be observed or synthetic.")
+    if evaluation_mode not in {"observed_offline", "synthetic_demo"}:
+        raise ValueError("Unsupported evaluation mode.")
     evidence = aggregate_evidence(events)[surface]
     version = version or f"{surface.value}-{run_id}"
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -46,6 +53,9 @@ def build_surface_run(
                 "exposures": evidence.exposure_count,
                 "terminal_feedback": evidence.terminal_count,
                 "policy": "likelihood_ranker",
+                "dataset_origin": dataset_origin,
+                "evaluation_mode": evaluation_mode,
+                "causal_metrics": causal_metrics or {},
             },
             indent=2,
         ),
@@ -64,6 +74,8 @@ def build_surface_run(
                     "decisions": evidence.global_stats.count,
                     "positives": evidence.global_stats.successes,
                 },
+                "dataset_origin": dataset_origin,
+                "evaluation_mode": evaluation_mode,
             },
             indent=2,
         ),
@@ -76,6 +88,9 @@ def build_surface_run(
         run_id=run_id,
         version=version,
         evidence=evidence,
+        dataset_origin=dataset_origin,
+        evaluation_mode=evaluation_mode,
+        causal_metrics=causal_metrics or {},
     )
     (output_dir / "artifact_manifest.json").write_text(
         json.dumps(manifest, indent=2), encoding="utf-8"
@@ -96,6 +111,8 @@ def approve_surface_run(
         raise ValueError("Cannot approve an artifact for another surface.")
     if manifest.get("gates", {}).get("passed") is not True:
         raise ValueError("Recommendation artifact gates have not passed.")
+    if manifest.get("promotion_eligible") is False:
+        raise ValueError("This artifact is not eligible for promotion.")
     selected_path = run_dir / "selected_policy.json"
     selected = json.loads(selected_path.read_text(encoding="utf-8"))
     selected["artifact_status"] = "active"
@@ -130,6 +147,9 @@ def _manifest(
     run_id: str,
     version: str,
     evidence: Any,
+    dataset_origin: str,
+    evaluation_mode: str,
+    causal_metrics: dict[str, Any],
 ) -> dict[str, Any]:
     names = (
         "recommendation_evidence.json",
@@ -145,6 +165,10 @@ def _manifest(
         "generated_at": datetime.now(UTC).isoformat(),
         "data_window": {"start": None, "end": datetime.now(UTC).isoformat()},
         "evidence_checksum": evidence_checksum(evidence),
+        "dataset_origin": dataset_origin,
+        "evaluation_mode": evaluation_mode,
+        "causal_metrics": causal_metrics,
+        "promotion_eligible": dataset_origin == "observed" and evaluation_mode == "observed_offline",
         "gates": {
             "passed": evidence.global_stats.count >= 1_000
             and evidence.global_stats.successes >= 100,

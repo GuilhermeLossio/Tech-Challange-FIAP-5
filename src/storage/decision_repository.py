@@ -42,6 +42,11 @@ class DecisionRecord:
     eligible_candidate_ids: list[str] = field(default_factory=list)
     ranked_candidates: list[dict[str, Any]] = field(default_factory=list)
     selection_probability: float = 1.0
+    behavior_policy: str = ""
+    behavior_policy_version: str = ""
+    behavior_propensity: float | None = None
+    propensity_source: str = "missing"
+    candidate_propensities: dict[str, float] = field(default_factory=dict)
 
     @property
     def partition_key(self) -> str:
@@ -447,6 +452,11 @@ def _record_to_dict(record: DecisionRecord) -> dict[str, Any]:
         "eligible_candidate_ids": record.eligible_candidate_ids,
         "ranked_candidates": record.ranked_candidates,
         "selection_probability": record.selection_probability,
+        "behavior_policy": record.behavior_policy,
+        "behavior_policy_version": record.behavior_policy_version,
+        "behavior_propensity": record.behavior_propensity,
+        "propensity_source": record.propensity_source,
+        "candidate_propensities": record.candidate_propensities,
     }
 
 
