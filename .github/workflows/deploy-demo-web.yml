@@ -218,11 +218,13 @@ jobs:
             --name "${{ vars.ECLOE_MARKET_STORAGE_ACCOUNT_NAME || 'ecloepaydemo' }}" \
             --query id -o tsv)"
           MARKET_CONTAINER_SCOPE="${MARKET_STORAGE_ID}/blobServices/default/containers/${{ vars.ECLOE_MARKET_BLOB_CONTAINER || 'ecloe-market-demo-assets' }}"
+          STORAGE_BLOB_READER_ROLE_ID="$(az role definition list \
+            --name "Storage Blob Data Reader" \
+            --query '[0].id' -o tsv)"
           if [ "$(az role assignment list \
-            --assignee-object-id "${PRINCIPAL_ID}" \
             --scope "${MARKET_CONTAINER_SCOPE}" \
-            --role "Storage Blob Data Reader" \
-            --query 'length(@)' -o tsv)" = "0" ]; then
+            --query "[?principalId=='${PRINCIPAL_ID}' && roleDefinitionId=='${STORAGE_BLOB_READER_ROLE_ID}'] | length(@)" \
+            -o tsv)" = "0" ]; then
             az role assignment create \
               --assignee-object-id "${PRINCIPAL_ID}" \
               --assignee-principal-type ServicePrincipal \
