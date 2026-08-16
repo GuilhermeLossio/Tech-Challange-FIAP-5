@@ -113,6 +113,8 @@ jobs:
 
   sql-integration:
     name: Azure SQL integration contracts
+    # Temporary opt-in until the ci-sql OIDC identity and secrets are configured.
+    if: vars.RUN_AZURE_SQL_INTEGRATION == 'true'
     runs-on: ubuntu-latest
     environment: ci-sql
     permissions:
