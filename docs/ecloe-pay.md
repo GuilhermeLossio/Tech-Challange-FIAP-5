@@ -21,7 +21,7 @@ ECloe Pay is the implemented digital wallet surface for the ECloe demo. It obtai
 
 In the MVP, ECloe Pay is not a bank account, credit product, external payment processor, or risk system. It is a synthetic wallet persisted in the `ecloe_pay` Azure SQL schema. The integrated Market checkout may debit that synthetic available balance with a row-locked, idempotent wallet payment and mark the synthetic order as paid; no bank or real-money rail is reached.
 
-The first implemented demo slice is available in [`../src/demo/ecloe_pay/`](../src/demo/ecloe_pay/). It is a runnable Flask frontend/API that can also be opened as a static fallback presentation. The static fallback is explicitly labeled `Presentation mode — data is not being persisted.` and must not imply that login, terms, or payment state was persisted in Azure SQL. It includes demo-persona authentication, mandatory demo terms, deterministic simulated-payment confirmation, transaction idempotency evidence, technical mode, and optional Azure SQL persistence for Pay-owned state.
+The first implemented demo slice is available in [`../src/demo/ecloe_pay/`](../src/demo/ecloe_pay/). It is a backend-backed Flask frontend/API. The browser does not provide a public static presentation fallback: login, terms, benefit interactions, and simulated payment require a live Flask backend and report an explicit unavailable state otherwise. It includes demo-persona authentication, mandatory demo terms, deterministic simulated-payment confirmation, transaction idempotency evidence, technical mode, and optional Azure SQL persistence for Pay-owned state.
 
 The Flask root route now serves the ECloe Pay landing page, while the runnable wallet demo is available at `/pay`.
 
@@ -219,7 +219,7 @@ The current repository documents a low-consumption Azure target architecture for
 | Pay transactional state | Azure SQL Database | Dedicated `ecloe_pay` schema owns demo sessions, wallet snapshots, payment orders, benefit interactions, and outbox events. |
 | Pay artifact bucket | Azure Blob Storage | Dedicated `ecloe-pay-demo-artifacts` bucket stores only demo-safe Pay evidence such as simulated receipts or screenshots. |
 | Secrets | Azure Key Vault | Keeps API credentials and service configuration outside code. |
-| Observability | Application Insights | Tracks UI actions, Engine latency, failures, and fallback mode without logging sensitive context. |
+| Observability | Application Insights | Tracks UI actions, Engine latency, failures, and backend-unavailable state without logging sensitive context. |
 
 These are target architecture notes, not deployed infrastructure in the current repository.
 
@@ -309,7 +309,7 @@ ECloe Pay is ready for the planned demo when:
 - customer-facing mode hides internal policy and artifact details;
 - technical mode exposes request, decision, reward, and policy evidence;
 - the UI never claims credit approval, eligibility approval, fraud detection, risk decisions, or immediate online learning;
-- fallback presentation mode works when the local Engine API is unavailable.
+- backend-unavailable state is explicit when the local Flask API is unavailable.
 
 ## Implemented Static Demo Slice
 
@@ -327,7 +327,7 @@ Files:
 | `landing.html` | ECloe Pay landing page explaining the simulated product, secure demo flow, private bucket, and Azure SQL ownership. |
 | `index.html` | ECloe Pay wallet, benefit, activity, security, and terms UI. |
 | `styles.css` | Responsive kawaii-inspired visual system for the static demo. |
-| `app.js` | Browser client for Flask APIs, plus static fallback state, terms gate, simulated transaction validation, idempotency guard, and reward-event evidence. |
+| `app.js` | Browser client for Flask APIs, terms gate, simulated transaction validation, idempotency guard, and reward-event evidence. |
 | `schema.sql` | Pay-owned Azure SQL `ecloe_pay` schema and dedicated Pay bucket record. |
 | `repository.py` | Compatibility re-export for the Pay persistence package. |
 | `repositories/` | PayRepository contract plus memory, Azure SQL, and factory implementations for simulated Pay state. |

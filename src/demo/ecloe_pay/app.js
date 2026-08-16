@@ -1,13 +1,3 @@
-const DEMO_STATE = Object.freeze({
-  sessionId: "sess_pay_demo_001",
-  decisionId: "",
-  eventPrefix: "evt_pay_demo",
-  idempotencyKey: "pay-demo:order_demo_7841:0426",
-  confirmationCode: "0426",
-  bucketName: "ecloe-pay-demo-artifacts",
-  paymentOrderId: "pay_order_demo_7841",
-});
-
 const timeline = document.querySelector("#timeline");
 const termsDialog = document.querySelector("#termsDialog");
 const termsCheckbox = document.querySelector("#termsCheckbox");
@@ -43,23 +33,9 @@ const viewDetailsButton = document.querySelector("#viewDetailsButton");
 const quickActionButtons = document.querySelectorAll(".quick-action[data-target]");
 const pageLocale = document.documentElement.lang || "en-US";
 
-let eventCounter = 1;
 let termsAccepted = false;
 let transactionLocked = false;
-let flaskAvailable = false;
-let backendRequiresAuth = false;
-let runtimeState = { ...DEMO_STATE };
-const valueElements = [
-  balanceAmount,
-  cashbackAmount,
-  goalPercent,
-  goalDetail,
-  paymentAmount,
-  paymentStatus,
-  loanAmount,
-  loanStatus,
-  loanRequestedAt,
-];
+let runtimeState = {};
 
 async function getJson(url) {
   const response = await fetch(url);
@@ -108,12 +84,6 @@ function setLoadedText(element, value) {
   element.classList.remove("wallet-loading-value", "compact");
   element.removeAttribute("aria-busy");
   element.textContent = value;
-}
-
-function setValuesFallback() {
-  for (const element of valueElements) {
-    setLoadedText(element, "--");
-  }
 }
 
 function formatMoney(cents, currency = "BRL") {
@@ -199,12 +169,6 @@ function setBenefitState(label, variant = "default") {
   benefitState.classList.toggle("success", variant === "success");
 }
 
-function nextEventId() {
-  const eventId = `${DEMO_STATE.eventPrefix}_${String(eventCounter).padStart(3, "0")}`;
-  eventCounter += 1;
-  return eventId;
-}
-
 function requireTerms() {
   if (!termsAccepted && !termsDialog.open) {
     termsDialog.showModal();
@@ -218,16 +182,6 @@ function redirectToLoginWhenNeeded(error) {
     return true;
   }
   return false;
-}
-
-function setPresentationMode() {
-  backendRequiresAuth = false;
-  authIdentity.textContent = "Carteira demonstrativa";
-  runtimeMode.textContent = "Modo apresentacao - os dados nao sao persistidos.";
-  databaseProvider.textContent = "apresentacao";
-  databaseSchema.textContent = "nao persistido";
-  bucketValue.textContent = DEMO_STATE.bucketName;
-  setValuesFallback();
 }
 
 function setAuthenticatedMode(auth, security) {
@@ -244,35 +198,21 @@ function recordReward(action, eventType, reward) {
     return;
   }
 
-  if (flaskAvailable) {
-    const actionByEvent = {
-      click: "open",
-      dismissal: "dismiss",
-      conversion: "accept",
-    };
-    postJson("/api/benefit-interactions", { action: actionByEvent[eventType] })
-      .then((body) => {
-        setBenefitState(action, reward === 1 ? "success" : "default");
-        const event = body.reward_event;
-        appendTimeline(
-          `${action}. Evento de recompensa preparado para ${body.engine_endpoint}.`,
-          `${event.event_id}, ${event.event_type}, reward=${event.reward}, decision=${event.decision_id}`,
-        );
-      })
-      .catch((error) => {
-        if (!redirectToLoginWhenNeeded(error)) {
-          appendTimeline(`Interacao rejeitada pela API Flask: ${error.message}`);
-        }
-      });
-    return;
-  }
-
-  const eventId = nextEventId();
-  setBenefitState("Previa da apresentacao");
-  appendTimeline(
-    `Modo apresentacao - os dados nao sao persistidos. ${action} foi apenas pre-visualizado.`,
-    `${eventId}, ${eventType}, reward=${reward}, decision=${DEMO_STATE.decisionId}`,
-  );
+  const actionByEvent = { click: "open", dismissal: "dismiss", conversion: "accept" };
+  postJson("/api/benefit-interactions", { action: actionByEvent[eventType] })
+    .then((body) => {
+      setBenefitState(action, reward === 1 ? "success" : "default");
+      const event = body.reward_event;
+      appendTimeline(
+        `${action}. Evento de recompensa preparado para ${body.engine_endpoint}.`,
+        `${event.event_id}, ${event.event_type}, reward=${event.reward}, decision=${event.decision_id}`,
+      );
+    })
+    .catch((error) => {
+      if (!redirectToLoginWhenNeeded(error)) {
+        appendTimeline(`Interacao rejeitada pela API Flask: ${error.message}`);
+      }
+    });
 }
 
 document.querySelector("#openTermsButton").addEventListener("click", () => {
@@ -300,13 +240,6 @@ acceptTermsButton.addEventListener("click", () => {
     termsDialog.close();
     appendTimeline("Termos da demo aceitos para esta sessao.");
   };
-
-  if (!flaskAvailable) {
-    termsAccepted = true;
-    termsDialog.close();
-    appendTimeline("Modo apresentacao - os dados nao sao persistidos. Termos aceitos apenas para pre-visualizacao.");
-    return;
-  }
 
   postJson("/api/terms", { accepted: true })
     .then(finish)
@@ -348,77 +281,45 @@ transactionForm.addEventListener("submit", (event) => {
   }
 
   const normalizedCode = confirmationCode.value.trim();
-  if (transactionLocked && !flaskAvailable) {
-    appendTimeline("Modo apresentacao - os dados nao sao persistidos. Previa duplicada ignorada.");
+  if (transactionLocked) {
+    appendTimeline("Tentativa duplicada ignorada pela idempotencia da sessao.");
     return;
   }
-
-  if (normalizedCode !== DEMO_STATE.confirmationCode) {
-    securityState.textContent = "Somente previa";
-    securityState.classList.remove("success");
-    appendTimeline("Modo apresentacao - os dados nao sao persistidos. Previa de confirmacao rejeitada.");
-    return;
-  }
-
-  if (flaskAvailable) {
-    postJson(`/api/payment-orders/${runtimeState.paymentOrderId}/simulate`, {
-      confirmation_code: normalizedCode,
+  postJson(`/api/payment-orders/${runtimeState.paymentOrderId}/simulate`, {
+    confirmation_code: normalizedCode,
+  })
+    .then((body) => {
+      transactionLocked = true;
+      securityState.textContent = "Verificado";
+      securityState.classList.add("success");
+      setBenefitState("Pagamento simulado aceito", "success");
+      getJson("/api/session").then(renderSession);
+      appendTimeline(
+        "A API Flask verificou o pagamento simulado e preparou o evento de recompensa.",
+        `${body.reward_event.event_id}, provider=${body.database_provider}, schema=${body.database_schema}, bucket=${body.bucket_name}`,
+      );
     })
-      .then((body) => {
-        transactionLocked = true;
-        securityState.textContent = "Verificado";
-        securityState.classList.add("success");
-        setBenefitState("Pagamento simulado aceito", "success");
-        getJson("/api/session").then(renderSession);
-        appendTimeline(
-          "A API Flask verificou o pagamento simulado e preparou o evento de recompensa.",
-          `${body.reward_event.event_id}, provider=${body.database_provider}, schema=${body.database_schema}, bucket=${body.bucket_name}`,
-        );
-      })
-      .catch((error) => {
-        if (redirectToLoginWhenNeeded(error)) {
-          return;
-        }
-        securityState.textContent = "Rejeitado";
-        securityState.classList.remove("success");
-        appendTimeline(`Pagamento simulado rejeitado pela API Flask: ${error.message}`);
-      });
-    return;
-  }
-
-  transactionLocked = true;
-  securityState.textContent = "Somente previa";
-  securityState.classList.remove("success");
-  recordReward("Pagamento simulado aceito", "conversion", 1);
-  appendTimeline(
-    "Modo apresentacao - os dados nao sao persistidos. Nenhuma ordem de pagamento do Azure SQL foi atualizada.",
-    `idempotency=${DEMO_STATE.idempotencyKey}, bucket=${DEMO_STATE.bucketName}`,
-  );
+    .catch((error) => {
+      if (redirectToLoginWhenNeeded(error)) return;
+      securityState.textContent = "Rejeitado";
+      securityState.classList.remove("success");
+      appendTimeline(`Pagamento simulado rejeitado pela API Flask: ${error.message}`);
+    });
 });
 
 document.querySelector("#resetButton").addEventListener("click", () => {
   const finish = (body = {}) => {
-    eventCounter = 1;
     transactionLocked = false;
     termsAccepted = false;
     confirmationCode.value = "";
-    securityState.textContent = flaskAvailable ? "Bloqueado" : "Somente previa";
-    securityState.classList.toggle("success", flaskAvailable);
-    setBenefitState(flaskAvailable ? "Pronto" : "Previa da apresentacao");
+    securityState.textContent = "Bloqueado";
+    securityState.classList.remove("success");
+    setBenefitState("Pronto");
     timeline.replaceChildren();
-    sessionId.textContent = body.session_id || DEMO_STATE.sessionId;
-    appendTimeline(
-      flaskAvailable
-        ? "Sessao reiniciada com dados deterministicos da demo."
-        : "Modo apresentacao - os dados nao sao persistidos. Estado estatico reiniciado.",
-    );
+    sessionId.textContent = body.session_id || runtimeState.sessionId;
+    appendTimeline("Sessao reiniciada com dados deterministicos da demo.");
     termsDialog.showModal();
   };
-
-  if (!flaskAvailable) {
-    finish();
-    return;
-  }
 
   postJson("/api/reset", {})
     .then(() => getJson("/api/session"))
@@ -444,9 +345,8 @@ logoutButton.addEventListener("click", () => {
 async function bootstrap() {
   try {
     const auth = await getJson("/api/auth/me");
-    flaskAvailable = true;
-    backendRequiresAuth = Boolean(auth.requires_authentication);
     const body = await getJson("/api/session");
+    document.body.dataset.backendReady = "true";
     setAuthenticatedMode(auth, body.security);
     renderSession(body);
     termsAccepted = Boolean(body.session.terms_accepted);
@@ -458,13 +358,22 @@ async function bootstrap() {
     if (redirectToLoginWhenNeeded(error)) {
       return;
     }
-    setPresentationMode();
-    securityState.textContent = "Somente previa";
+    securityState.textContent = "Backend indisponivel";
     securityState.classList.remove("success");
-    setBenefitState("Previa da apresentacao");
-    appendTimeline("Modo apresentacao - os dados nao sao persistidos.");
+    setBenefitState("Conecte o backend Flask para continuar");
+    appendTimeline(`A demo nao pode continuar sem o backend Flask: ${error.message}`);
+    for (const element of [
+      acceptTermsButton,
+      document.querySelector("#viewBenefitButton"),
+      document.querySelector("#dismissBenefitButton"),
+      document.querySelector("#acceptBenefitButton"),
+      transactionForm,
+      document.querySelector("#resetButton"),
+    ]) {
+      if (element) element.disabled = true;
+    }
   } finally {
-    if (!termsAccepted) {
+    if (!termsAccepted && document.body.dataset.backendReady === "true") {
       termsDialog.showModal();
     }
   }

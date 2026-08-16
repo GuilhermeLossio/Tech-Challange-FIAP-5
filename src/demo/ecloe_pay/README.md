@@ -18,12 +18,16 @@ http://127.0.0.1:5000/pay
 ```
 
 The root route shows the landing page. The `/pay` route redirects to
-`/pay/login` until the demo persona is authenticated. The HTML can still be
+`/pay/login` until the demo persona is authenticated. The browser client
+requires the Flask backend and reports an explicit outage instead of serving
+a public presentation fallback.
+<!--
 opened directly in a browser as a fallback
-presentation mode. In that mode the UI explicitly says
-`Presentation mode — data is not being persisted.` and does not claim that login,
+The backend-unavailable state is shown explicitly; no state-changing operation
+is simulated in the browser.
+The browser does not claim that login,
 terms, or payment state was saved in Azure SQL. It does not require account
-creation, does not call a payment provider, and does not process real money.
+creation, does not call a payment provider, and does not process real money. -->
 
 Implemented in this slice:
 

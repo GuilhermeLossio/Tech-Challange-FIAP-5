@@ -12,6 +12,7 @@ from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.requests import Request
 
+from src.api.metrics import metrics_for
 from src.api.observability import LOGGER_NAME
 from src.core.config import Settings, load_settings
 from src.core.rate_limit import RateLimitBackendUnavailable, SharedRateLimiter
@@ -102,6 +103,7 @@ def register_middleware(app: FastAPI, settings: Settings | None = None) -> None:
                 response.headers["X-Trace-Id"] = trace_id
                 return response
         finally:
+            metrics_for(request.app).request(status_code, (monotonic() - started) * 1000)
             _log_access(request, access_logger, request_id, trace_id, started, status_code)
 
 

@@ -5,9 +5,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 try:
-    from dotenv import load_dotenv as _load_dotenv
+    from dotenv import dotenv_values as _dotenv_values
 except ModuleNotFoundError:
-    _load_dotenv = None
+    _dotenv_values = None
 
 
 ROOT_DIR = Path(__file__).resolve().parents[2]
@@ -25,9 +25,19 @@ PLACEHOLDER_MARKERS = ("<", ">", "seu-", "your-", "tenant-subdomain")
 LOCAL_FLASK_SECRET_KEY = "local-dev-flask-secret-key"
 
 
+_ENV_FILE_VALUES: dict[str, str] = {}
+
+
 def _load_env_file(path: Path) -> None:
-    if _load_dotenv is not None:
-        _load_dotenv(path)
+    _ENV_FILE_VALUES.clear()
+    if _dotenv_values is not None:
+        _ENV_FILE_VALUES.update(
+            {
+                str(key): str(value)
+                for key, value in _dotenv_values(path).items()
+                if value is not None
+            }
+        )
         return
 
     if not path.exists():
@@ -39,11 +49,11 @@ def _load_env_file(path: Path) -> None:
             continue
 
         key, value = stripped.split("=", 1)
-        os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+        _ENV_FILE_VALUES[key.strip()] = value.strip().strip('"').strip("'")
 
 
 def _env(name: str, default: str = "") -> str:
-    return os.getenv(name, default).strip()
+    return os.getenv(name, _ENV_FILE_VALUES.get(name, default)).strip()
 
 
 def _split_csv(value: str) -> tuple[str, ...]:
@@ -158,6 +168,7 @@ class Settings:
 
 
 def load_settings(*, use_env_file: bool = True, env_file: Path | None = None) -> Settings:
+    _ENV_FILE_VALUES.clear()
     if use_env_file:
         _load_env_file(env_file or ROOT_DIR / ".env")
 

@@ -142,12 +142,7 @@ jobs:
               --system-assigned \
               --registry-server "${{ vars.ACR_LOGIN_SERVER }}" \
               --registry-identity system \
-              --env-vars \
-                APP_ENVIRONMENT=local \
-                ECLOE_WEB_AUTH_MODE=local \
-                ECLOE_PAY_DATABASE_MODE=memory \
-                ECLOE_MARKET_DATABASE_MODE=memory \
-                ECLOE_PAY_COOKIE_SECURE=true
+              --env-vars "${ENV_VARS[@]}"
           fi
 
           PRINCIPAL_ID="$(az containerapp show \

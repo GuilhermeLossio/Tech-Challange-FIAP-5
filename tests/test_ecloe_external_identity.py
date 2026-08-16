@@ -14,7 +14,7 @@ from src.demo.ecloe_pay.app import (
 )
 from src.demo.ecloe_pay.identity import EntraExternalIdentity, safe_return_to, subject_key
 from src.demo.ecloe_pay.personas import load_personas, persona_for_subject
-from src.demo.ecloe_pay.repositories.base import OidcLoginFlow, SignupIpLimitExceeded
+from src.demo.ecloe_pay.repositories.base import OidcLoginFlow
 from src.demo.ecloe_pay.repositories.memory import MemoryPayRepository
 
 
@@ -180,7 +180,7 @@ def test_signup_route_uses_create_prompt_and_login_page_links_signup() -> None:
     assert oauth_client.prompts == ["create"]
 
 
-def test_signup_ip_limit_blocks_second_new_subject_and_clears_oidc_cookie() -> None:
+def test_signup_allows_second_new_subject_from_same_ip_and_clears_oidc_cookie() -> None:
     settings = external_settings()
     repository = MemoryPayRepository(settings)
     first_oauth = FakeOAuthClient(subject="subject-one")
@@ -202,38 +202,31 @@ def test_signup_ip_limit_blocks_second_new_subject_and_clears_oidc_cookie() -> N
         FakeOAuthClient(subject="subject-two"),
     )
     client.get("/auth/signup", headers={"X-Forwarded-For": "198.51.100.7"})
-    blocked = client.get(
+    second = client.get(
         "/auth/callback?state=state-123&code=code-123",
         headers={"X-Forwarded-For": "198.51.100.7"},
     )
 
-    assert blocked.status_code == 403
-    assert blocked.get_json()["error"] == "This IP address has already created an ECloe account."
-    assert client.get_cookie(OIDC_FLOW_COOKIE_NAME, path="/auth/callback") is None
-    assert len(repository.external_identities) == 1
+    assert second.status_code == 302
+    assert len(repository.external_identities) == 2
     persisted = repr(repository.signup_registrations)
     assert "198.51.100.7" not in persisted
-    assert "blocked_ip_limit" in persisted
+    assert "blocked_ip_limit" not in persisted
 
 
-def test_signup_allowlisted_ip_can_create_multiple_accounts() -> None:
-    settings = replace(
-        external_settings(),
-        ecloe_signup_admin_ip_allowlist=("198.51.100.7",),
-    )
+def test_signup_same_ip_can_create_multiple_accounts() -> None:
+    settings = external_settings()
     repository = MemoryPayRepository(settings)
 
     first = repository.provision_external_user(
         "https://tenant.ciamlogin.com/v2.0",
         "subject-one",
         signup_ip_hash="hashed-ip",
-        allow_ip_reuse=True,
     )
     second = repository.provision_external_user(
         "https://tenant.ciamlogin.com/v2.0",
         "subject-two",
         signup_ip_hash="hashed-ip",
-        allow_ip_reuse=True,
     )
 
     assert first is not None
@@ -242,7 +235,7 @@ def test_signup_allowlisted_ip_can_create_multiple_accounts() -> None:
     assert len(repository.external_identities) == 2
 
 
-def test_signup_ip_limit_exception_is_raised_for_repository_race_guard() -> None:
+def test_signup_repository_does_not_block_reused_ip_hash() -> None:
     settings = external_settings()
     repository = MemoryPayRepository(settings)
     repository.provision_external_user(
@@ -251,12 +244,13 @@ def test_signup_ip_limit_exception_is_raised_for_repository_race_guard() -> None
         signup_ip_hash="hashed-ip",
     )
 
-    with pytest.raises(SignupIpLimitExceeded):
-        repository.provision_external_user(
-            "https://tenant.ciamlogin.com/v2.0",
-            "subject-two",
-            signup_ip_hash="hashed-ip",
-        )
+    second = repository.provision_external_user(
+        "https://tenant.ciamlogin.com/v2.0",
+        "subject-two",
+        signup_ip_hash="hashed-ip",
+    )
+    assert second is not None
+    assert len(repository.external_identities) == 2
 
 
 def test_logout_revokes_local_session_and_returns_entra_logout_url() -> None:

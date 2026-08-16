@@ -61,6 +61,8 @@ jobs:
             sleep 2
           done
           curl --fail http://127.0.0.1:8000/livez
+          curl --fail http://127.0.0.1:8000/docs
+          curl --fail http://127.0.0.1:8000/openapi.json
           docker stop ecloe-engine-smoke
 
       - name: Push image

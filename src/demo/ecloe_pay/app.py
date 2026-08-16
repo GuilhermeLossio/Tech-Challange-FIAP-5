@@ -36,6 +36,14 @@ from src.demo.ecloe_pay.repositories import (
     SignupEmailAlreadyExists,
     create_pay_repository,
 )
+from src.demo.ecloe_pay.services.auth import (
+    cookie_secure as service_cookie_secure,
+)
+from src.demo.ecloe_pay.services.auth import (
+    csrf_matches,
+    csrf_token,
+    rotate_csrf_token,
+)
 from src.recommendation import (
     Candidate,
     CandidateType,
@@ -70,7 +78,7 @@ PAY_BENEFITS = {
 
 
 def _cookie_secure(settings: Settings) -> bool:
-    return settings.app_environment != "local"
+    return service_cookie_secure(settings.app_environment)
 
 
 def _set_auth_cookie(response, token: str, settings: Settings) -> None:
@@ -95,10 +103,7 @@ def _clear_auth_cookie(response, settings: Settings) -> None:
 
 
 def _set_csrf_cookie(response, settings: Settings) -> str:
-    token = session.get("csrf_token")
-    if not isinstance(token, str) or not token:
-        token = secrets.token_hex(32)
-        session["csrf_token"] = token
+    token = csrf_token(session)
     response.set_cookie(
         CSRF_COOKIE_NAME,
         token,
@@ -112,14 +117,23 @@ def _set_csrf_cookie(response, settings: Settings) -> str:
 
 
 def _rotate_csrf_token(response, settings: Settings) -> str:
-    session.pop("csrf_token", None)
-    return _set_csrf_cookie(response, settings)
+    token = rotate_csrf_token(session)
+    response.set_cookie(
+        CSRF_COOKIE_NAME,
+        token,
+        httponly=False,
+        secure=_cookie_secure(settings),
+        samesite="Lax",
+        path="/",
+        max_age=settings.ecloe_pay_session_ttl_seconds,
+    )
+    return token
 
 
 def _csrf_valid() -> bool:
     cookie_token = request.cookies.get(CSRF_COOKIE_NAME, "")
     header_token = request.headers.get(CSRF_HEADER_NAME, "")
-    return bool(cookie_token and header_token) and hmac.compare_digest(cookie_token, header_token)
+    return csrf_matches(cookie_token, header_token)
 
 
 def _csrf_error():

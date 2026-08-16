@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.45.15.27210",
-      "templateHash": "13682181367630686278"
+      "templateHash": "13313891041002299277"
     }
   },
   "parameters": {
@@ -343,6 +343,102 @@
       "dependsOn": [
         "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
         "[resourceId('Microsoft.Storage/storageAccounts', variables('storageName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('ecloe-{0}-failed-requests', parameters('environmentName'))]",
+      "location": "global",
+      "properties": {
+        "description": "Alert when Engine failed requests exceed the 1% SLO budget.",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+        ],
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "failed-requests",
+              "criterionType": "StaticThresholdCriterion",
+              "metricName": "requests/failed",
+              "operator": "GreaterThan",
+              "threshold": 1,
+              "timeAggregation": "Count"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('ecloe-{0}-latency', parameters('environmentName'))]",
+      "location": "global",
+      "properties": {
+        "description": "Alert when request latency breaches the 500 ms p95 SLO.",
+        "severity": 2,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+        ],
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "latency",
+              "criterionType": "StaticThresholdCriterion",
+              "metricName": "requests/duration",
+              "operator": "GreaterThan",
+              "threshold": 500,
+              "timeAggregation": "Average"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('ecloe-{0}-availability', parameters('environmentName'))]",
+      "location": "global",
+      "properties": {
+        "description": "Alert when availability falls below the 99.5% SLO.",
+        "severity": 1,
+        "enabled": true,
+        "scopes": [
+          "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
+        ],
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "availability",
+              "criterionType": "StaticThresholdCriterion",
+              "metricName": "availabilityResults/availabilityPercentage",
+              "operator": "LessThan",
+              "threshold": "[div(995, 10)]",
+              "timeAggregation": "Average"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]"
       ]
     },
     {

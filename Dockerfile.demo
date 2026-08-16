@@ -29,12 +29,13 @@ RUN apt-get update \
     && addgroup --system ecloe \
     && adduser --system --ingroup ecloe ecloe
 
-COPY pyproject.toml README.md ./
+COPY pyproject.toml requirements.lock README.md ./
 COPY src ./src
 COPY data/demo ./data/demo
 
 RUN python -m pip install --upgrade pip \
-    && python -m pip install --no-cache-dir -e ".[azure-sql]" gunicorn \
+    && python -m pip install --no-cache-dir --requirement requirements.lock \
+    && python -m pip install --no-cache-dir --no-deps . \
     && apt-get purge -y --auto-remove gcc g++ unixodbc-dev
 
 USER ecloe

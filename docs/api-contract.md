@@ -4,6 +4,11 @@
 
 This document defines the local Decision API payloads for ECloe. The target use case is an integrated marketplace and digital wallet channel where **ECloe Market** provides commerce behavior signals, **ECloe Pay** provides wallet context and eligible actions, and **ECloe Engine** selects the next best action. The MVP exposes these contracts through FastAPI and includes append-only reward ingestion linked to existing decisions.
 
+FastAPI owns technical Engine contracts and exposes interactive documentation at
+`/docs`, `/redoc`, and `/openapi.json`. Flask owns browser sessions, customer
+authentication, Market/Pay BFF routes, and HTML rendering; it does not replace
+the Engine API or own its decision contracts.
+
 Customer browser authentication is a separate Flask BFF contract. In Azure, `GET /auth/login` and `GET /auth/callback` use Microsoft Entra External ID, while `GET /api/auth/me` and `POST /api/auth/logout` operate on an opaque application session. Tokens and real identity claims are not exposed through these APIs. See [`azure-customer-authentication.md`](azure-customer-authentication.md).
 
 The dedicated ECloe Pay wallet surface documentation is maintained separately in [`ecloe-pay.md`](ecloe-pay.md). This contract remains focused on the implemented Engine API payloads that ECloe Pay will consume during the planned demo.

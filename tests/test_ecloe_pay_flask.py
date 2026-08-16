@@ -273,7 +273,7 @@ def test_pay_flask_wallet_runs_on_pay_route_after_login() -> None:
     assert "Demo balance" in body
     assert "Security confirmation" in body
     assert "ECloe Pay demo terms" in body
-    assert "Presentation mode" in body
+    assert "Presentation mode" not in body
 
 
 def test_pay_flask_session_requires_login_by_default() -> None:

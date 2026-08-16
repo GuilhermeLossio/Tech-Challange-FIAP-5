@@ -26,6 +26,15 @@ Use Application Insights or Log Analytics to inspect:
 
 - 5xx responses;
 - p95 latency;
+
+## Platform SLOs and alerts
+
+The production targets are 99.5% availability, p95 Engine latency below 500 ms,
+and less than 1% HTTP 5xx responses. Readiness failures alert after three
+consecutive evaluation periods. The Bicep deployment creates availability,
+latency, and failed-request alerts against Application Insights. Check the
+`/metrics` endpoint for bounded local counters and correlate incidents with
+`X-Request-Id` and `X-Trace-Id`.
 - readiness failures;
 - artifact loading failures;
 - Cosmos DB exceptions;

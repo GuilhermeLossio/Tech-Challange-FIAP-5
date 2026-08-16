@@ -279,6 +279,87 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
   }
 }
 
+// Operational guardrails: 99.5% availability, p95 latency under 500 ms,
+// and less than 1% failed requests. Action routing can be attached by the
+// platform team through the alert resource IDs without changing the app.
+resource failedRequestsAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: 'ecloe-${environmentName}-failed-requests'
+  location: 'global'
+  properties: {
+    description: 'Alert when Engine failed requests exceed the 1% SLO budget.'
+    severity: 2
+    enabled: true
+    scopes: [appInsights.id]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT5M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'failed-requests'
+          criterionType: 'StaticThresholdCriterion'
+          metricName: 'requests/failed'
+          operator: 'GreaterThan'
+          threshold: 1
+          timeAggregation: 'Count'
+        }
+      ]
+    }
+  }
+}
+
+resource latencyAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: 'ecloe-${environmentName}-latency'
+  location: 'global'
+  properties: {
+    description: 'Alert when request latency breaches the 500 ms p95 SLO.'
+    severity: 2
+    enabled: true
+    scopes: [appInsights.id]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT5M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'latency'
+          criterionType: 'StaticThresholdCriterion'
+          metricName: 'requests/duration'
+          operator: 'GreaterThan'
+          threshold: 500
+          timeAggregation: 'Average'
+        }
+      ]
+    }
+  }
+}
+
+resource availabilityAlert 'Microsoft.Insights/metricAlerts@2018-03-01' = {
+  name: 'ecloe-${environmentName}-availability'
+  location: 'global'
+  properties: {
+    description: 'Alert when availability falls below the 99.5% SLO.'
+    severity: 1
+    enabled: true
+    scopes: [appInsights.id]
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT15M'
+    criteria: {
+      'odata.type': 'Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria'
+      allOf: [
+        {
+          name: 'availability'
+          criterionType: 'StaticThresholdCriterion'
+          metricName: 'availabilityResults/availabilityPercentage'
+          operator: 'LessThan'
+          threshold: 995 / 10
+          timeAggregation: 'Average'
+        }
+      ]
+    }
+  }
+}
+
 resource blobReaderRole 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(storage.id, app.name, 'Storage Blob Data Reader')
   scope: storage

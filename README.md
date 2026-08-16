@@ -1,4 +1,11 @@
 # ECloe - Datathon 7MLET
+
+> Quickstart and navigation. Detailed architecture, operations, API, product,
+> security, and ML documentation is indexed in [`docs/index.md`](docs/index.md).
+
+ECloe has two explicit runtime surfaces: FastAPI is the authenticated Engine
+API; Flask is the web BFF for Market and Pay sessions. The browser demo requires
+the Flask backend and has no public static persistence fallback.
 > **Low-cost next-best-action engine for integrated marketplace and digital wallet ecosystems.**
 
 ECloe is a Machine Learning Engineering MVP that compares deterministic and adaptive decision policies for recommending the next best eligible action in a marketplace-finance journey. The product story is split into **ECloe Market**, a simulated marketplace, **ECloe Pay**, a simulated digital wallet, and **ECloe Engine**, the adaptive decision layer between them. It shows how marketplace behavior and wallet context can guide offers, messages, or benefits without making credit, fraud, or eligibility decisions. The active data-preparation foundation is the public Kaggle Hillstrom email-campaign dataset, processed into minimized context, action, and reward columns for offline bandit evaluation.

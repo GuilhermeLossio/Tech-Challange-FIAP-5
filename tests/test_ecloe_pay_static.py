@@ -173,14 +173,14 @@ def test_pay_authentication_uses_secure_cookie_csrf_and_rate_limit() -> None:
     assert "samesite=\"Lax\"" in app_source
     assert "path=\"/\"" in app_source
     assert "max_age=settings.ecloe_pay_session_ttl_seconds" in app_source
-    assert "settings.app_environment != \"local\"" in app_source
-    assert "hmac.compare_digest" in app_source
+    assert "service_cookie_secure" in app_source
+    assert "csrf_matches" in app_source
     assert "request.cookies.get(CSRF_COOKIE_NAME) or secrets.token_urlsafe" not in app_source
     assert "LOGIN_RATE_LIMIT_ATTEMPTS" in app_source
     assert "Cache-Control" in app_source
     assert "redirect(_localized_login_url(locale))" in app_source
     assert "make_response" in app_source
-    assert "session.get(\"csrf_token\")" in app_source
+    assert "csrf_token(session)" in app_source
     assert "_rotate_csrf_token" in app_source
     assert "SharedRateLimiter" in app_source
     assert "app.secret_key = settings.flask_secret_key" in app_source
@@ -226,9 +226,9 @@ def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     wallet_styles = (PAY_DEMO / "wallet.css").read_text(encoding="utf-8")
 
     assert "transactionLocked" in script
-    assert "Previa duplicada ignorada" in script
+    assert "Tentativa duplicada ignorada" in script
     assert "confirmationCode" in script
-    assert "pre-visualizado" in script
+    assert "backend Flask" in script
     assert "localStorage" not in script
     assert "/api/auth/me" in script
     assert "/api/auth/logout" in script
@@ -236,7 +236,7 @@ def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     assert "sql_schema" not in script
     assert "database_provider" in script
     assert "database_schema" in script
-    assert "Modo apresentacao" in script
+    assert "Backend indisponivel" in script
     assert "formatMoney" in script
     assert "renderSession(body)" in script
     assert "setLoadedText" in script
@@ -246,7 +246,7 @@ def test_pay_demo_blocks_duplicate_simulated_payment() -> None:
     assert "@keyframes shimmer-text" in wallet_styles
     for fixed_value in ("R$ 428,70", "R$ 18,40", "64%", "R$ 127,90"):
         assert fixed_value not in index
-    assert 't("wallet.presentationMode")' in index
+    assert 't("wallet.loading")' in index
     assert "postgres_schema" not in index
     assert "PostgreSQL" not in index
 

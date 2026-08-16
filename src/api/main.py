@@ -22,9 +22,9 @@ def create_app(
         title="ECloe Engine API",
         version="0.1.0",
         lifespan=create_lifespan(decision_service, decision_repository, recommendation_service),
-        docs_url=None,
-        redoc_url=None,
-        openapi_url=None,
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json",
     )
     if decision_service is not None:
         app.state.decision_service = decision_service

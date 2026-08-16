@@ -483,13 +483,22 @@ def test_business_routes_require_expected_scopes() -> None:
         assert route_scopes == scopes
 
 
-def test_api_public_documentation_routes_are_disabled() -> None:
+def test_api_public_documentation_routes_are_available() -> None:
     app = api_main.create_app()
     paths = {getattr(route, "path", None) for route in app.routes}
 
-    assert "/docs" not in paths
-    assert "/redoc" not in paths
-    assert "/openapi.json" not in paths
+    assert "/docs" in paths
+    assert "/redoc" in paths
+    assert "/openapi.json" in paths
+
+
+def test_swagger_documentation_is_exposed_by_the_http_app() -> None:
+    app = api_main.create_app()
+    client = TestClient(app, base_url="http://127.0.0.1")
+
+    assert client.get("/docs").status_code == 200
+    assert client.get("/redoc").status_code == 200
+    assert client.get("/openapi.json").status_code == 200
 
 
 @requires_testclient

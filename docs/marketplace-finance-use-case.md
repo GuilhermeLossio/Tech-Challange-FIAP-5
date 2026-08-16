@@ -112,7 +112,7 @@ The planned demo interface should simulate the full journey without implementing
 
 | Step | Area | Status | Demo behavior |
 |:---|:---|:---|:---|
-| 1 | Demo launcher | Planned for demo | Select a deterministic persona, channel, presentation mode, technical mode, session ID, and seed. |
+| 1 | Demo launcher | Planned for demo | Select a deterministic persona, channel, technical mode, session ID, and seed. |
 | 2 | ECloe Market | Planned for demo | Browse categories, view a product, add it to cart, and start checkout. |
 | 3 | Context aggregation | Planned for demo | Convert raw UI events into minimized fields such as `channel`, `history_segment`, and `newbie`. |
 | 4 | Eligibility simulation | Planned for demo | Produce eligible offers before ECloe Engine is called. |
