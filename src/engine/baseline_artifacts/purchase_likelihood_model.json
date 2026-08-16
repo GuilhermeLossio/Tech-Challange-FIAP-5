@@ -1,0 +1,18 @@
+{
+  "schema_version": "purchase_likelihood_model.v1",
+  "artifact_status": "active",
+  "version": "deterministic-baseline-v1",
+  "generated_at": "2026-08-16T00:00:00Z",
+  "source_file": "embedded_deterministic_baseline",
+  "global_conversion_rate": 0.01,
+  "global_count": 0,
+  "action_rates": {
+    "legacy_variant_a": {"count": 0, "successes": 0, "rate": 0.01},
+    "legacy_variant_b": {"count": 0, "successes": 0, "rate": 0.01},
+    "legacy_control": {"count": 0, "successes": 0, "rate": 0.01}
+  },
+  "context_rates": {},
+  "min_samples": 10,
+  "smoothing_alpha": 2.0,
+  "context_columns": ["channel", "history_segment", "newbie"]
+}

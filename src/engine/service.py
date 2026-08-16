@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from dataclasses import asdict
 from datetime import UTC, datetime
 from pathlib import Path
@@ -8,6 +9,7 @@ from uuid import uuid4
 from src.engine.artifacts import (
     SELECTED_POLICY_SCHEMA,
     ArtifactMetadata,
+    ArtifactValidationError,
     LoadedArtifact,
     load_json_artifact,
 )
@@ -16,6 +18,8 @@ from src.engine.schemas import DecisionResponse, EngineRequest
 from src.engine.strategies import DecisionStrategy, LikelihoodRankerStrategy
 
 DEFAULT_SELECTED_POLICY_FILE = DEFAULT_OUTPUT_DIR / "selected_policy.json"
+BASELINE_ARTIFACT_DIR = Path(__file__).resolve().parent / "baseline_artifacts"
+LOGGER = logging.getLogger(__name__)
 
 
 class DecisionService:
@@ -54,10 +58,17 @@ class DecisionService:
 
     @classmethod
     def from_directory(cls, artifact_dir: Path) -> DecisionService:
-        return cls.from_files(
-            likelihood_model_file=artifact_dir / "purchase_likelihood_model.json",
-            selected_policy_file=artifact_dir / "selected_policy.json",
-        )
+        try:
+            return cls.from_files(
+                likelihood_model_file=artifact_dir / "purchase_likelihood_model.json",
+                selected_policy_file=artifact_dir / "selected_policy.json",
+            )
+        except (FileNotFoundError, ArtifactValidationError) as error:
+            LOGGER.warning("Decision artifact fallback reason=%s", type(error).__name__)
+            return cls.from_files(
+                likelihood_model_file=BASELINE_ARTIFACT_DIR / "purchase_likelihood_model.json",
+                selected_policy_file=BASELINE_ARTIFACT_DIR / "selected_policy.json",
+            )
 
     def current_policy(self) -> dict[str, object]:
         artifact = self.strategy.artifact_metadata

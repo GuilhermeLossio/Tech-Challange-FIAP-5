@@ -139,6 +139,26 @@ def test_decision_service_recommends_only_eligible_offer(tmp_path) -> None:
     assert response.created_at
 
 
+def test_decision_service_falls_back_to_embedded_baseline_when_artifacts_are_missing(
+    tmp_path,
+) -> None:
+    service = DecisionService.from_directory(tmp_path / "missing-artifacts")
+
+    response = service.decide(
+        EngineRequest(
+            request_id="req_baseline",
+            customer_context={"channel": "Web"},
+            eligible_offers=["financial_education", "cashback_recurring_purchase"],
+        )
+    )
+    policy = service.current_policy()
+
+    assert response.offer_id == "financial_education"
+    assert response.artifact_version == "deterministic-baseline-v1"
+    assert "context_or_action_has_limited_evidence" in response.warnings
+    assert policy["promoted_offline_policy"]["policy"] == "deterministic_baseline"
+
+
 def test_likelihood_training_rejects_blocked_columns(tmp_path) -> None:
     input_file = tmp_path / "processed.csv"
     dataframe = processed_dataframe()
