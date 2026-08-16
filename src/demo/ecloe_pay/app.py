@@ -185,9 +185,10 @@ def _render_demo_template(template_name: str, settings: Settings, **context):
             **context,
         ),
     )
+    locale_cookie_value = "pt-BR" if locale == "pt-BR" else "en-US"
     response.set_cookie(
         LOCALE_COOKIE_NAME,
-        canonical_locale(locale),
+        locale_cookie_value,
         httponly=False,
         secure=_cookie_secure(settings),
         samesite="Lax",
