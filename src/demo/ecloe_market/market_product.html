@@ -36,18 +36,16 @@
         <div class="product-gallery-main">
           <img
             data-product-gallery-main
-            src="{{ product.thumbnail }}"
+            src="/market/assets/catalog/{{ product.product_id }}.svg"
             alt="{{ product.title_pt if locale == "pt-BR" else product.title_en }}"
-            onerror="this.src='/market/assets/product-placeholder.svg'"
           />
         </div>
         <div class="thumbnail-row">
           {% for image in product.images %}
-            <button class="gallery-thumb {{ 'active' if loop.first else '' }}" type="button" data-gallery-image="{{ image }}">
+            <button class="gallery-thumb {{ 'active' if loop.first else '' }}" type="button" data-gallery-image="/market/assets/catalog/{{ product.product_id }}.svg">
               <img
-                src="{{ image }}"
+                src="/market/assets/catalog/{{ product.product_id }}.svg"
                 alt="{{ product.title_pt if locale == "pt-BR" else product.title_en }}"
-                onerror="this.src='/market/assets/product-placeholder.svg'"
               />
             </button>
           {% endfor %}
@@ -84,7 +82,7 @@
         <strong class="product-price">R$ {{ "%.2f"|format((detail.current_price.price_cents if detail.current_price else product.price_cents) / 100) }}</strong>
         <p class="shipping-badge">{{ t("market.deliveryBadge") }}</p>
         <p>{{ t("market.payBenefitCopy") }}</p>
-        <button class="primary-link full-width" type="button" data-add-product="{{ product.product_id }}" data-cart-title="{{ product.title_pt if locale == 'pt-BR' else product.title_en }}" data-cart-thumbnail="{{ product.thumbnail }}" data-cart-price="{{ detail.current_price.price_cents if detail.current_price else product.price_cents }}" data-cart-currency="{{ detail.current_price.currency if detail.current_price else product.currency }}" data-cart-variant="{{ detail.default_variant.variant_id if detail.default_variant else '' }}" data-add-label="{{ t('market.addToCart') }}" data-adding-label="{{ t('market.addingToCart') }}" data-added-label="{{ t('market.addedToCartButton') }}" data-failed-label="{{ t('market.cartAddFailed') }}">{{ t("market.addToCart") }}</button>
+        <button class="primary-link full-width" type="button" data-add-product="{{ product.product_id }}" data-cart-title="{{ product.title_pt if locale == 'pt-BR' else product.title_en }}" data-cart-thumbnail="/market/assets/catalog/{{ product.product_id }}.svg" data-cart-price="{{ detail.current_price.price_cents if detail.current_price else product.price_cents }}" data-cart-currency="{{ detail.current_price.currency if detail.current_price else product.currency }}" data-cart-variant="{{ detail.default_variant.variant_id if detail.default_variant else '' }}" data-add-label="{{ t('market.addToCart') }}" data-adding-label="{{ t('market.addingToCart') }}" data-added-label="{{ t('market.addedToCartButton') }}" data-failed-label="{{ t('market.cartAddFailed') }}">{{ t("market.addToCart") }}</button>
         <a class="secondary-link full-width" href="/market/cart">{{ t("market.goToCart") }}</a>
         {% if user %}
           <a class="secondary-link full-width" href="/pay">{{ t("market.openPay") }}</a>
