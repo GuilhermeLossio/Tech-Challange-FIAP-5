@@ -113,9 +113,6 @@ jobs:
 
   sql-integration:
     name: Azure SQL integration contracts
-    # Pull-request jobs cannot assume that the protected Azure environment is
-    # configured. Run the real Azure SQL gate explicitly or after merge.
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     environment: ci-sql
     permissions:
