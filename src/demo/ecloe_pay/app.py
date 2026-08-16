@@ -26,6 +26,7 @@ from src.core.config import Settings, load_settings
 from src.core.rate_limit import RateLimitBackendUnavailable, SharedRateLimiter
 from src.demo.ecloe_pay.i18n import (
     LOCALE_COOKIE_NAME,
+    canonical_locale,
     load_messages,
     resolve_locale,
     translate,
@@ -186,7 +187,7 @@ def _render_demo_template(template_name: str, settings: Settings, **context):
     )
     response.set_cookie(
         LOCALE_COOKIE_NAME,
-        locale,
+        canonical_locale(locale),
         httponly=False,
         secure=_cookie_secure(settings),
         samesite="Lax",

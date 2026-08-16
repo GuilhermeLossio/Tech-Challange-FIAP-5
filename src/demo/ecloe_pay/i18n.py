@@ -29,6 +29,10 @@ def normalize_locale(value: str | None) -> str | None:
     return normalized if normalized in SUPPORTED_LOCALES else None
 
 
+def canonical_locale(value: str | None) -> str:
+    return normalize_locale(value) or DEFAULT_LOCALE
+
+
 def resolve_locale(request: Request) -> str:
     for candidate in [
         request.args.get("lang"),
