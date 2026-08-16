@@ -177,5 +177,7 @@ def test_cosmos_document_payload_uses_existing_customer_id_partition_alias() -> 
 
     assert decision_payload["customer_id"] == "sub_hash"
     assert reward_payload["customer_id"] == "sub_hash"
+    assert "ttl" not in decision_payload
+    assert "ttl" not in reward_payload
     assert _record_from_dict({"customer_id": "sub_hash", **decision_payload}).subject_key == "sub_hash"
     assert _reward_from_dict({"customer_id": "sub_hash", **reward_payload}).subject_key == "sub_hash"
