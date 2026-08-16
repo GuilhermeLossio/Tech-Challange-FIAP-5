@@ -42,6 +42,33 @@ def test_integrated_demo_market_catalog_is_public() -> None:
     assert "deterministic_baseline" in body
 
 
+def test_market_catalog_asset_is_read_from_private_blob(monkeypatch) -> None:
+    from src.demo.ecloe_market import blueprint as market_module
+
+    class Download:
+        def readall(self) -> bytes:
+            return b"synthetic-png"
+
+    class Container:
+        def download_blob(self, blob_name: str) -> Download:
+            assert blob_name == "catalog/images/prd_demo_0001_01.png"
+            return Download()
+
+    monkeypatch.setattr(market_module, "_catalog_asset_container", lambda: Container())
+    response = create_app().test_client().get("/market/catalog-assets/prd_demo_0001_01.png")
+
+    assert response.status_code == 200
+    assert response.data == b"synthetic-png"
+    assert response.content_type == "image/png"
+    assert response.headers["Cache-Control"] == "public, max-age=86400, immutable"
+
+
+def test_market_catalog_asset_rejects_unexpected_blob_names() -> None:
+    response = create_app().test_client().get("/market/catalog-assets/other.png")
+
+    assert response.status_code == 404
+
+
 def test_pay_and_market_trailing_slashes_redirect_to_canonical_routes() -> None:
     app = create_app()
     client = app.test_client()
@@ -184,7 +211,9 @@ def test_integrated_demo_market_pays_order_from_ecloe_pay_wallet_once() -> None:
         json={"product_id": "prd_demo_0001"},
         headers=headers,
     )
-    inventory_before = client.get("/api/market/products/prd_demo_0001").get_json()["inventory_items"]
+    inventory_before = client.get("/api/market/products/prd_demo_0001").get_json()[
+        "inventory_items"
+    ]
     headers = csrf_headers(client)
     checkout = client.post(
         "/api/market/checkouts",
@@ -474,9 +503,7 @@ def test_local_cart_payment_does_not_mutate_inventory_or_legacy_cart() -> None:
     assert payment.status_code == 200
     assert payment.get_json()["order"]["status"] == "paid"
     assert client.get("/api/market/cart").get_json()["cart"]["empty"] is True
-    inventory_after = client.get("/api/market/products/prd_demo_0001").get_json()[
-        "inventory_items"
-    ]
+    inventory_after = client.get("/api/market/products/prd_demo_0001").get_json()["inventory_items"]
     assert inventory_after == inventory_before
 
 
@@ -499,7 +526,7 @@ def test_local_cart_checkout_blocks_price_and_stock_changes_before_order() -> No
                     "product_id": "prd_demo_0013",
                     "quantity": 9,
                     "expected_unit_price_cents": 5765,
-                }
+                },
             ]
         },
         headers=headers,

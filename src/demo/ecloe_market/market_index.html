@@ -146,7 +146,7 @@
           <article class="recommendation-item">
             <a href="/market/products/{{ product.product_id }}">
               <img
-                src="/market/assets/catalog/{{ product.product_id }}.svg"
+                src="/market/catalog-assets/{{ product.product_id }}_01.png"
                 alt="{{ product_title }}"
                 loading="lazy"
               />
@@ -163,7 +163,7 @@
               data-recommendation-decision="{{ recommendation.decision_id }}"
               data-recommendation-position="{{ ranked.rank }}"
               data-cart-title="{{ product_title }}"
-              data-cart-thumbnail="/market/assets/catalog/{{ product.product_id }}.svg"
+              data-cart-thumbnail="/market/catalog-assets/{{ product.product_id }}_01.png"
               data-cart-price="{{ product.price_cents }}"
               data-cart-currency="{{ product.currency }}"
               data-add-label="{{ t('market.addToCart') }}"
@@ -241,7 +241,7 @@
               <div class="product-image-panel">
                 <a class="product-image-link" href="/market/products/{{ product.product_id }}">
                   <img
-                    src="/market/assets/catalog/{{ product.product_id }}.svg"
+                    src="/market/catalog-assets/{{ product.product_id }}_01.png"
                     alt="{{ product_title }}"
                     loading="lazy"
                   />
@@ -250,7 +250,7 @@
                   <div class="product-card-thumbs" aria-hidden="true">
                     {% for image in product.images[:3] %}
                       <img
-                        src="/market/assets/catalog/{{ product.product_id }}.svg"
+                        src="/market/catalog-assets/{{ product.product_id }}_0{{ loop.index }}.png"
                         alt=""
                         loading="lazy"
                       />
@@ -278,7 +278,7 @@
                 </div>
               </div>
               <div class="product-card-actions">
-                <button class="primary-link" type="button" data-add-product="{{ product.product_id }}" data-cart-title="{{ product_title }}" data-cart-thumbnail="/market/assets/catalog/{{ product.product_id }}.svg" data-cart-price="{{ product.price_cents }}" data-cart-currency="{{ product.currency }}" data-add-label="{{ t('market.addToCart') }}" data-adding-label="{{ t('market.addingToCart') }}" data-added-label="{{ t('market.addedToCartButton') }}" data-failed-label="{{ t('market.cartAddFailed') }}">{{ t("market.addToCart") }}</button>
+                <button class="primary-link" type="button" data-add-product="{{ product.product_id }}" data-cart-title="{{ product_title }}" data-cart-thumbnail="/market/catalog-assets/{{ product.product_id }}_01.png" data-cart-price="{{ product.price_cents }}" data-cart-currency="{{ product.currency }}" data-add-label="{{ t('market.addToCart') }}" data-adding-label="{{ t('market.addingToCart') }}" data-added-label="{{ t('market.addedToCartButton') }}" data-failed-label="{{ t('market.cartAddFailed') }}">{{ t("market.addToCart") }}</button>
                 <a class="secondary-link" href="/market/products/{{ product.product_id }}">{{ t("market.viewProduct") }}</a>
               </div>
             </article>

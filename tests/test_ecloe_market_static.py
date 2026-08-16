@@ -49,12 +49,12 @@ def test_ecloe_market_i18n_files_exist() -> None:
     assert (i18n_dir / "en-US.json").exists()
 
 
-def test_ecloe_market_uses_packaged_catalog_images_without_inline_fallbacks() -> None:
+def test_ecloe_market_uses_managed_blob_catalog_images_without_inline_fallbacks() -> None:
     market_dir = ROOT / "src" / "demo" / "ecloe_market"
     templates = "\n".join(path.read_text(encoding="utf-8") for path in market_dir.glob("*.html"))
     script = (market_dir / "assets" / "market.js").read_text(encoding="utf-8")
 
-    assert "/market/assets/catalog/{{ product.product_id }}.svg" in templates
+    assert "/market/catalog-assets/{{ product.product_id }}_01.png" in templates
     assert "onerror=" not in templates
     assert "catalogThumbnail(productId" in script
 

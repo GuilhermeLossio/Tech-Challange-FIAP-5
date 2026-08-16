@@ -27,7 +27,7 @@
 
   function catalogThumbnail(productId, fallback) {
     if (/^prd_demo_\d{4}$/.test(productId)) {
-      return `/market/assets/catalog/${productId}.svg`;
+      return `/market/catalog-assets/${productId}_01.png`;
     }
     return String(fallback || "/market/assets/product-placeholder.svg");
   }
