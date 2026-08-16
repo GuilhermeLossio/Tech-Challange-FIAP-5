@@ -123,7 +123,7 @@ jobs:
             test -n "${{ vars.ECLOE_WEB_ENTRA_CLIENT_SECRET_URI }}" || { echo "ECLOE_WEB_ENTRA_CLIENT_SECRET_URI is required"; exit 1; }
             test -n "${{ vars.ECLOE_DEMO_WEB_BASE_URL }}" || { echo "ECLOE_DEMO_WEB_BASE_URL is required"; exit 1; }
           fi
-          az keyvault show --ids "${{ vars.ECLOE_KEY_VAULT_ID }}" --output none
+          az keyvault show --id "${{ vars.ECLOE_KEY_VAULT_ID }}" --output none
           if az containerapp show --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" --name "${{ inputs.container_app_name }}" --output none 2>/dev/null; then
             az containerapp identity assign \
               --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
