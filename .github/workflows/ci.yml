@@ -54,10 +54,23 @@ jobs:
 
       - name: Start container for load smoke
         run: |
-          docker run -d --rm --name ecloe-engine-load -p 8000:8000 \
-            -e ARTIFACT_SOURCE=file -e AUTH_MODE=disabled -e API_HOST=0.0.0.0 \
+          docker run -d --name ecloe-engine-load -p 8000:8000 \
+            -e ARTIFACT_SOURCE=file -e AUTH_MODE=disabled \
             ecloe-engine:ci
-          for i in {1..30}; do curl --fail --silent http://127.0.0.1:8000/livez && break; sleep 2; done
+          for i in {1..30}; do
+            if curl --fail --silent --show-error http://127.0.0.1:8000/livez; then
+              exit 0
+            fi
+            if ! docker inspect --format='{{.State.Running}}' ecloe-engine-load 2>/dev/null | grep -q true; then
+              echo "Engine container stopped before becoming ready."
+              docker logs ecloe-engine-load 2>&1 || true
+              exit 1
+            fi
+            sleep 2
+          done
+          echo "Engine container did not become ready within 60 seconds."
+          docker logs ecloe-engine-load 2>&1 || true
+          exit 1
 
       - name: Install k6
         uses: grafana/setup-k6-action@v1
@@ -67,7 +80,7 @@ jobs:
 
       - name: Stop load container
         if: always()
-        run: docker stop ecloe-engine-load || true
+        run: docker rm --force ecloe-engine-load || true
 
       - name: Secret scan
         uses: gitleaks/gitleaks-action@v3
