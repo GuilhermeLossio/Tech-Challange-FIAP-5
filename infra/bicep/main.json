@@ -5,7 +5,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.45.15.27210",
-      "templateHash": "13313891041002299277"
+      "templateHash": "2831584575362202757"
     }
   },
   "parameters": {
@@ -123,6 +123,12 @@
       "metadata": {
         "description": "Container App external ingress port."
       }
+    },
+    "trustedHosts": {
+      "type": "string",
+      "metadata": {
+        "description": "Comma-separated host names accepted by the API host validation middleware."
+      }
     }
   },
   "variables": {
@@ -226,6 +232,10 @@
                 {
                   "name": "API_HOST",
                   "value": "0.0.0.0"
+                },
+                {
+                  "name": "TRUSTED_HOSTS",
+                  "value": "[parameters('trustedHosts')]"
                 },
                 {
                   "name": "AUTH_MODE",

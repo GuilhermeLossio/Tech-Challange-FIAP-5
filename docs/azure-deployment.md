@@ -40,6 +40,7 @@ CONTAINERAPPS_ENVIRONMENT=ecloe-demo-aca-env
 AZURE_COSMOS_ACCOUNT=ecloe5cosmos1266cl
 AZURE_COSMOS_DATABASE=ecloe
 AZURE_KEY_VAULT_NAME=<existing-key-vault-name>
+ECLOE_ENGINE_TRUSTED_HOSTS=ecloe-engine-mvp.<container-apps-domain>
 FLASK_SECRET_NAME=ecloe-flask-secret-key
 SUBJECT_KEY_SALT_SECRET_NAME=ecloe-subject-key-salt
 RATE_LIMIT_REDIS_SECRET_NAME=ecloe-rate-limit-redis-url

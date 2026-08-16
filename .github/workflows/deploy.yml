@@ -50,6 +50,7 @@ jobs:
         run: |
           test -n "${{ vars.AZURE_RESOURCE_GROUP }}" || { echo "AZURE_RESOURCE_GROUP is required"; exit 1; }
           test -n "${{ vars.AZURE_KEY_VAULT_NAME }}" || { echo "AZURE_KEY_VAULT_NAME is required"; exit 1; }
+          test -n "${{ vars.ECLOE_ENGINE_TRUSTED_HOSTS }}" || { echo "ECLOE_ENGINE_TRUSTED_HOSTS is required"; exit 1; }
           az keyvault show --name "${{ vars.AZURE_KEY_VAULT_NAME }}" --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" --output none
           az containerapp env show \
             --name "${{ vars.CONTAINERAPPS_ENVIRONMENT || 'ecloe-demo-aca-env' }}" \
@@ -94,6 +95,7 @@ jobs:
               containerAppsEnvironmentName="${{ vars.CONTAINERAPPS_ENVIRONMENT || 'ecloe-demo-aca-env' }}" \
               entraTenantId="${{ secrets.AZURE_TENANT_ID }}" \
               entraClientId="${{ secrets.ENTRA_CLIENT_ID }}" \
+              trustedHosts="${{ vars.ECLOE_ENGINE_TRUSTED_HOSTS }}" \
               keyVaultName="${{ vars.AZURE_KEY_VAULT_NAME }}" \
               flaskSecretName="${{ vars.FLASK_SECRET_NAME || 'ecloe-flask-secret-key' }}" \
               subjectKeySaltSecretName="${{ vars.SUBJECT_KEY_SALT_SECRET_NAME || 'ecloe-subject-key-salt' }}" \
