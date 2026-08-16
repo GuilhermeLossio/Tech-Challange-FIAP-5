@@ -11,6 +11,7 @@ from typing import Any
 
 from werkzeug.security import check_password_hash
 
+from src.core.azure_sql import strip_sqlalchemy_trusted_connection
 from src.core.config import Settings
 from src.demo.ecloe_pay.personas import external_user_id, persona_for_subject
 from src.demo.ecloe_pay.repositories.base import (
@@ -82,13 +83,12 @@ class AzureSqlPayRepository(PayRepository):
             query=query,
         )
         engine = create_engine(url, connect_args=connect_args, pool_pre_ping=True)
-        if "attrs_before" in connect_args:
-            from sqlalchemy import event
+        from sqlalchemy import event
 
-            @event.listens_for(engine, "do_connect")
-            def _remove_sqlalchemy_trusted_connection(dialect, connection_record, cargs, cparams):
-                if cargs:
-                    cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
+        @event.listens_for(engine, "do_connect")
+        def _remove_sqlalchemy_trusted_connection(dialect, connection_record, cargs, cparams):
+            if cargs:
+                cargs[0] = strip_sqlalchemy_trusted_connection(cargs[0])
 
         return engine
 

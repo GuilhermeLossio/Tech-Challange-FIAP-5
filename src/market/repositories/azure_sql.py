@@ -6,6 +6,7 @@ import struct
 import uuid
 from typing import Any
 
+from src.core.azure_sql import strip_sqlalchemy_trusted_connection
 from src.core.config import Settings
 from src.market.domain import (
     Cart,
@@ -65,13 +66,12 @@ class AzureSqlMarketRepository(MarketRepository):
             query=query,
         )
         engine = create_engine(url, connect_args=connect_args, pool_pre_ping=True)
-        if "attrs_before" in connect_args:
-            from sqlalchemy import event
+        from sqlalchemy import event
 
-            @event.listens_for(engine, "do_connect")
-            def _remove_sqlalchemy_trusted_connection(dialect, connection_record, cargs, cparams):
-                if cargs:
-                    cargs[0] = cargs[0].replace(";Trusted_Connection=Yes", "")
+        @event.listens_for(engine, "do_connect")
+        def _remove_sqlalchemy_trusted_connection(dialect, connection_record, cargs, cparams):
+            if cargs:
+                cargs[0] = strip_sqlalchemy_trusted_connection(cargs[0])
 
         return engine
 
