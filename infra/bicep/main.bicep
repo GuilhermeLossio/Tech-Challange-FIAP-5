@@ -51,6 +51,9 @@ param rateLimitRedisSecretName string = 'ecloe-rate-limit-redis-url'
 @description('Container App external ingress port.')
 param targetPort int = 8000
 
+@description('Comma-separated host names accepted by the API host validation middleware.')
+param trustedHosts string
+
 var unique = uniqueString(resourceGroup().id, environmentName)
 var storageName = toLower('ecloeart${unique}')
 var appInsightsName = 'ecloe-ai-${environmentName}'
@@ -163,6 +166,10 @@ resource app 'Microsoft.App/containerApps@2024-03-01' = {
             {
               name: 'API_HOST'
               value: '0.0.0.0'
+            }
+            {
+              name: 'TRUSTED_HOSTS'
+              value: trustedHosts
             }
             {
               name: 'AUTH_MODE'

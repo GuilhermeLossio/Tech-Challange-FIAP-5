@@ -22,7 +22,7 @@ Deploy or update the runtime resources:
 az deployment group create \
   --resource-group FIAPTechChallange5 \
   --template-file infra/bicep/main.bicep \
-  --parameters environmentName=mvp location=chilecentral acrName=ecloedemo1266 containerAppsEnvironmentName=ecloe-demo-aca-env containerImage=ecloedemo1266.azurecr.io/ecloe-engine:<git-sha> entraTenantId=<tenant> entraClientId=<client> subjectKeySalt=<secret>
+  --parameters environmentName=mvp location=chilecentral acrName=ecloedemo1266 containerAppsEnvironmentName=ecloe-demo-aca-env containerImage=ecloedemo1266.azurecr.io/ecloe-engine:<git-sha> entraTenantId=<tenant> entraClientId=<client> keyVaultName=<key-vault-name>
 ```
 
 The template uses the existing Azure Container Registry and existing Container Apps environment. It creates Storage, `ecloe-artifacts`, Application Insights, and the ECloe Engine Container App with a system-assigned Managed Identity.
@@ -39,6 +39,11 @@ ACR_LOGIN_SERVER=ecloedemo1266.azurecr.io
 CONTAINERAPPS_ENVIRONMENT=ecloe-demo-aca-env
 AZURE_COSMOS_ACCOUNT=ecloe5cosmos1266cl
 AZURE_COSMOS_DATABASE=ecloe
+AZURE_KEY_VAULT_NAME=<existing-key-vault-name>
+ECLOE_ENGINE_TRUSTED_HOSTS=ecloe-engine-mvp.<container-apps-domain>
+FLASK_SECRET_NAME=ecloe-flask-secret-key
+SUBJECT_KEY_SALT_SECRET_NAME=ecloe-subject-key-salt
+RATE_LIMIT_REDIS_SECRET_NAME=ecloe-rate-limit-redis-url
 ```
 
 Required GitHub environment secrets for `mvp`:
@@ -48,16 +53,40 @@ AZURE_CLIENT_ID
 AZURE_TENANT_ID
 AZURE_SUBSCRIPTION_ID
 ENTRA_CLIENT_ID
-FLASK_SECRET_KEY
-SUBJECT_KEY_SALT
-RATE_LIMIT_REDIS_URL
 ```
 
-After deployment, grant the Container App identity Cosmos DB data-plane access:
+The API workflow grants the Container App identity Cosmos DB data-plane access idempotently. The Key Vault must exist before the workflow starts and contain these secrets:
+
+```text
+ecloe-flask-secret-key
+ecloe-subject-key-salt
+ecloe-rate-limit-redis-url
+```
+
+The MVP Demo Web workflow uses `auth_mode=local_signup`, Azure SQL with Managed Identity,
+and one replica. It requires these environment variables:
+
+```text
+ECLOE_KEY_VAULT_ID
+ECLOE_PAY_SQL_SERVER
+ECLOE_PAY_SQL_DATABASE
+```
+
+Set `ecloe-rate-limit-redis-url` to `memory://ecloe-mvp` for the single-replica MVP.
+Before running the Demo Web workflow, apply `src/demo/ecloe_pay/schema.sql` and the Market
+SQL schema with an Entra migration identity. Then grant the Container App identity access:
 
 ```powershell
-.\scripts\grant_cosmos_data_contributor.ps1 -PrincipalId <managed-identity-principal-id>
+python -m scripts.grant_ecloe_demo_sql_access --principal-id <managed-identity-object-id>
 ```
+
+The script creates an idempotent contained user and grants runtime access only on the
+`ecloe_pay` and `ecloe_market` schemas. The SQL firewall must allow the migration runner;
+the deployment workflow does not widen the firewall automatically.
+
+For a later External ID deployment, run `Deploy Demo Web` with `auth_mode=entra_external`
+and additionally configure `ECLOE_WEB_ENTRA_AUTHORITY`, `ECLOE_WEB_ENTRA_CLIENT_ID`,
+`ECLOE_WEB_ENTRA_CLIENT_SECRET_URI`, and `ECLOE_DEMO_WEB_BASE_URL`.
 
 ## Runtime Settings
 

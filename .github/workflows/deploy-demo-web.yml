@@ -11,6 +11,14 @@ on:
         description: "GitHub environment used for Azure OIDC."
         required: true
         default: "mvp"
+      auth_mode:
+        description: "Customer authentication mode for the deployed demo."
+        required: true
+        default: "local_signup"
+        type: choice
+        options:
+          - local_signup
+          - entra_external
       container_app_name:
         description: "Azure Container App name for the ECloe Market/Pay demo."
         required: true
@@ -55,7 +63,7 @@ jobs:
             TAG="${GITHUB_SHA}"
           fi
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
-          echo "image=${{ vars.ACR_LOGIN_SERVER }}/ecloe-demo-web:${TAG}" >> "$GITHUB_OUTPUT"
+          echo "image=${{ vars.ACR_LOGIN_SERVER || 'ecloedemo1266.azurecr.io' }}/ecloe-demo-web:${TAG}" >> "$GITHUB_OUTPUT"
 
       - name: Build demo image
         run: |
@@ -89,7 +97,7 @@ jobs:
 
       - name: Push image
         run: |
-          az acr login --name "${{ vars.ACR_NAME }}"
+          az acr login --name "${{ vars.ACR_NAME || 'ecloedemo1266' }}"
           docker push "${{ steps.image.outputs.image }}"
 
       - name: Ensure Container Apps environment exists
@@ -104,26 +112,55 @@ jobs:
               --location "${{ inputs.location }}"
           fi
 
+      - name: Ensure system identity and validate cloud prerequisites
+        shell: bash
+        run: |
+          test -n "${{ vars.ECLOE_KEY_VAULT_ID }}" || { echo "ECLOE_KEY_VAULT_ID is required"; exit 1; }
+          test -n "${{ vars.AZURE_KEY_VAULT_NAME }}" || { echo "AZURE_KEY_VAULT_NAME is required"; exit 1; }
+          if [ "${{ inputs.auth_mode }}" = "entra_external" ]; then
+            test -n "${{ vars.ECLOE_WEB_ENTRA_AUTHORITY }}" || { echo "ECLOE_WEB_ENTRA_AUTHORITY is required"; exit 1; }
+            test -n "${{ vars.ECLOE_WEB_ENTRA_CLIENT_ID }}" || { echo "ECLOE_WEB_ENTRA_CLIENT_ID is required"; exit 1; }
+            test -n "${{ vars.ECLOE_WEB_ENTRA_CLIENT_SECRET_URI }}" || { echo "ECLOE_WEB_ENTRA_CLIENT_SECRET_URI is required"; exit 1; }
+            test -n "${{ vars.ECLOE_DEMO_WEB_BASE_URL }}" || { echo "ECLOE_DEMO_WEB_BASE_URL is required"; exit 1; }
+          fi
+          az keyvault show --name "${{ vars.AZURE_KEY_VAULT_NAME }}" --output none
+          if az containerapp show --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" --name "${{ inputs.container_app_name }}" --output none 2>/dev/null; then
+            az containerapp identity assign \
+              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --name "${{ inputs.container_app_name }}" \
+              --system-assigned \
+              --output none
+          fi
+
       - name: Deploy Container App
         shell: bash
         run: |
           ENV_VARS=(
             APP_ENVIRONMENT=cloud
+            RATE_LIMIT_BACKEND=redis
+            RATE_LIMIT_REDIS_URL=secretref:rate-limit-redis-url
+            FLASK_SECRET_KEY=secretref:flask-secret-key
+            SUBJECT_KEY_SALT=secretref:subject-key-salt
             ECLOE_PAY_DATABASE_MODE=azure_sql
             ECLOE_MARKET_DATABASE_MODE=azure_sql
-            ECLOE_PAY_SQL_SERVER=${{ vars.ECLOE_PAY_SQL_SERVER }}
-            ECLOE_PAY_SQL_DATABASE=${{ vars.ECLOE_PAY_SQL_DATABASE }}
+            "ECLOE_PAY_SQL_SERVER=${{ vars.ECLOE_PAY_SQL_SERVER || 'ecloe-sql-1266.database.windows.net' }}"
+            "ECLOE_PAY_SQL_DATABASE=${{ vars.ECLOE_PAY_SQL_DATABASE || 'ecloe_validation' }}"
             ECLOE_PAY_SQL_AUTH_MODE=managed_identity
             ECLOE_PAY_SQL_DRIVER="ODBC Driver 18 for SQL Server"
-            ECLOE_WEB_AUTH_MODE=entra_external
-            ECLOE_WEB_ENTRA_AUTHORITY=${{ vars.ECLOE_WEB_ENTRA_AUTHORITY }}
-            ECLOE_WEB_ENTRA_CLIENT_ID=${{ vars.ECLOE_WEB_ENTRA_CLIENT_ID }}
-            ECLOE_WEB_ENTRA_CLIENT_SECRET=secretref:entra-client-secret
-            ECLOE_WEB_ENTRA_REDIRECT_URI=${{ vars.ECLOE_DEMO_WEB_BASE_URL }}/auth/callback
-            ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI=${{ vars.ECLOE_DEMO_WEB_BASE_URL }}/
+            "ECLOE_WEB_AUTH_MODE=${{ inputs.auth_mode }}"
             ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json
             ECLOE_PAY_COOKIE_SECURE=true
           )
+
+          if [ "${{ inputs.auth_mode }}" = "entra_external" ]; then
+            ENV_VARS+=(
+              "ECLOE_WEB_ENTRA_AUTHORITY=${{ vars.ECLOE_WEB_ENTRA_AUTHORITY }}"
+              "ECLOE_WEB_ENTRA_CLIENT_ID=${{ vars.ECLOE_WEB_ENTRA_CLIENT_ID }}"
+              ECLOE_WEB_ENTRA_CLIENT_SECRET=secretref:entra-client-secret
+              "ECLOE_WEB_ENTRA_REDIRECT_URI=${{ vars.ECLOE_DEMO_WEB_BASE_URL }}/auth/callback"
+              "ECLOE_WEB_ENTRA_POST_LOGOUT_REDIRECT_URI=${{ vars.ECLOE_DEMO_WEB_BASE_URL }}/"
+            )
+          fi
 
           if ! az containerapp show \
             --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
@@ -136,19 +173,32 @@ jobs:
               --ingress external \
               --target-port 8000 \
               --min-replicas 1 \
-              --max-replicas 2 \
-              --cpu 0.25 \
-              --memory 0.5Gi \
+              --max-replicas 1 \
+              --cpu 0.5 \
+              --memory 1.0Gi \
               --system-assigned \
-              --registry-server "${{ vars.ACR_LOGIN_SERVER }}" \
-              --registry-identity system \
-              --env-vars "${ENV_VARS[@]}"
+              --registry-server "${{ vars.ACR_LOGIN_SERVER || 'ecloedemo1266.azurecr.io' }}" \
+              --registry-identity system
           fi
 
           PRINCIPAL_ID="$(az containerapp show \
             --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
             --name "${{ inputs.container_app_name }}" \
             --query identity.principalId -o tsv)"
+          ACR_ID="$(az acr show --name "${{ vars.ACR_NAME || 'ecloedemo1266' }}" --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" --query id -o tsv)"
+          if [ "$(az role assignment list --assignee-object-id "${PRINCIPAL_ID}" --scope "${ACR_ID}" --role AcrPull --query 'length(@)' -o tsv)" = "0" ]; then
+            az role assignment create \
+              --assignee-object-id "${PRINCIPAL_ID}" \
+              --assignee-principal-type ServicePrincipal \
+              --scope "${ACR_ID}" \
+              --role AcrPull
+          fi
+          az containerapp registry set \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ inputs.container_app_name }}" \
+            --server "${{ vars.ACR_LOGIN_SERVER || 'ecloedemo1266.azurecr.io' }}" \
+            --identity system \
+            --output none
           if [ "$(az role assignment list \
             --assignee-object-id "${PRINCIPAL_ID}" \
             --scope "${{ vars.ECLOE_KEY_VAULT_ID }}" \
@@ -160,15 +210,36 @@ jobs:
               --scope "${{ vars.ECLOE_KEY_VAULT_ID }}" \
               --role "Key Vault Secrets User"
           fi
-          az containerapp secret set \
-            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
-            --name "${{ inputs.container_app_name }}" \
-            --secrets "entra-client-secret=keyvaultref:${{ vars.ECLOE_WEB_ENTRA_CLIENT_SECRET_URI }},identityref:system"
+          SECRETS=(
+            "flask-secret-key=keyvaultref:https://${{ vars.AZURE_KEY_VAULT_NAME }}.vault.azure.net/secrets/${{ vars.FLASK_SECRET_NAME || 'ecloe-flask-secret-key' }},identityref:system"
+            "subject-key-salt=keyvaultref:https://${{ vars.AZURE_KEY_VAULT_NAME }}.vault.azure.net/secrets/${{ vars.SUBJECT_KEY_SALT_SECRET_NAME || 'ecloe-subject-key-salt' }},identityref:system"
+            "rate-limit-redis-url=keyvaultref:https://${{ vars.AZURE_KEY_VAULT_NAME }}.vault.azure.net/secrets/${{ vars.RATE_LIMIT_REDIS_SECRET_NAME || 'ecloe-rate-limit-redis-url' }},identityref:system"
+          )
+          if [ "${{ inputs.auth_mode }}" = "entra_external" ]; then
+            SECRETS+=("entra-client-secret=keyvaultref:${{ vars.ECLOE_WEB_ENTRA_CLIENT_SECRET_URI }},identityref:system")
+          fi
+          for attempt in {1..12}; do
+            if az containerapp secret set \
+              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --name "${{ inputs.container_app_name }}" \
+              --secrets "${SECRETS[@]}" \
+              --output none; then
+              break
+            fi
+            if [ "${attempt}" = "12" ]; then
+              exit 1
+            fi
+            sleep 10
+          done
           az containerapp update \
             --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
             --name "${{ inputs.container_app_name }}" \
             --image "${{ steps.image.outputs.image }}" \
-            --set-env-vars "${ENV_VARS[@]}"
+            --set-env-vars "${ENV_VARS[@]}" \
+            --min-replicas 1 \
+            --max-replicas 1 \
+            --cpu 0.5 \
+            --memory 1.0Gi
 
       - name: Smoke deployed demo
         shell: bash

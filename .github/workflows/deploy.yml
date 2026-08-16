@@ -45,6 +45,18 @@ jobs:
           echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
           echo "image=${{ vars.ACR_LOGIN_SERVER || 'ecloedemo1266.azurecr.io' }}/ecloe-engine:${TAG}" >> "$GITHUB_OUTPUT"
 
+      - name: Validate cloud prerequisites
+        shell: bash
+        run: |
+          test -n "${{ vars.AZURE_RESOURCE_GROUP }}" || { echo "AZURE_RESOURCE_GROUP is required"; exit 1; }
+          test -n "${{ vars.AZURE_KEY_VAULT_NAME }}" || { echo "AZURE_KEY_VAULT_NAME is required"; exit 1; }
+          test -n "${{ vars.ECLOE_ENGINE_TRUSTED_HOSTS }}" || { echo "ECLOE_ENGINE_TRUSTED_HOSTS is required"; exit 1; }
+          az keyvault show --name "${{ vars.AZURE_KEY_VAULT_NAME }}" --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" --output none
+          az containerapp env show \
+            --name "${{ vars.CONTAINERAPPS_ENVIRONMENT || 'ecloe-demo-aca-env' }}" \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --output none
+
       - name: Build local image
         run: docker build --build-arg VCS_REF="${GITHUB_SHA}" --build-arg VERSION="${{ steps.image.outputs.tag }}" -t "${{ steps.image.outputs.image }}" .
 
@@ -54,7 +66,7 @@ jobs:
           docker run -d --rm --name ecloe-engine-smoke -p 8000:8000 \
             -e ARTIFACT_SOURCE=file \
             -e AUTH_MODE=disabled \
-            -e API_HOST=0.0.0.0 \
+            -e API_HOST=127.0.0.1 \
             "${{ steps.image.outputs.image }}"
           for i in {1..30}; do
             curl --fail http://127.0.0.1:8000/livez && break
@@ -67,7 +79,7 @@ jobs:
 
       - name: Push image
         run: |
-          az acr login --name "${{ vars.ACR_NAME }}"
+          az acr login --name "${{ vars.ACR_NAME || 'ecloedemo1266' }}"
           docker push "${{ steps.image.outputs.image }}"
 
       - name: Deploy Bicep
@@ -83,9 +95,39 @@ jobs:
               containerAppsEnvironmentName="${{ vars.CONTAINERAPPS_ENVIRONMENT || 'ecloe-demo-aca-env' }}" \
               entraTenantId="${{ secrets.AZURE_TENANT_ID }}" \
               entraClientId="${{ secrets.ENTRA_CLIENT_ID }}" \
-              subjectKeySalt="${{ secrets.SUBJECT_KEY_SALT }}" \
+              trustedHosts="${{ vars.ECLOE_ENGINE_TRUSTED_HOSTS }}" \
+              keyVaultName="${{ vars.AZURE_KEY_VAULT_NAME }}" \
+              flaskSecretName="${{ vars.FLASK_SECRET_NAME || 'ecloe-flask-secret-key' }}" \
+              subjectKeySaltSecretName="${{ vars.SUBJECT_KEY_SALT_SECRET_NAME || 'ecloe-subject-key-salt' }}" \
+              rateLimitRedisSecretName="${{ vars.RATE_LIMIT_REDIS_SECRET_NAME || 'ecloe-rate-limit-redis-url' }}" \
               cosmosAccountName="${{ vars.AZURE_COSMOS_ACCOUNT || 'ecloe5cosmos1266cl' }}" \
               cosmosDatabaseName="${{ vars.AZURE_COSMOS_DATABASE || 'ecloe' }}"
+
+      - name: Grant Cosmos data-plane access
+        shell: bash
+        run: |
+          APP_NAME="ecloe-engine-${{ inputs.environment }}"
+          PRINCIPAL_ID="$(az containerapp show \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${APP_NAME}" \
+            --query "identity.principalId" -o tsv)"
+          ROLE_DEFINITION_ID="$(az cosmosdb sql role definition list \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --account-name "${{ vars.AZURE_COSMOS_ACCOUNT || 'ecloe5cosmos1266cl' }}" \
+            --query "[?roleName=='Cosmos DB Built-in Data Contributor'].id | [0]" -o tsv)"
+          SCOPE="/dbs/${{ vars.AZURE_COSMOS_DATABASE || 'ecloe' }}"
+          EXISTS="$(az cosmosdb sql role assignment list \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --account-name "${{ vars.AZURE_COSMOS_ACCOUNT || 'ecloe5cosmos1266cl' }}" \
+            --query "[?principalId=='${PRINCIPAL_ID}' && roleDefinitionId=='${ROLE_DEFINITION_ID}' && scope=='${SCOPE}'] | length(@)" -o tsv)"
+          if [ "${EXISTS}" != "1" ]; then
+            az cosmosdb sql role assignment create \
+              --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+              --account-name "${{ vars.AZURE_COSMOS_ACCOUNT || 'ecloe5cosmos1266cl' }}" \
+              --role-definition-id "${ROLE_DEFINITION_ID}" \
+              --principal-id "${PRINCIPAL_ID}" \
+              --scope "${SCOPE}"
+          fi
 
       - name: Show deployment URL
         run: |

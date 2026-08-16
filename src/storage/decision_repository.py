@@ -426,7 +426,7 @@ def _is_cosmos_conflict(error: Exception) -> bool:
 
 
 def _record_to_dict(record: DecisionRecord) -> dict[str, Any]:
-    return {
+    payload = {
         "decision_id": record.decision_id,
         "subject_key": record.subject_key,
         "customer_id": record.subject_key,
@@ -442,7 +442,6 @@ def _record_to_dict(record: DecisionRecord) -> dict[str, Any]:
         "response": record.response,
         "idempotency_key": record.idempotency_key,
         "request_hash": record.request_hash,
-        "ttl": record.ttl,
         "id": record.id,
         "event_type": record.event_type,
         "surface": record.surface,
@@ -458,6 +457,9 @@ def _record_to_dict(record: DecisionRecord) -> dict[str, Any]:
         "propensity_source": record.propensity_source,
         "candidate_propensities": record.candidate_propensities,
     }
+    if record.ttl is not None:
+        payload["ttl"] = record.ttl
+    return payload
 
 
 def _record_from_dict(payload: dict[str, Any]) -> DecisionRecord:
@@ -468,7 +470,7 @@ def _record_from_dict(payload: dict[str, Any]) -> DecisionRecord:
 
 
 def _reward_to_dict(record: RewardRecord) -> dict[str, Any]:
-    return {
+    payload = {
         "event_id": record.event_id,
         "decision_id": record.decision_id,
         "subject_key": record.subject_key,
@@ -479,7 +481,6 @@ def _reward_to_dict(record: RewardRecord) -> dict[str, Any]:
         "created_at": record.created_at,
         "response": record.response,
         "request_hash": record.request_hash,
-        "ttl": record.ttl,
         "id": record.id,
         "record_type": record.record_type,
         "surface": record.surface,
@@ -487,6 +488,9 @@ def _reward_to_dict(record: RewardRecord) -> dict[str, Any]:
         "position": record.position,
         "terminal": record.terminal,
     }
+    if record.ttl is not None:
+        payload["ttl"] = record.ttl
+    return payload
 
 
 def _reward_from_dict(payload: dict[str, Any]) -> RewardRecord:

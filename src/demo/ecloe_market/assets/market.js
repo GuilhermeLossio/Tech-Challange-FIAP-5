@@ -25,6 +25,13 @@
     return `${item.product_id}:${item.variant_id || "default"}`;
   }
 
+  function catalogThumbnail(productId, fallback) {
+    if (/^prd_demo_\d{4}$/.test(productId)) {
+      return `/market/assets/catalog/${productId}.svg`;
+    }
+    return String(fallback || "/market/assets/product-placeholder.svg");
+  }
+
   function normalizeCartItem(item) {
     if (!item || typeof item !== "object") {
       return null;
@@ -44,7 +51,7 @@
       variant_id: variantId,
       quantity,
       title: String(item.title || productId),
-      thumbnail: String(item.thumbnail || "/market/assets/product-placeholder.svg"),
+      thumbnail: catalogThumbnail(productId, item.thumbnail),
       unit_price_cents: price,
       currency: String(item.currency || "BRL"),
       issues: Array.isArray(item.issues) ? item.issues.map(String) : [],
