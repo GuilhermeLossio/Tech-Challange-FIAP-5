@@ -7,7 +7,17 @@ from pathlib import Path
 from urllib.parse import urlencode
 from uuid import uuid4
 
-from flask import Blueprint, current_app, jsonify, make_response, redirect, render_template, request
+from flask import (
+    Blueprint,
+    Response,
+    abort,
+    current_app,
+    jsonify,
+    make_response,
+    redirect,
+    render_template,
+    request,
+)
 
 from src.demo.ecloe_pay.app import CSRF_COOKIE_NAME, CSRF_HEADER_NAME
 from src.demo.ecloe_pay.identity import safe_return_to
@@ -31,9 +41,52 @@ market_blueprint = Blueprint(
     template_folder=str(MARKET_DIR),
 )
 
+CATALOG_IMAGE_PATTERN = re.compile(r"prd_demo_\d{4}_0[1-3]\.png")
+
 
 def _repository() -> MarketRepository:
     return current_app.market_repository  # type: ignore[attr-defined]
+
+
+def _catalog_asset_container():
+    extension_key = "ecloe_market_blob_container"
+    container = current_app.extensions.get(extension_key)
+    if container is not None:
+        return container
+    settings = current_app.pay_settings  # type: ignore[attr-defined]
+    if not settings.azure_storage_account_url:
+        raise RuntimeError("AZURE_STORAGE_ACCOUNT_URL is required for ECloe Market Blob assets.")
+    from azure.identity import DefaultAzureCredential
+    from azure.storage.blob import BlobServiceClient
+
+    service = BlobServiceClient(
+        account_url=settings.azure_storage_account_url,
+        credential=DefaultAzureCredential(),
+    )
+    container = service.get_container_client(settings.ecloe_market_blob_container)
+    current_app.extensions[extension_key] = container
+    return container
+
+
+@market_blueprint.get("/market/catalog-assets/<filename>")
+def catalog_asset(filename: str):
+    if CATALOG_IMAGE_PATTERN.fullmatch(filename) is None:
+        abort(404)
+    settings = current_app.pay_settings  # type: ignore[attr-defined]
+    blob_name = f"{settings.ecloe_market_blob_prefix}/images/{filename}"
+    try:
+        download = _catalog_asset_container().download_blob(blob_name)
+        payload = download.readall()
+    except Exception as error:
+        from azure.core.exceptions import ResourceNotFoundError
+
+        if isinstance(error, ResourceNotFoundError):
+            abort(404)
+        current_app.logger.error("ECloe Market catalog Blob read failed for %s", filename)
+        return jsonify({"error": "Catalog asset is temporarily unavailable."}), 503
+    response = Response(payload, mimetype="image/png")
+    response.headers["Cache-Control"] = "public, max-age=86400, immutable"
+    return response
 
 
 def _render_market_template(template_name: str, **context):
@@ -65,7 +118,9 @@ def _render_market_template(template_name: str, **context):
 def _csrf_valid() -> bool:
     cookie_token = request.cookies.get(CSRF_COOKIE_NAME, "")
     header_token = request.headers.get(CSRF_HEADER_NAME, "")
-    return bool(cookie_token and header_token and secrets.compare_digest(cookie_token, header_token))
+    return bool(
+        cookie_token and header_token and secrets.compare_digest(cookie_token, header_token)
+    )
 
 
 def _csrf_error():
@@ -121,7 +176,7 @@ def _api_user_id():
 def _positive_int_arg(name: str, default: int, *, maximum: int | None = None) -> int:
     try:
         value = int(request.args.get(name, default))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         value = default
     value = max(value, 1)
     return min(value, maximum) if maximum is not None else value
@@ -166,7 +221,9 @@ def _cart_payload(cart) -> dict[str, object]:
     }
 
 
-def _review_checkout_items(payload: object) -> tuple[tuple[CheckoutItemRequest, ...], list[dict[str, object]]]:
+def _review_checkout_items(
+    payload: object,
+) -> tuple[tuple[CheckoutItemRequest, ...], list[dict[str, object]]]:
     if not isinstance(payload, list) or not payload or len(payload) > 50:
         raise ValueError("Checkout items must contain between 1 and 50 lines.")
     requests: list[CheckoutItemRequest] = []
@@ -248,7 +305,9 @@ def _review_checkout_items(payload: object) -> tuple[tuple[CheckoutItemRequest, 
             "title": (
                 detail.product.title_pt
                 if detail and locale == "pt-BR"
-                else detail.product.title_en if detail else product_id
+                else detail.product.title_en
+                if detail
+                else product_id
             ),
             "thumbnail": detail.product.thumbnail if detail else "",
             "issues": issues,
@@ -454,17 +513,22 @@ def api_recommendation_feedback():
     event_type = str(payload.get("event_type", ""))
     try:
         position = int(payload.get("position", 0))
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         position = 0
     session_key = _market_session_key()
     decision = current_app.recommendation_decisions.get(decision_id)  # type: ignore[attr-defined]
     ranked = decision.get("ranked_candidates", []) if decision else []
-    valid = any(
-        item.get("candidate_id") == product_id and int(item.get("rank", 0)) == position
-        for item in ranked
-    ) and decision.get("session_key") == session_key
+    valid = (
+        any(
+            item.get("candidate_id") == product_id and int(item.get("rank", 0)) == position
+            for item in ranked
+        )
+        and decision.get("session_key") == session_key
+    )
     if not valid or event_type not in {"impression", "click", "add_to_cart"}:
-        return jsonify({"error": "Recommendation feedback does not match the presented slate."}), 400
+        return jsonify(
+            {"error": "Recommendation feedback does not match the presented slate."}
+        ), 400
     event_id = str(payload.get("event_id") or f"evt_market_{uuid4()}")
     if len(event_id) > 128:
         return jsonify({"error": "event_id is too long."}), 400
@@ -492,7 +556,7 @@ def api_update_cart_item(cart_item_id: str):
             cart_item_id=cart_item_id,
             quantity=int(payload.get("quantity", 1)),
         )
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return jsonify({"error": "Invalid cart item request."}), 400
     response = jsonify({"cart": _cart_payload(cart)})
     return _attach_market_session(response, session_key)
@@ -592,7 +656,11 @@ def api_pay_order(order_id: str):
     if not idempotency_key or len(idempotency_key) > 180:
         return jsonify({"error": "A valid Idempotency-Key header is required."}), 400
     order = next(
-        (item for item in _repository().list_orders(user_id=str(user_id)) if item.order_id == order_id),
+        (
+            item
+            for item in _repository().list_orders(user_id=str(user_id))
+            if item.order_id == order_id
+        ),
         None,
     )
     if order is None:
@@ -614,7 +682,9 @@ def api_pay_order(order_id: str):
             currency=payment.currency,
         )
     except ValueError as error:
-        current_app.logger.warning("Market order payment conflict for order_id=%s: %s", order_id, error)
+        current_app.logger.warning(
+            "Market order payment conflict for order_id=%s: %s", order_id, error
+        )
         if str(error) == "Insufficient ECloe Pay balance.":
             _repository().release_checkout_cart(
                 checkout_id=order.checkout_id,
@@ -646,7 +716,9 @@ def api_list_orders():
 
 @market_blueprint.get("/api/market/categories")
 def api_categories():
-    return jsonify({"categories": [asdict(category) for category in _repository().list_categories()]})
+    return jsonify(
+        {"categories": [asdict(category) for category in _repository().list_categories()]}
+    )
 
 
 @market_blueprint.get("/api/market/products")

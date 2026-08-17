@@ -149,6 +149,9 @@ jobs:
             ECLOE_PAY_SQL_DRIVER="ODBC Driver 18 for SQL Server"
             "ECLOE_WEB_AUTH_MODE=${{ inputs.auth_mode }}"
             ECLOE_MARKET_CATALOG_PATH=data/demo/ecloe_market_catalog.azure.json
+            "AZURE_STORAGE_ACCOUNT_URL=https://${{ vars.ECLOE_MARKET_STORAGE_ACCOUNT_NAME || 'ecloepaydemo' }}.blob.core.windows.net"
+            "ECLOE_MARKET_BLOB_CONTAINER=${{ vars.ECLOE_MARKET_BLOB_CONTAINER || 'ecloe-market-demo-assets' }}"
+            "ECLOE_MARKET_BLOB_PREFIX=${{ vars.ECLOE_MARKET_BLOB_PREFIX || 'catalog' }}"
             ECLOE_PAY_COOKIE_SECURE=true
           )
 
@@ -209,6 +212,24 @@ jobs:
               --assignee-principal-type ServicePrincipal \
               --scope "${{ vars.ECLOE_KEY_VAULT_ID }}" \
               --role "Key Vault Secrets User"
+          fi
+          MARKET_STORAGE_ID="$(az storage account show \
+            --resource-group "${{ vars.AZURE_RESOURCE_GROUP }}" \
+            --name "${{ vars.ECLOE_MARKET_STORAGE_ACCOUNT_NAME || 'ecloepaydemo' }}" \
+            --query id -o tsv)"
+          MARKET_CONTAINER_SCOPE="${MARKET_STORAGE_ID}/blobServices/default/containers/${{ vars.ECLOE_MARKET_BLOB_CONTAINER || 'ecloe-market-demo-assets' }}"
+          STORAGE_BLOB_READER_ROLE_ID="$(az role definition list \
+            --name "Storage Blob Data Reader" \
+            --query '[0].id' -o tsv)"
+          if [ "$(az role assignment list \
+            --scope "${MARKET_CONTAINER_SCOPE}" \
+            --query "[?principalId=='${PRINCIPAL_ID}' && roleDefinitionId=='${STORAGE_BLOB_READER_ROLE_ID}'] | length(@)" \
+            -o tsv)" = "0" ]; then
+            az role assignment create \
+              --assignee-object-id "${PRINCIPAL_ID}" \
+              --assignee-principal-type ServicePrincipal \
+              --scope "${MARKET_CONTAINER_SCOPE}" \
+              --role "Storage Blob Data Reader"
           fi
           SECRETS=(
             "flask-secret-key=keyvaultref:https://${{ vars.AZURE_KEY_VAULT_NAME }}.vault.azure.net/secrets/${{ vars.FLASK_SECRET_NAME || 'ecloe-flask-secret-key' }},identityref:system"

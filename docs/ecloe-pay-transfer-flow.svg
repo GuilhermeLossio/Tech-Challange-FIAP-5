@@ -2,11 +2,16 @@
   <title id="title">ECloe Pay transfer flow</title>
   <desc id="desc">ECloe Pay transfer flow with gateway authentication, Demo BFF orchestration, Pay Transaction API, synchronous Engine Decision API validation, Azure SQL transaction with outbox row, Outbox Publisher, Service Bus publication, and Decision Reward Store.</desc>
   <defs>
+    <linearGradient id="ecloeBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffde8"/>
+      <stop offset="58%" stop-color="#f7ffb9"/>
+      <stop offset="100%" stop-color="#dcfff0"/>
+    </linearGradient>
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#087f83"/>
     </marker>
     <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0bb9b0"/>
     </marker>
 
     <g id="icon-web" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
@@ -68,89 +73,89 @@
       <circle cx="20" cy="20" r="4"/>
     </g>
   </defs>
-  <rect width="1280" height="560" fill="#ffffff"/>
-  <text x="640" y="42" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#1f2328">ECloe Pay Transfer Flow</text>
-  <text x="640" y="68" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#57606a">Decision checks are synchronous; durable events are published only after the Pay SQL transaction commits.</text>
+  <rect width="1280" height="560" fill="url(#ecloeBg)"/>
+  <text x="640" y="42" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#14343b">ECloe Pay Transfer Flow</text>
+  <text x="640" y="68" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#087f83">Decision checks are synchronous; durable events are published only after the Pay SQL transaction commits.</text>
 
-  <rect x="40" y="120" width="150" height="96" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" data-card="true"/>
-  <use href="#icon-web" transform="translate(48 130) scale(0.30)" color="#2563eb" aria-hidden="true"/>
-  <text x="88" y="152" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Customer</text>
-  <text x="115" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">accepts wallet</text>
-  <text x="115" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">benefit</text>
-  <rect x="230" y="120" width="150" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-web" transform="translate(238 130) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="278" y="152" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Web</text>
-  <text x="305" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">submits action</text>
-  <text x="305" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">with CSRF</text>
-  <rect x="420" y="120" width="160" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-shield" transform="translate(428 130) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="468" y="152" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Gateway</text>
-  <text x="500" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">JWT, rate limit,</text>
-  <text x="500" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">correlation ID</text>
-  <rect x="620" y="120" width="160" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-api" transform="translate(628 130) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="668" y="152" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Demo BFF</text>
-  <text x="700" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">loads session</text>
-  <text x="700" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">and context</text>
-  <rect x="820" y="120" width="180" height="96" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" data-card="true"/>
-  <use href="#icon-api" transform="translate(904 120) scale(0.30)" color="#2563eb" aria-hidden="true"/>
-  <text x="910" y="152" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1f2328">Pay Transaction API</text>
-  <text x="910" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">wallet ledger and</text>
-  <text x="910" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">payment state</text>
-  <rect x="1050" y="120" width="180" height="96" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-api" transform="translate(1134 120) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="1140" y="152" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#1f2328">Engine Decision API</text>
-  <text x="1140" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">checks decision</text>
-  <text x="1140" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">and reward rules</text>
+  <rect x="40" y="120" width="150" height="96" rx="12" fill="#d9fff0" stroke="#0bb9b0" stroke-width="1.5" data-card="true"/>
+  <use href="#icon-web" transform="translate(48 130) scale(0.30)" color="#0bb9b0" aria-hidden="true"/>
+  <text x="88" y="152" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#14343b">Customer</text>
+  <text x="115" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">accepts wallet</text>
+  <text x="115" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">benefit</text>
+  <rect x="230" y="120" width="150" height="96" rx="12" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-web" transform="translate(238 130) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="278" y="152" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#14343b">Web</text>
+  <text x="305" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">submits action</text>
+  <text x="305" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">with CSRF</text>
+  <rect x="420" y="120" width="160" height="96" rx="12" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-shield" transform="translate(428 130) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="468" y="152" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#14343b">Gateway</text>
+  <text x="500" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">JWT, rate limit,</text>
+  <text x="500" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">correlation ID</text>
+  <rect x="620" y="120" width="160" height="96" rx="12" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-api" transform="translate(628 130) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="668" y="152" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#14343b">Demo BFF</text>
+  <text x="700" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">loads session</text>
+  <text x="700" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">and context</text>
+  <rect x="820" y="120" width="180" height="96" rx="12" fill="#d9fff0" stroke="#0bb9b0" stroke-width="1.5" data-card="true"/>
+  <use href="#icon-api" transform="translate(904 120) scale(0.30)" color="#0bb9b0" aria-hidden="true"/>
+  <text x="910" y="152" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#14343b">Pay Transaction API</text>
+  <text x="910" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">wallet ledger and</text>
+  <text x="910" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">payment state</text>
+  <rect x="1050" y="120" width="180" height="96" rx="12" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-api" transform="translate(1134 120) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="1140" y="152" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#14343b">Engine Decision API</text>
+  <text x="1140" y="175" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">checks decision</text>
+  <text x="1140" y="193" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">and reward rules</text>
 
-  <line x1="190" y1="168" x2="230" y2="168" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
-  <line x1="380" y1="168" x2="420" y2="168" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <line x1="580" y1="168" x2="620" y2="168" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <line x1="780" y1="168" x2="820" y2="168" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <line x1="1000" y1="150" x2="1050" y2="150" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <line x1="1050" y1="188" x2="1000" y2="188" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="190" y1="168" x2="230" y2="168" stroke="#0bb9b0" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <line x1="380" y1="168" x2="420" y2="168" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="580" y1="168" x2="620" y2="168" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="780" y1="168" x2="820" y2="168" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="1000" y1="150" x2="1050" y2="150" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="1050" y1="188" x2="1000" y2="188" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
 
-  <rect x="125" y="244" width="110" height="26" rx="8" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="180" y="262" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#2563eb">tap</text>
-  <rect x="385" y="244" width="110" height="26" rx="8" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="440" y="262" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">HTTPS</text>
-  <rect x="725" y="244" width="150" height="26" rx="8" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="800" y="262" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">wallet command</text>
-  <rect x="1015" y="244" width="210" height="26" rx="8" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="1120" y="262" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">validate decision / reward</text>
+  <rect x="125" y="244" width="110" height="26" rx="8" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="180" y="262" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#0bb9b0">tap</text>
+  <rect x="385" y="244" width="110" height="26" rx="8" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="440" y="262" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#087f83">HTTPS</text>
+  <rect x="725" y="244" width="150" height="26" rx="8" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="800" y="262" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#087f83">wallet command</text>
+  <rect x="1015" y="244" width="210" height="26" rx="8" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="1120" y="262" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#087f83">validate decision / reward</text>
 
-  <rect x="130" y="340" width="220" height="86" rx="12" fill="#eff6ff" stroke="#2563eb" data-card="true"/>
-  <use href="#icon-wallet" transform="translate(138 350) scale(0.30)" color="#2563eb" aria-hidden="true"/>
-  <text x="174" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Pay SQL + Outbox</text>
-  <text x="240" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Azure SQL transaction</text>
-  <text x="240" y="412" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">wallet state + outbox</text>
-  <rect x="460" y="340" width="190" height="86" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-bus" transform="translate(468 350) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="504" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Outbox Publisher</text>
-  <text x="555" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">polls committed</text>
-  <text x="555" y="412" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">outbox rows</text>
-  <rect x="760" y="340" width="170" height="86" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-decision" transform="translate(768 350) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="804" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Service Bus</text>
-  <text x="845" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">domain events</text>
-  <rect x="1040" y="340" width="190" height="86" rx="12" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-decision" transform="translate(1129 342) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="1135" y="372" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#1f2328">Decision/Reward Store</text>
-  <text x="1135" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">Cosmos evidence</text>
+  <rect x="130" y="340" width="220" height="86" rx="12" fill="#e5fff7" stroke="#0bb9b0" data-card="true"/>
+  <use href="#icon-wallet" transform="translate(138 350) scale(0.30)" color="#0bb9b0" aria-hidden="true"/>
+  <text x="174" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#14343b">Pay SQL + Outbox</text>
+  <text x="240" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">Azure SQL transaction</text>
+  <text x="240" y="412" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">wallet state + outbox</text>
+  <rect x="460" y="340" width="190" height="86" rx="12" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-bus" transform="translate(468 350) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="504" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#14343b">Outbox Publisher</text>
+  <text x="555" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">polls committed</text>
+  <text x="555" y="412" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">outbox rows</text>
+  <rect x="760" y="340" width="170" height="86" rx="12" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-decision" transform="translate(768 350) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="804" y="372" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#14343b">Service Bus</text>
+  <text x="845" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">domain events</text>
+  <rect x="1040" y="340" width="190" height="86" rx="12" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-decision" transform="translate(1129 342) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="1135" y="372" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" font-weight="700" fill="#14343b">Decision/Reward Store</text>
+  <text x="1135" y="394" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">Cosmos evidence</text>
 
-  <polyline points="910,216 910,292 240,292 240,340" fill="none" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
-  <line x1="350" y1="383" x2="460" y2="383" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <line x1="650" y1="383" x2="760" y2="383" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <polyline points="1140,216 1140,292 1135,292 1135,340" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <rect x="445" y="278" width="260" height="28" rx="8" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="575" y="297" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#2563eb">commit state + outbox row</text>
-  <rect x="370" y="438" width="100" height="26" rx="8" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="420" y="456" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">poll/read</text>
-  <rect x="650" y="438" width="110" height="26" rx="8" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="705" y="456" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">publish</text>
-  <rect x="1030" y="278" width="180" height="28" rx="8" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="1120" y="297" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#57606a">write reward evidence</text>
+  <polyline points="910,216 910,292 240,292 240,340" fill="none" stroke="#0bb9b0" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <line x1="350" y1="383" x2="460" y2="383" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <line x1="650" y1="383" x2="760" y2="383" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <polyline points="1140,216 1140,292 1135,292 1135,340" fill="none" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <rect x="445" y="278" width="260" height="28" rx="8" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="575" y="297" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#0bb9b0">commit state + outbox row</text>
+  <rect x="370" y="438" width="100" height="26" rx="8" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="420" y="456" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#087f83">poll/read</text>
+  <rect x="650" y="438" width="110" height="26" rx="8" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="705" y="456" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#087f83">publish</text>
+  <rect x="1030" y="278" width="180" height="28" rx="8" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="1120" y="297" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="10.8" fill="#087f83">write reward evidence</text>
 
-  <rect x="90" y="490" width="1100" height="44" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="640" y="517" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">There is no direct API-to-publisher call; publication starts from committed SQL outbox rows.</text>
+  <rect x="90" y="490" width="1100" height="44" rx="10" fill="#fffbd9" stroke="#8bd9cf"/>
+  <text x="640" y="517" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#087f83">There is no direct API-to-publisher call; publication starts from committed SQL outbox rows.</text>
 </svg>

@@ -2,20 +2,25 @@
   <title id="title">ECloe API security and observability flow</title>
   <desc id="desc">Security and observability flow for ECloe Engine Decision API with orthogonal connectors. API clients send requests through the API Gateway and Auth boundary, Host and CORS checks lead to Entra ID scope checks, valid requests reach Engine routers, redacted telemetry reaches Application Insights, and CI gates feed continuous assurance without crossing the legend.</desc>
   <defs>
+    <linearGradient id="ecloeBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffde8"/>
+      <stop offset="58%" stop-color="#f7ffb9"/>
+      <stop offset="100%" stop-color="#dcfff0"/>
+    </linearGradient>
     <marker id="arrowGray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#087f83"/>
     </marker>
     <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0bb9b0"/>
     </marker>
     <style>
-      .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-weight: 700; }
-      .sectionText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 13px; font-weight: 700; }
-      .bodyText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; }
-      .cardTitle { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-size: 15px; font-weight: 700; }
-      .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; }
-      .pillText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; font-weight: 700; }
-      .labelText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; font-weight: 700; }
+      .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #14343b; font-weight: 700; }
+      .sectionText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 13px; font-weight: 700; }
+      .bodyText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 12px; }
+      .cardTitle { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #14343b; font-size: 15px; font-weight: 700; }
+      .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 11.5px; }
+      .pillText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 11.5px; font-weight: 700; }
+      .labelText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 11.5px; font-weight: 700; }
     </style>
 
     <g id="icon-web" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
@@ -77,93 +82,93 @@
       <circle cx="20" cy="20" r="4"/>
     </g>
   </defs>
-  <rect width="1240" height="700" fill="#ffffff"/>
+  <rect width="1240" height="700" fill="url(#ecloeBg)"/>
   <text x="620" y="46" text-anchor="middle" class="titleText" font-size="24">ECloe - API Security and Observability Flow</text>
   <text x="620" y="74" text-anchor="middle" class="bodyText" font-size="13">Gateway controls, authentication, business execution, telemetry, and CI assurance with non-overlapping orthogonal flows.</text>
 
-  <rect x="40" y="112" width="238" height="330" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2"/>
+  <rect x="40" y="112" width="238" height="330" rx="18" fill="#fffbd9" stroke="#8bd9cf" stroke-width="2"/>
   <text x="70" y="140" class="sectionText">Client and Token</text>
-  <rect x="72" y="178" width="174" height="198" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2" data-card="true"/>
-  <use href="#icon-web" transform="translate(80 188) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <rect x="72" y="178" width="174" height="198" rx="12" fill="#d9fff0" stroke="#0bb9b0" stroke-width="2" data-card="true"/>
+  <use href="#icon-web" transform="translate(80 188) scale(0.30)" color="#0bb9b0" aria-hidden="true"/>
   <text x="120" y="224" text-anchor="start" class="cardTitle">API Client</text>
   <text x="159" y="254" text-anchor="middle" class="cardSub">Bearer token,</text>
   <text x="159" y="272" text-anchor="middle" class="cardSub">request_id, trace_id,</text>
   <text x="159" y="290" text-anchor="middle" class="cardSub">and minimized context</text>
-  <rect x="100" y="328" width="118" height="24" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+  <rect x="100" y="328" width="118" height="24" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
   <text x="159" y="344" text-anchor="middle" class="pillText">no raw PII log</text>
 
-  <rect x="326" y="112" width="266" height="330" rx="18" fill="#f8fbff" stroke="#c6d6f4" stroke-width="2"/>
+  <rect x="326" y="112" width="266" height="330" rx="18" fill="#f0ffea" stroke="#9adfd0" stroke-width="2"/>
   <text x="356" y="140" class="sectionText">API Gateway / Auth Boundary</text>
-  <rect x="358" y="168" width="202" height="106" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2" data-card="true"/>
-  <use href="#icon-bus" transform="translate(366 178) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <rect x="358" y="168" width="202" height="106" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf" stroke-width="2" data-card="true"/>
+  <use href="#icon-bus" transform="translate(366 178) scale(0.30)" color="#087f83" aria-hidden="true"/>
   <text x="406" y="207" text-anchor="start" class="cardTitle">Host and CORS</text>
   <text x="459" y="235" text-anchor="middle" class="cardSub">Trusted host and</text>
   <text x="459" y="253" text-anchor="middle" class="cardSub">explicit origins</text>
-  <rect x="358" y="304" width="202" height="106" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2" data-card="true"/>
-  <use href="#icon-wallet" transform="translate(366 314) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <rect x="358" y="304" width="202" height="106" rx="12" fill="#d9fff0" stroke="#0bb9b0" stroke-width="2" data-card="true"/>
+  <use href="#icon-wallet" transform="translate(366 314) scale(0.30)" color="#0bb9b0" aria-hidden="true"/>
   <text x="406" y="343" text-anchor="start" class="cardTitle">Guard</text>
   <text x="459" y="371" text-anchor="middle" class="cardSub">Payload size, rate,</text>
   <text x="459" y="389" text-anchor="middle" class="cardSub">and concurrency limits</text>
 
-  <rect x="640" y="112" width="250" height="330" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2"/>
+  <rect x="640" y="112" width="250" height="330" rx="18" fill="#fffbd9" stroke="#8bd9cf" stroke-width="2"/>
   <text x="670" y="140" class="sectionText">Business Execution</text>
-  <rect x="672" y="168" width="186" height="106" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2" data-card="true"/>
-  <use href="#icon-web" transform="translate(680 178) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <rect x="672" y="168" width="186" height="106" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf" stroke-width="2" data-card="true"/>
+  <use href="#icon-web" transform="translate(680 178) scale(0.30)" color="#087f83" aria-hidden="true"/>
   <text x="720" y="207" text-anchor="start" class="cardTitle">Entra Auth</text>
   <text x="765" y="235" text-anchor="middle" class="cardSub">Validates JWT claims</text>
   <text x="765" y="253" text-anchor="middle" class="cardSub">and required scopes</text>
-  <rect x="672" y="304" width="186" height="106" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2" data-card="true"/>
-  <use href="#icon-api" transform="translate(680 314) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <rect x="672" y="304" width="186" height="106" rx="12" fill="#d9fff0" stroke="#0bb9b0" stroke-width="2" data-card="true"/>
+  <use href="#icon-api" transform="translate(680 314) scale(0.30)" color="#0bb9b0" aria-hidden="true"/>
   <text x="720" y="343" text-anchor="start" class="cardTitle">Routers</text>
   <text x="765" y="371" text-anchor="middle" class="cardSub">Decision, likelihood,</text>
   <text x="765" y="389" text-anchor="middle" class="cardSub">policy, and reward</text>
 
-  <rect x="938" y="112" width="262" height="330" rx="18" fill="#f8fbff" stroke="#c6d6f4" stroke-width="2"/>
+  <rect x="938" y="112" width="262" height="330" rx="18" fill="#f0ffea" stroke="#9adfd0" stroke-width="2"/>
   <text x="968" y="140" class="sectionText">Telemetry Sink</text>
-  <rect x="970" y="168" width="198" height="106" rx="12" fill="#dbeafe" stroke="#2563eb" stroke-width="2" data-card="true"/>
-  <use href="#icon-api" transform="translate(978 178) scale(0.30)" color="#2563eb" aria-hidden="true"/>
+  <rect x="970" y="168" width="198" height="106" rx="12" fill="#d9fff0" stroke="#0bb9b0" stroke-width="2" data-card="true"/>
+  <use href="#icon-api" transform="translate(978 178) scale(0.30)" color="#0bb9b0" aria-hidden="true"/>
   <text x="1018" y="207" text-anchor="start" class="cardTitle">Logs</text>
   <text x="1069" y="235" text-anchor="middle" class="cardSub">Route, status, latency,</text>
   <text x="1069" y="253" text-anchor="middle" class="cardSub">decision and trace IDs</text>
-  <rect x="970" y="304" width="198" height="106" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2" data-card="true"/>
-  <use href="#icon-worker" transform="translate(978 314) scale(0.30)" color="#57606a" aria-hidden="true"/>
+  <rect x="970" y="304" width="198" height="106" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf" stroke-width="2" data-card="true"/>
+  <use href="#icon-worker" transform="translate(978 314) scale(0.30)" color="#087f83" aria-hidden="true"/>
   <text x="1018" y="343" text-anchor="start" class="cardTitle">Telemetry</text>
   <text x="1069" y="371" text-anchor="middle" class="cardSub">Exports redacted spans</text>
   <text x="1069" y="389" text-anchor="middle" class="cardSub">to Application Insights</text>
 
-  <polyline points="246,277 300,277 300,357 326,357" fill="none" stroke="#2563eb" stroke-width="2.6" marker-end="url(#arrowBlue)"/>
+  <polyline points="246,277 300,277 300,357 326,357" fill="none" stroke="#0bb9b0" stroke-width="2.6" marker-end="url(#arrowBlue)"/>
   <text x="300" y="263" text-anchor="middle" class="labelText">HTTPS</text>
-  <polyline points="560,221 600,221 600,221 672,221" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrowGray)"/>
+  <polyline points="560,221 600,221 600,221 672,221" fill="none" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrowGray)"/>
   <text x="616" y="207" text-anchor="middle" class="labelText">scope check</text>
-  <polyline points="560,357 600,357 600,357 672,357" fill="none" stroke="#2563eb" stroke-width="2.6" marker-end="url(#arrowBlue)"/>
+  <polyline points="560,357 600,357 600,357 672,357" fill="none" stroke="#0bb9b0" stroke-width="2.6" marker-end="url(#arrowBlue)"/>
   <text x="616" y="343" text-anchor="middle" class="labelText">valid request</text>
-  <polyline points="858,357 910,357 910,221 970,221" fill="none" stroke="#2563eb" stroke-width="2.6" marker-end="url(#arrowBlue)"/>
+  <polyline points="858,357 910,357 910,221 970,221" fill="none" stroke="#0bb9b0" stroke-width="2.6" marker-end="url(#arrowBlue)"/>
   <text x="914" y="207" text-anchor="middle" class="labelText">redacted logs</text>
 
-  <rect x="118" y="470" width="1004" height="34" rx="17" fill="#ffffff" stroke="#d0d7de" stroke-width="2"/>
-  <circle cx="144" cy="487" r="6" fill="#2563eb"/>
+  <rect x="118" y="470" width="1004" height="34" rx="17" fill="url(#ecloeBg)" stroke="#8bd9cf" stroke-width="2"/>
+  <circle cx="144" cy="487" r="6" fill="#0bb9b0"/>
   <text x="162" y="491" class="bodyText">Business routes require token scopes in cloud; local disabled auth is limited to 127.0.0.1.</text>
-  <circle cx="780" cy="487" r="6" fill="#57606a"/>
+  <circle cx="780" cy="487" r="6" fill="#087f83"/>
   <text x="798" y="491" class="bodyText">Minimized context is excluded from access logs.</text>
 
-  <rect x="480" y="526" width="280" height="30" rx="15" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2"/>
+  <rect x="480" y="526" width="280" height="30" rx="15" fill="#fffbd9" stroke="#8bd9cf" stroke-width="2"/>
   <text x="620" y="546" text-anchor="middle" class="labelText">continuous assurance</text>
 
   <g transform="translate(90 590)">
-    <rect width="1060" height="70" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2"/>
+    <rect width="1060" height="70" rx="18" fill="#fffbd9" stroke="#8bd9cf" stroke-width="2"/>
     <text x="32" y="30" class="sectionText">CI gates</text>
-    <rect x="114" y="18" width="140" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="114" y="18" width="140" height="34" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
     <text x="184" y="39" text-anchor="middle" class="pillText">Ruff</text>
-    <rect x="270" y="18" width="140" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="270" y="18" width="140" height="34" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
     <text x="340" y="39" text-anchor="middle" class="pillText">pytest + cov</text>
-    <rect x="426" y="18" width="140" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="426" y="18" width="140" height="34" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
     <text x="496" y="39" text-anchor="middle" class="pillText">pip-audit</text>
-    <rect x="582" y="18" width="140" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="582" y="18" width="140" height="34" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
     <text x="652" y="39" text-anchor="middle" class="pillText">OpenAPI</text>
-    <rect x="738" y="18" width="140" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="738" y="18" width="140" height="34" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
     <text x="808" y="39" text-anchor="middle" class="pillText">CodeQL</text>
-    <rect x="894" y="18" width="140" height="34" rx="12" fill="#ffffff" stroke="#d0d7de"/>
+    <rect x="894" y="18" width="140" height="34" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
     <text x="964" y="39" text-anchor="middle" class="pillText">secret scanning</text>
   </g>
-  <polyline points="620,590 620,566 620,556" fill="none" stroke="#57606a" stroke-width="2.2" stroke-dasharray="6 6" marker-end="url(#arrowGray)"/>
+  <polyline points="620,590 620,566 620,556" fill="none" stroke="#087f83" stroke-width="2.2" stroke-dasharray="6 6" marker-end="url(#arrowGray)"/>
 </svg>

@@ -2,35 +2,40 @@
   <title id="title">ECloe lightweight MLOps lifecycle</title>
   <desc id="desc">Six-step ECloe lightweight MLOps lifecycle. The pipeline prepares data, evaluates policies, logs MLflow runs, validates the Golden Set, selects a demo policy, and promotes the policy artifact for light deployment. This offline lifecycle does not include Pay, Market, Service Bus, or Outbox flows.</desc>
   <defs>
+    <linearGradient id="ecloeBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffde8"/>
+      <stop offset="58%" stop-color="#f7ffb9"/>
+      <stop offset="100%" stop-color="#dcfff0"/>
+    </linearGradient>
     <linearGradient id="neutralCard" x1="0" x2="1" y1="0" y2="1">
       <stop offset="0%" stop-color="#ffffff"/>
-      <stop offset="100%" stop-color="#f6f8fa"/>
+      <stop offset="100%" stop-color="#fffbd9"/>
     </linearGradient>
     <linearGradient id="blueCard" x1="0" x2="1" y1="0" y2="1">
-      <stop offset="0%" stop-color="#eff6ff"/>
-      <stop offset="100%" stop-color="#dbeafe"/>
+      <stop offset="0%" stop-color="#e5fff7"/>
+      <stop offset="100%" stop-color="#d9fff0"/>
     </linearGradient>
     <filter id="softShadow" x="-20%" y="-25%" width="140%" height="160%">
-      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#1f2328" flood-opacity="0.12"/>
+      <feDropShadow dx="0" dy="8" stdDeviation="8" flood-color="#14343b" flood-opacity="0.12"/>
     </filter>
     <filter id="finalShadow" x="-24%" y="-30%" width="148%" height="170%">
-      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#2563eb" flood-opacity="0.18"/>
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0bb9b0" flood-opacity="0.18"/>
     </filter>
     <marker id="arrowGray" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="7" markerHeight="7" orient="auto">
-      <path d="M 1 1 L 11 6 L 1 11 z" fill="#57606a"/>
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#087f83"/>
     </marker>
     <marker id="arrowBlue" viewBox="0 0 12 12" refX="10" refY="6" markerWidth="8" markerHeight="8" orient="auto">
-      <path d="M 1 1 L 11 6 L 1 11 z" fill="#2563eb"/>
+      <path d="M 1 1 L 11 6 L 1 11 z" fill="#0bb9b0"/>
     </marker>
     <style>
-      .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-weight: 700; }
-      .sectionText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 13px; font-weight: 700; }
-      .bodyText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; }
-      .cardTitle { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-size: 15px; font-weight: 700; }
-      .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; }
+      .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #14343b; font-weight: 700; }
+      .sectionText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 13px; font-weight: 700; }
+      .bodyText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 12px; }
+      .cardTitle { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #14343b; font-size: 15px; font-weight: 700; }
+      .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 11.5px; }
       .badgeText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #ffffff; font-size: 12px; font-weight: 700; }
-      .icon { fill: none; stroke: #57606a; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
-      .iconBlue { fill: none; stroke: #2563eb; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+      .icon { fill: none; stroke: #087f83; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+      .iconBlue { fill: none; stroke: #0bb9b0; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
     </style>
 
     <g id="icon-web" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
@@ -93,23 +98,23 @@
     </g>
   </defs>
 
-  <rect width="1240" height="520" fill="#ffffff"/>
+  <rect width="1240" height="520" fill="url(#ecloeBg)"/>
   <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Lightweight MLOps Lifecycle</text>
   <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">Local-first pipeline to track, validate, and promote a demonstrable policy artifact with low operational cost.</text>
 
-  <rect x="40" y="112" width="1160" height="288" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
+  <rect x="40" y="112" width="1160" height="288" rx="18" fill="#fffbd9" stroke="#8bd9cf"/>
   <text x="70" y="140" class="sectionText">Evaluation and promotion pipeline</text>
 
-  <line x1="240" y1="254" x2="292" y2="254" stroke="#57606a" stroke-width="2.3" marker-end="url(#arrowGray)"/>
+  <line x1="240" y1="254" x2="292" y2="254" stroke="#087f83" stroke-width="2.3" marker-end="url(#arrowGray)"/>
   <line x1="422" y1="254" x2="474" y2="254" stroke="#4f79c9" stroke-width="2.7" marker-end="url(#arrowBlue)" opacity="0.78"/>
   <line x1="604" y1="254" x2="656" y2="254" stroke="#3c6fd3" stroke-width="2.9" marker-end="url(#arrowBlue)" opacity="0.84"/>
   <line x1="786" y1="254" x2="838" y2="254" stroke="#3268d0" stroke-width="3.1" marker-end="url(#arrowBlue)" opacity="0.92"/>
-  <line x1="968" y1="254" x2="1020" y2="254" stroke="#2563eb" stroke-width="3.3" marker-end="url(#arrowBlue)"/>
+  <line x1="968" y1="254" x2="1020" y2="254" stroke="#0bb9b0" stroke-width="3.3" marker-end="url(#arrowBlue)"/>
 
   <g data-card="true" transform="translate(76 168)" filter="url(#softShadow)">
-    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#d0d7de"/>
-    <use href="#icon-chart" transform="translate(122 12) scale(0.58)" color="#57606a" aria-hidden="true"/>
-    <circle cx="25" cy="25" r="15" fill="#57606a"/>
+    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#8bd9cf"/>
+    <use href="#icon-chart" transform="translate(122 12) scale(0.58)" color="#087f83" aria-hidden="true"/>
+    <circle cx="25" cy="25" r="15" fill="#087f83"/>
     <text x="25" y="29" text-anchor="middle" class="badgeText">1</text>
     <g class="icon" transform="translate(58 18)">
       <ellipse cx="24" cy="10" rx="24" ry="8"/>
@@ -123,8 +128,8 @@
   </g>
 
   <g data-card="true" transform="translate(258 168)" filter="url(#softShadow)">
-    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#c6d6f4"/>
-    <use href="#icon-chart" transform="translate(122 12) scale(0.58)" color="#57606a" aria-hidden="true"/>
+    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#9adfd0"/>
+    <use href="#icon-chart" transform="translate(122 12) scale(0.58)" color="#087f83" aria-hidden="true"/>
     <circle cx="25" cy="25" r="15" fill="#4f6f9d"/>
     <text x="25" y="29" text-anchor="middle" class="badgeText">2</text>
     <g class="icon" transform="translate(56 18)">
@@ -133,7 +138,7 @@
       <path d="M 15 16 l-9 20 h18 z"/>
       <path d="M 37 16 l-9 20 h18 z"/>
       <path d="M 12 52 h28"/>
-      <path d="M 49 10 l5 5 l10 -11" stroke="#2563eb"/>
+      <path d="M 49 10 l5 5 l10 -11" stroke="#0bb9b0"/>
     </g>
     <text x="82" y="82" text-anchor="middle" class="cardTitle">
       <tspan x="82" dy="0">Evaluate</tspan>
@@ -144,8 +149,8 @@
   </g>
 
   <g data-card="true" transform="translate(440 168)" filter="url(#softShadow)">
-    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#bcd2f3"/>
-    <use href="#icon-artifact" transform="translate(122 12) scale(0.58)" color="#57606a" aria-hidden="true"/>
+    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#9adfd0"/>
+    <use href="#icon-artifact" transform="translate(122 12) scale(0.58)" color="#087f83" aria-hidden="true"/>
     <circle cx="25" cy="25" r="15" fill="#3f71c8"/>
     <text x="25" y="29" text-anchor="middle" class="badgeText">3</text>
     <g class="icon" transform="translate(57 20)">
@@ -153,7 +158,7 @@
       <rect x="11" y="27" width="9" height="20" rx="2"/>
       <rect x="27" y="15" width="9" height="32" rx="2"/>
       <rect x="43" y="6" width="9" height="41" rx="2"/>
-      <path d="M 7 12 c13 0 15 10 25 10 c8 0 11 -7 23 -7" stroke="#2563eb"/>
+      <path d="M 7 12 c13 0 15 10 25 10 c8 0 11 -7 23 -7" stroke="#0bb9b0"/>
     </g>
     <text x="82" y="82" text-anchor="middle" class="cardTitle">Log MLflow</text>
     <text x="82" y="106" text-anchor="middle" class="cardSub">Track params, metrics,</text>
@@ -162,8 +167,8 @@
   </g>
 
   <g data-card="true" transform="translate(622 168)" filter="url(#softShadow)">
-    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#aac7f4"/>
-    <use href="#icon-chart" transform="translate(122 12) scale(0.58)" color="#57606a" aria-hidden="true"/>
+    <rect width="164" height="156" rx="11" fill="url(#neutralCard)" stroke="#9adfd0"/>
+    <use href="#icon-chart" transform="translate(122 12) scale(0.58)" color="#087f83" aria-hidden="true"/>
     <circle cx="25" cy="25" r="15" fill="#326ad7"/>
     <text x="25" y="29" text-anchor="middle" class="badgeText">4</text>
     <g class="iconBlue" transform="translate(56 18)">
@@ -179,9 +184,9 @@
   </g>
 
   <g data-card="true" transform="translate(804 168)" filter="url(#softShadow)">
-    <rect width="164" height="156" rx="11" fill="url(#blueCard)" stroke="#8fb5f1"/>
-    <use href="#icon-decision" transform="translate(122 12) scale(0.58)" color="#2563eb" aria-hidden="true"/>
-    <circle cx="25" cy="25" r="15" fill="#2563eb"/>
+    <rect width="164" height="156" rx="11" fill="url(#blueCard)" stroke="#6cc5b9"/>
+    <use href="#icon-decision" transform="translate(122 12) scale(0.58)" color="#0bb9b0" aria-hidden="true"/>
+    <circle cx="25" cy="25" r="15" fill="#0bb9b0"/>
     <text x="25" y="29" text-anchor="middle" class="badgeText">5</text>
     <g class="iconBlue" transform="translate(58 18)">
       <path d="M 10 7 l30 22 l-14 3 l-5 13 z"/>
@@ -197,9 +202,9 @@
   </g>
 
   <g data-card="true" transform="translate(986 160)" filter="url(#finalShadow)">
-    <rect width="178" height="172" rx="12" fill="url(#blueCard)" stroke="#2563eb" stroke-width="2.4"/>
-    <use href="#icon-decision" transform="translate(136 12) scale(0.58)" color="#2563eb" aria-hidden="true"/>
-    <circle cx="28" cy="28" r="16" fill="#2563eb"/>
+    <rect width="178" height="172" rx="12" fill="url(#blueCard)" stroke="#0bb9b0" stroke-width="2.4"/>
+    <use href="#icon-decision" transform="translate(136 12) scale(0.58)" color="#0bb9b0" aria-hidden="true"/>
+    <circle cx="28" cy="28" r="16" fill="#0bb9b0"/>
     <text x="28" y="32" text-anchor="middle" class="badgeText">6</text>
     <g class="iconBlue" transform="translate(68 16) scale(0.68)">
       <path d="M 12 40 c-7 0 -12 -5 -12 -11 c0 -5 4 -10 10 -11 c3 -9 11 -15 21 -15 c11 0 20 8 22 19 c6 1 10 6 10 12 c0 8 -6 14 -15 14 H12"/>
@@ -212,15 +217,15 @@
     <text x="89" y="151" text-anchor="middle" class="cardSub">for serving.</text>
   </g>
 
-  <polyline points="706,342 706,382 158,382 158,342" fill="none" stroke="#2563eb" stroke-width="2.2" stroke-dasharray="7 7" marker-end="url(#arrowBlue)" opacity="0.72"/>
-  <rect x="438" y="350" width="262" height="28" rx="14" fill="#ffffff" stroke="#d0d7de"/>
+  <polyline points="706,342 706,382 158,382 158,342" fill="none" stroke="#0bb9b0" stroke-width="2.2" stroke-dasharray="7 7" marker-end="url(#arrowBlue)" opacity="0.72"/>
+  <rect x="438" y="350" width="262" height="28" rx="14" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
   <text x="569" y="369" text-anchor="middle" class="bodyText" font-size="12">feedback loop</text>
 
   <g transform="translate(160 432)">
-    <rect width="920" height="48" rx="18" fill="#f6f8fa" stroke="#d0d7de"/>
-    <circle cx="28" cy="24" r="6" fill="#2563eb"/>
+    <rect width="920" height="48" rx="18" fill="#fffbd9" stroke="#8bd9cf"/>
+    <circle cx="28" cy="24" r="6" fill="#0bb9b0"/>
     <text x="46" y="21" class="bodyText">MLflow: experiment tracking, metrics, and artifacts.</text>
-    <circle cx="486" cy="24" r="6" fill="#57606a"/>
+    <circle cx="486" cy="24" r="6" fill="#087f83"/>
     <text x="504" y="21" class="bodyText">Golden Set: deterministic cases for explainable validation.</text>
     <text x="46" y="38" class="bodyText">Main flow is blue; dashed arrow indicates offline learning.</text>
   </g>

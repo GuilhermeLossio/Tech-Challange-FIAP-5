@@ -1,5 +1,7 @@
 # ECloe - Datathon 7MLET
 
+![ECloe](docs/ECloeMain.png)
+
 > Quickstart and navigation. Detailed architecture, operations, API, product,
 > security, and ML documentation is indexed in [`docs/index.md`](docs/index.md).
 
@@ -104,6 +106,8 @@ Supporting diagrams:
 Status: **Implemented**.
 
 The ECloe Demo is one simulated web application with **ECloe Market** for marketplace browsing and checkout and **ECloe Pay** for wallet benefits and accepted-offer status. The Flask application builds minimized context, sends typed eligible candidates to ECloe Engine, and records domain interactions without processing real money.
+
+![ECloe Market MVP interface](output/playwright/checkout.png)
 
 Short journey:
 
