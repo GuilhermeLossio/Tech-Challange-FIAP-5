@@ -2,20 +2,25 @@
   <title id="title">ECloe decision and learning flow</title>
   <desc id="desc">ECloe decision flow with orthogonal connectors. The online path moves left to right from Channel to Engine Decision API, Bandit Service, Offer, and Decision Reward Store. The offline path places Policy Update on the left and uses a non-crossing U-shaped reward attribution route plus a short feedback route to Engine Decision API.</desc>
   <defs>
+    <linearGradient id="ecloeBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffde8"/>
+      <stop offset="58%" stop-color="#f7ffb9"/>
+      <stop offset="100%" stop-color="#dcfff0"/>
+    </linearGradient>
     <marker id="arrowGray" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#087f83"/>
     </marker>
     <marker id="arrowBlue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0bb9b0"/>
     </marker>
     <style>
-      .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-weight: 700; }
-      .sectionText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 13px; font-weight: 700; }
-      .bodyText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; }
-      .cardTitle { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #1f2328; font-size: 15px; font-weight: 700; }
-      .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 11.5px; }
+      .titleText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #14343b; font-weight: 700; }
+      .sectionText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 13px; font-weight: 700; }
+      .bodyText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 12px; }
+      .cardTitle { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #14343b; font-size: 15px; font-weight: 700; }
+      .cardSub { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 11.5px; }
       .badgeText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #ffffff; font-size: 12px; font-weight: 700; }
-      .labelText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #57606a; font-size: 12px; font-weight: 700; }
+      .labelText { font-family: Segoe UI, Helvetica, Arial, sans-serif; fill: #087f83; font-size: 12px; font-weight: 700; }
     </style>
 
     <g id="icon-web" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
@@ -77,86 +82,86 @@
       <circle cx="20" cy="20" r="4"/>
     </g>
   </defs>
-  <rect width="1240" height="620" fill="#ffffff"/>
+  <rect width="1240" height="620" fill="url(#ecloeBg)"/>
   <text x="620" y="48" text-anchor="middle" class="titleText" font-size="24">ECloe - Decision and Learning Flow</text>
   <text x="620" y="76" text-anchor="middle" class="bodyText" font-size="13">The online path returns an eligible-offer decision; the offline path uses delayed rewards to review the policy.</text>
 
-  <rect x="40" y="112" width="1160" height="226" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.4"/>
+  <rect x="40" y="112" width="1160" height="226" rx="18" fill="#fffbd9" stroke="#8bd9cf" stroke-width="2.4"/>
   <text x="70" y="140" class="sectionText">Online decision path</text>
 
   <g data-card="true" transform="translate(76 172)">
-    <rect width="180" height="132" rx="11" fill="#ffffff" stroke="#57606a" stroke-width="3"/>
-    <use href="#icon-web" transform="translate(138 12) scale(0.58)" color="#57606a" aria-hidden="true"/>
-    <circle cx="25" cy="24" r="15" fill="#57606a"/>
+    <rect width="180" height="132" rx="11" fill="url(#ecloeBg)" stroke="#087f83" stroke-width="3"/>
+    <use href="#icon-web" transform="translate(138 12) scale(0.58)" color="#087f83" aria-hidden="true"/>
+    <circle cx="25" cy="24" r="15" fill="#087f83"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">1</text>
     <text x="90" y="76" text-anchor="middle" class="cardTitle">Channel</text>
     <text x="90" y="100" text-anchor="middle" class="cardSub">Web, app, CRM, or notebook</text>
     <text x="90" y="118" text-anchor="middle" class="cardSub">sends minimized context.</text>
   </g>
   <g data-card="true" transform="translate(304 172)">
-    <rect width="180" height="132" rx="11" fill="#ffffff" stroke="#57606a" stroke-width="3"/>
-    <use href="#icon-api" transform="translate(138 12) scale(0.58)" color="#57606a" aria-hidden="true"/>
-    <circle cx="25" cy="24" r="15" fill="#57606a"/>
+    <rect width="180" height="132" rx="11" fill="url(#ecloeBg)" stroke="#087f83" stroke-width="3"/>
+    <use href="#icon-api" transform="translate(138 12) scale(0.58)" color="#087f83" aria-hidden="true"/>
+    <circle cx="25" cy="24" r="15" fill="#087f83"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">2</text>
     <text x="90" y="76" text-anchor="middle" class="cardTitle">Engine Decision API</text>
     <text x="90" y="100" text-anchor="middle" class="cardSub">Checks schema,</text>
     <text x="90" y="118" text-anchor="middle" class="cardSub">eligible offers, and policy.</text>
   </g>
   <g data-card="true" transform="translate(532 172)">
-    <rect width="180" height="132" rx="11" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
-    <use href="#icon-decision" transform="translate(138 12) scale(0.58)" color="#2563eb" aria-hidden="true"/>
-    <circle cx="25" cy="24" r="15" fill="#2563eb"/>
+    <rect width="180" height="132" rx="11" fill="#d9fff0" stroke="#0bb9b0" stroke-width="3"/>
+    <use href="#icon-decision" transform="translate(138 12) scale(0.58)" color="#0bb9b0" aria-hidden="true"/>
+    <circle cx="25" cy="24" r="15" fill="#0bb9b0"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">3</text>
     <text x="90" y="76" text-anchor="middle" class="cardTitle">Policy Ranking</text>
     <text x="90" y="100" text-anchor="middle" class="cardSub">Loads active policy and</text>
     <text x="90" y="118" text-anchor="middle" class="cardSub">chooses one eligible offer.</text>
   </g>
   <g data-card="true" transform="translate(760 172)">
-    <rect width="180" height="132" rx="11" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
-    <use href="#icon-decision" transform="translate(138 12) scale(0.58)" color="#2563eb" aria-hidden="true"/>
-    <circle cx="25" cy="24" r="15" fill="#2563eb"/>
+    <rect width="180" height="132" rx="11" fill="#d9fff0" stroke="#0bb9b0" stroke-width="3"/>
+    <use href="#icon-decision" transform="translate(138 12) scale(0.58)" color="#0bb9b0" aria-hidden="true"/>
+    <circle cx="25" cy="24" r="15" fill="#0bb9b0"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">4</text>
     <text x="90" y="76" text-anchor="middle" class="cardTitle">Ranked Offer</text>
     <text x="90" y="100" text-anchor="middle" class="cardSub">Action is shown with</text>
     <text x="90" y="118" text-anchor="middle" class="cardSub">auditable reason codes.</text>
   </g>
   <g data-card="true" transform="translate(988 172)">
-    <rect width="176" height="132" rx="11" fill="#dbeafe" stroke="#2563eb" stroke-width="3"/>
-    <use href="#icon-decision" transform="translate(134 12) scale(0.58)" color="#2563eb" aria-hidden="true"/>
-    <circle cx="25" cy="24" r="15" fill="#2563eb"/>
+    <rect width="176" height="132" rx="11" fill="#d9fff0" stroke="#0bb9b0" stroke-width="3"/>
+    <use href="#icon-decision" transform="translate(134 12) scale(0.58)" color="#0bb9b0" aria-hidden="true"/>
+    <circle cx="25" cy="24" r="15" fill="#0bb9b0"/>
     <text x="25" y="28" text-anchor="middle" class="badgeText">5</text>
     <text x="88" y="76" text-anchor="middle" class="cardTitle">Decision Store</text>
     <text x="88" y="100" text-anchor="middle" class="cardSub">Persists decision_id,</text>
     <text x="88" y="118" text-anchor="middle" class="cardSub">version, and rewards.</text>
   </g>
 
-  <line x1="256" y1="238" x2="304" y2="238" stroke="#57606a" stroke-width="2.3" marker-end="url(#arrowGray)"/>
+  <line x1="256" y1="238" x2="304" y2="238" stroke="#087f83" stroke-width="2.3" marker-end="url(#arrowGray)"/>
   <text x="280" y="222" text-anchor="middle" class="labelText">context</text>
-  <line x1="484" y1="238" x2="532" y2="238" stroke="#2563eb" stroke-width="2.8" marker-end="url(#arrowBlue)"/>
+  <line x1="484" y1="238" x2="532" y2="238" stroke="#0bb9b0" stroke-width="2.8" marker-end="url(#arrowBlue)"/>
   <text x="508" y="222" text-anchor="middle" class="labelText">validated request</text>
-  <line x1="712" y1="238" x2="760" y2="238" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <line x1="712" y1="238" x2="760" y2="238" stroke="#0bb9b0" stroke-width="3" marker-end="url(#arrowBlue)"/>
   <text x="736" y="222" text-anchor="middle" class="labelText">decision</text>
-  <line x1="940" y1="238" x2="988" y2="238" stroke="#2563eb" stroke-width="3" marker-end="url(#arrowBlue)"/>
+  <line x1="940" y1="238" x2="988" y2="238" stroke="#0bb9b0" stroke-width="3" marker-end="url(#arrowBlue)"/>
   <text x="964" y="222" text-anchor="middle" class="labelText">events</text>
 
-  <rect x="40" y="368" width="1160" height="126" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.4"/>
+  <rect x="40" y="368" width="1160" height="126" rx="18" fill="#fffbd9" stroke="#8bd9cf" stroke-width="2.4"/>
   <text x="70" y="396" class="sectionText">Offline learning path</text>
   <g data-card="true" transform="translate(260 426)">
-    <rect width="240" height="42" rx="12" fill="#ffffff" stroke="#d0d7de" stroke-width="2.2"/>
-    <use href="#icon-decision" transform="translate(212 12) scale(0.45)" color="#57606a" aria-hidden="true"/>
+    <rect width="240" height="42" rx="12" fill="url(#ecloeBg)" stroke="#8bd9cf" stroke-width="2.2"/>
+    <use href="#icon-decision" transform="translate(212 12) scale(0.45)" color="#087f83" aria-hidden="true"/>
     <text x="120" y="26" text-anchor="middle" class="cardTitle" style="font-size:13.5px">Reviewed Policy Update</text>
   </g>
 
-  <polyline points="1076,304 1076,408 380,408 380,426" fill="none" stroke="#2563eb" stroke-width="2.3" stroke-dasharray="7 7" marker-end="url(#arrowBlue)"/>
+  <polyline points="1076,304 1076,408 380,408 380,426" fill="none" stroke="#0bb9b0" stroke-width="2.3" stroke-dasharray="7 7" marker-end="url(#arrowBlue)"/>
   <text x="728" y="394" text-anchor="middle" class="labelText">reward attribution</text>
-  <polyline points="380,426 380,346 394,346 394,304" fill="none" stroke="#57606a" stroke-width="2.1" stroke-dasharray="7 7" marker-end="url(#arrowGray)"/>
+  <polyline points="380,426 380,346 394,346 394,304" fill="none" stroke="#087f83" stroke-width="2.1" stroke-dasharray="7 7" marker-end="url(#arrowGray)"/>
   <text x="314" y="358" text-anchor="middle" class="labelText">new version</text>
 
   <g transform="translate(184 530)">
-    <rect width="872" height="36" rx="18" fill="#f6f8fa" stroke="#d0d7de" stroke-width="2.2"/>
-    <circle cx="28" cy="18" r="6" fill="#2563eb"/>
+    <rect width="872" height="36" rx="18" fill="#fffbd9" stroke="#8bd9cf" stroke-width="2.2"/>
+    <circle cx="28" cy="18" r="6" fill="#0bb9b0"/>
     <text x="46" y="22" class="bodyText">decision_id links each offer to delayed reward events.</text>
-    <circle cx="420" cy="18" r="6" fill="#57606a"/>
+    <circle cx="420" cy="18" r="6" fill="#087f83"/>
     <text x="438" y="22" class="bodyText">Dashed arrows are offline learning feedback, not serving latency.</text>
   </g>
 </svg>

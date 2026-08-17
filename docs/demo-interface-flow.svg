@@ -2,11 +2,16 @@
   <title id="title">ECloe planned demo interface architecture</title>
   <desc id="desc">Planned ECloe Demo interface showing Demo Web screens, API Gateway and Auth boundary, Demo BFF orchestration, Market Transaction API, Pay Transaction API, Engine Decision API, and Decision and Reward Store. The BFF is a demo orchestrator, not the only possible channel integration pattern.</desc>
   <defs>
+    <linearGradient id="ecloeBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffde8"/>
+      <stop offset="58%" stop-color="#f7ffb9"/>
+      <stop offset="100%" stop-color="#dcfff0"/>
+    </linearGradient>
     <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#57606a"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#087f83"/>
     </marker>
     <marker id="arrow-blue" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#2563eb"/>
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0bb9b0"/>
     </marker>
 
     <g id="icon-web" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
@@ -68,68 +73,68 @@
       <circle cx="20" cy="20" r="4"/>
     </g>
   </defs>
-  <rect width="1180" height="520" fill="#ffffff"/>
-  <text x="590" y="42" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#1f2328">ECloe Demo Interface Layer</text>
-  <text x="590" y="68" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#57606a">Demo BFF orchestrates the web journey; APIs remain domain services behind gateway and auth controls</text>
+  <rect width="1180" height="520" fill="url(#ecloeBg)"/>
+  <text x="590" y="42" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="24" font-weight="700" fill="#14343b">ECloe Demo Interface Layer</text>
+  <text x="590" y="68" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" fill="#087f83">Demo BFF orchestrates the web journey; APIs remain domain services behind gateway and auth controls</text>
 
-  <rect x="45" y="112" width="230" height="300" rx="18" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="70" y="140" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Demo screens</text>
-  <rect x="80" y="178" width="160" height="52" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" data-card="true"/>
-  <use href="#icon-wallet" transform="translate(88 188) scale(0.30)" color="#2563eb" aria-hidden="true"/>
-  <text x="128" y="210" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Market</text>
-  <rect x="80" y="260" width="160" height="52" rx="10" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-wallet" transform="translate(88 270) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="128" y="292" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Pay</text>
-  <rect x="80" y="342" width="160" height="52" rx="10" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-api" transform="translate(88 352) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="128" y="374" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Control</text>
+  <rect x="45" y="112" width="230" height="300" rx="18" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="70" y="140" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#087f83">Demo screens</text>
+  <rect x="80" y="178" width="160" height="52" rx="10" fill="#d9fff0" stroke="#0bb9b0" stroke-width="1.5" data-card="true"/>
+  <use href="#icon-wallet" transform="translate(88 188) scale(0.30)" color="#0bb9b0" aria-hidden="true"/>
+  <text x="128" y="210" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#14343b">Market</text>
+  <rect x="80" y="260" width="160" height="52" rx="10" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-wallet" transform="translate(88 270) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="128" y="292" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#14343b">Pay</text>
+  <rect x="80" y="342" width="160" height="52" rx="10" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-api" transform="translate(88 352) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="128" y="374" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#14343b">Control</text>
 
-  <rect x="340" y="112" width="230" height="300" rx="18" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="365" y="140" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Perimeter and BFF</text>
-  <rect x="375" y="190" width="160" height="74" rx="10" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-shield" transform="translate(383 200) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="419" y="218" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#1f2328">API Gateway</text>
-  <text x="455" y="238" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">auth, rate limit,</text>
-  <text x="455" y="256" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">correlation IDs</text>
-  <rect x="375" y="315" width="160" height="64" rx="10" fill="#eff6ff" stroke="#2563eb" data-card="true"/>
-  <use href="#icon-web" transform="translate(383 325) scale(0.30)" color="#2563eb" aria-hidden="true"/>
-  <text x="423" y="347" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#1f2328">Demo BFF</text>
-  <text x="455" y="367" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">web journey only</text>
+  <rect x="340" y="112" width="230" height="300" rx="18" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="365" y="140" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#087f83">Perimeter and BFF</text>
+  <rect x="375" y="190" width="160" height="74" rx="10" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-shield" transform="translate(383 200) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="419" y="218" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13.5" font-weight="700" fill="#14343b">API Gateway</text>
+  <text x="455" y="238" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">auth, rate limit,</text>
+  <text x="455" y="256" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">correlation IDs</text>
+  <rect x="375" y="315" width="160" height="64" rx="10" fill="#e5fff7" stroke="#0bb9b0" data-card="true"/>
+  <use href="#icon-web" transform="translate(383 325) scale(0.30)" color="#0bb9b0" aria-hidden="true"/>
+  <text x="423" y="347" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" font-weight="700" fill="#14343b">Demo BFF</text>
+  <text x="455" y="367" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">web journey only</text>
 
-  <rect x="645" y="112" width="250" height="300" rx="18" fill="#ffffff" stroke="#d0d7de"/>
-  <text x="670" y="140" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#57606a">Domain APIs</text>
-  <rect x="690" y="170" width="160" height="58" rx="10" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5" data-card="true"/>
-  <use href="#icon-api" transform="translate(698 180) scale(0.30)" color="#2563eb" aria-hidden="true"/>
-  <text x="734" y="194" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#1f2328">Market Transaction</text>
-  <text x="770" y="213" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">cart and checkout</text>
-  <rect x="690" y="262" width="160" height="58" rx="10" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-api" transform="translate(698 272) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="734" y="286" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1f2328">Pay Transaction</text>
-  <text x="770" y="305" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#57606a">wallet state</text>
-  <rect x="690" y="350" width="160" height="42" rx="10" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-api" transform="translate(698 360) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="734" y="378" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#1f2328">Engine Decision</text>
+  <rect x="645" y="112" width="250" height="300" rx="18" fill="url(#ecloeBg)" stroke="#8bd9cf"/>
+  <text x="670" y="140" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#087f83">Domain APIs</text>
+  <rect x="690" y="170" width="160" height="58" rx="10" fill="#d9fff0" stroke="#0bb9b0" stroke-width="1.5" data-card="true"/>
+  <use href="#icon-api" transform="translate(698 180) scale(0.30)" color="#0bb9b0" aria-hidden="true"/>
+  <text x="734" y="194" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" font-weight="700" fill="#14343b">Market Transaction</text>
+  <text x="770" y="213" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#087f83">cart and checkout</text>
+  <rect x="690" y="262" width="160" height="58" rx="10" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-api" transform="translate(698 272) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="734" y="286" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#14343b">Pay Transaction</text>
+  <text x="770" y="305" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.2" fill="#087f83">wallet state</text>
+  <rect x="690" y="350" width="160" height="42" rx="10" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-api" transform="translate(698 360) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="734" y="378" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12.5" font-weight="700" fill="#14343b">Engine Decision</text>
 
-  <rect x="965" y="180" width="170" height="80" rx="10" fill="#f6f8fa" stroke="#d0d7de" data-card="true"/>
-  <use href="#icon-api" transform="translate(973 190) scale(0.30)" color="#57606a" aria-hidden="true"/>
-  <text x="1009" y="212" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#1f2328">Evidence Store</text>
-  <text x="1050" y="234" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#57606a">implemented persistence</text>
+  <rect x="965" y="180" width="170" height="80" rx="10" fill="#fffbd9" stroke="#8bd9cf" data-card="true"/>
+  <use href="#icon-api" transform="translate(973 190) scale(0.30)" color="#087f83" aria-hidden="true"/>
+  <text x="1009" y="212" text-anchor="start" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="13" font-weight="700" fill="#14343b">Evidence Store</text>
+  <text x="1050" y="234" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11.5" fill="#087f83">implemented persistence</text>
 
-  <polyline points="240,204 307,204 307,227 375,227" fill="none" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
-  <text x="309" y="200" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#2563eb">secure route</text>
-  <polyline points="240,286 307,286 307,227 375,227" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <text x="308" y="265" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">secure route</text>
-  <line x1="455" y1="264" x2="455" y2="315" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <text x="482" y="294" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">session</text>
-  <polyline points="535,338 612,338 612,199 690,199" fill="none" stroke="#2563eb" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
-  <text x="614" y="246" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#2563eb">checkout command</text>
-  <polyline points="535,347 612,347 612,291 690,291" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <text x="615" y="314" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">wallet command</text>
-  <polyline points="535,361 612,361 612,371 690,371" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <text x="615" y="381" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">decision request</text>
-  <polyline points="850,371 908,371 908,220 965,220" fill="none" stroke="#57606a" stroke-width="2.2" marker-end="url(#arrow)"/>
-  <text x="930" y="300" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#57606a">write evidence</text>
+  <polyline points="240,204 307,204 307,227 375,227" fill="none" stroke="#0bb9b0" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <text x="309" y="200" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#0bb9b0">secure route</text>
+  <polyline points="240,286 307,286 307,227 375,227" fill="none" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="308" y="265" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#087f83">secure route</text>
+  <line x1="455" y1="264" x2="455" y2="315" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="482" y="294" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#087f83">session</text>
+  <polyline points="535,338 612,338 612,199 690,199" fill="none" stroke="#0bb9b0" stroke-width="2.4" marker-end="url(#arrow-blue)"/>
+  <text x="614" y="246" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#0bb9b0">checkout command</text>
+  <polyline points="535,347 612,347 612,291 690,291" fill="none" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="615" y="314" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#087f83">wallet command</text>
+  <polyline points="535,361 612,361 612,371 690,371" fill="none" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="615" y="381" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#087f83">decision request</text>
+  <polyline points="850,371 908,371 908,220 965,220" fill="none" stroke="#087f83" stroke-width="2.2" marker-end="url(#arrow)"/>
+  <text x="930" y="300" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="11" fill="#087f83">write evidence</text>
 
-  <rect x="90" y="455" width="1000" height="42" rx="10" fill="#f6f8fa" stroke="#d0d7de"/>
-  <text x="590" y="481" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#57606a">Mobile or partner channels can call domain APIs through the gateway; Demo BFF is only the web demo orchestrator.</text>
+  <rect x="90" y="455" width="1000" height="42" rx="10" fill="#fffbd9" stroke="#8bd9cf"/>
+  <text x="590" y="481" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="12" fill="#087f83">Mobile or partner channels can call domain APIs through the gateway; Demo BFF is only the web demo orchestrator.</text>
 </svg>

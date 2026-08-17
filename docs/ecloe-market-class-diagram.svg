@@ -2,8 +2,13 @@
   <title id="title">ECloe Market Class Diagram</title>
   <desc id="desc">Domain classes for the public marketplace, cart, checkout, orders, payment references, and outbox boundaries.</desc>
   <defs>
+    <linearGradient id="ecloeBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffde8"/>
+      <stop offset="58%" stop-color="#f7ffb9"/>
+      <stop offset="100%" stop-color="#dcfff0"/>
+    </linearGradient>
     <style>
-      .bg{fill:#f7fcf7}.title{font:700 24px Segoe UI,Arial,sans-serif;fill:#064437}.body{font:400 13px Segoe UI,Arial,sans-serif;fill:#31564f}.card{fill:#fff;stroke:#b9d8cf;stroke-width:1.5}.cardTitle{font:700 14px Segoe UI,Arial,sans-serif;fill:#064437}.cardSub{font:400 12px Segoe UI,Arial,sans-serif;fill:#31564f}.section{font:700 15px Segoe UI,Arial,sans-serif;fill:#073f36}.line{stroke:#7da99d;stroke-width:2;fill:none}.icon{stroke:#073f36;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
+      .bg{fill:#f7fcf7}.title{font:700 24px Segoe UI,Arial,sans-serif;fill:#087f83}.body{font:400 13px Segoe UI,Arial,sans-serif;fill:#3b6b70}.card{fill:#fff;stroke:#8bd9cf;stroke-width:1.5}.cardTitle{font:700 14px Segoe UI,Arial,sans-serif;fill:#087f83}.cardSub{font:400 12px Segoe UI,Arial,sans-serif;fill:#3b6b70}.section{font:700 15px Segoe UI,Arial,sans-serif;fill:#087f83}.line{stroke:#6cc5b9;stroke-width:2;fill:none}.icon{stroke:#087f83;stroke-width:2;fill:none;stroke-linecap:round;stroke-linejoin:round}
     </style>
     <g id="icon-web"><rect class="icon" x="7" y="10" width="26" height="20" rx="3"/><path class="icon" d="M7 16h26"/></g>
     <g id="icon-cart"><path class="icon" d="M9 11h4l3 14h14l3-10H16"/><circle class="icon" cx="18" cy="31" r="2"/><circle class="icon" cx="29" cy="31" r="2"/></g>

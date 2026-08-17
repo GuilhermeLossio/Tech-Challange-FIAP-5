@@ -2,9 +2,14 @@
   <title id="title">ECloe recommendation system overview</title>
   <desc id="desc">Market and Pay send eligible candidates and minimized context to ECloe Engine. Operational state remains in Azure SQL, decision history remains in Cosmos DB, and versioned artifacts remain in Blob Storage.</desc>
   <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#475569"/></marker>
+    <linearGradient id="ecloeBg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fffde8"/>
+      <stop offset="58%" stop-color="#f7ffb9"/>
+      <stop offset="100%" stop-color="#dcfff0"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#247477"/></marker>
     <style>
-      .title{font:700 25px Segoe UI,Arial,sans-serif;fill:#172033}.sub{font:13px Segoe UI,Arial,sans-serif;fill:#596579}.lane{font:700 13px Segoe UI,Arial,sans-serif;fill:#475569}.ct{font:700 15px Segoe UI,Arial,sans-serif;fill:#172033}.cb{font:12px Segoe UI,Arial,sans-serif;fill:#596579}.line{fill:none;stroke:#475569;stroke-width:2.5;marker-end:url(#arrow)}
+      .title{font:700 25px Segoe UI,Arial,sans-serif;fill:#14343b}.sub{font:13px Segoe UI,Arial,sans-serif;fill:#3b6b70}.lane{font:700 13px Segoe UI,Arial,sans-serif;fill:#247477}.ct{font:700 15px Segoe UI,Arial,sans-serif;fill:#14343b}.cb{font:12px Segoe UI,Arial,sans-serif;fill:#3b6b70}.line{fill:none;stroke:#247477;stroke-width:2.5;marker-end:url(#arrow)}
     </style>
     <g id="icon-web" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="7" width="30" height="23" rx="3"/><path d="M5 14h30M15 35h10M20 30v5"/></g>
     <g id="icon-cart" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 8h5l4 17h17l4-12H13"/><circle cx="17" cy="32" r="2"/><circle cx="29" cy="32" r="2"/></g>
@@ -13,52 +18,52 @@
     <g id="icon-data" fill="none" stroke="currentColor" stroke-width="2.4"><ellipse cx="20" cy="9" rx="12" ry="5"/><path d="M8 9v20c0 3 5 5 12 5s12-2 12-5V9M8 19c0 3 5 5 12 5s12-2 12-5"/></g>
     <g id="icon-file" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M11 5h14l6 6v24H11zM25 5v8h6M16 21h10M16 27h10"/></g>
   </defs>
-  <rect width="1240" height="700" fill="#fff"/>
+  <rect width="1240" height="700" fill="url(#ecloeBg)"/>
   <text x="620" y="45" text-anchor="middle" class="title">ECloe Recommendation System</text>
   <text x="620" y="72" text-anchor="middle" class="sub">Independent Market and Pay policies share one governed Engine boundary.</text>
   <g data-card="true" transform="translate(1045 22)">
-    <rect width="150" height="48" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>
-    <use href="#icon-web" transform="translate(12 7) scale(.55)" color="#475569"/>
+    <rect width="150" height="48" rx="8" fill="#fffbd9" stroke="#8bd9cf"/>
+    <use href="#icon-web" transform="translate(12 7) scale(.55)" color="#247477"/>
     <text x="55" y="29" class="cb">System view</text>
   </g>
-  <rect x="38" y="104" width="1164" height="220" rx="12" fill="#f8fafc" stroke="#cbd5e1"/>
+  <rect x="38" y="104" width="1164" height="220" rx="12" fill="#fffbd9" stroke="#8bd9cf"/>
   <text x="62" y="130" class="lane">Synchronous decision path</text>
   <g transform="translate(70 162)">
-    <rect width="190" height="120" rx="8" fill="#fff" stroke="#166534" stroke-width="2.5"/>
-    <use href="#icon-cart" transform="translate(142 13) scale(.62)" color="#166534"/>
+    <rect width="190" height="120" rx="8" fill="url(#ecloeBg)" stroke="#0b877d" stroke-width="2.5"/>
+    <use href="#icon-cart" transform="translate(142 13) scale(.62)" color="#0b877d"/>
     <text x="20" y="38" class="ct">ECloe Market</text><text x="20" y="68" class="cb">Active, priced, in-stock</text><text x="20" y="88" class="cb">product candidates</text>
   </g>
   <g transform="translate(70 390)">
-    <rect width="190" height="120" rx="8" fill="#fff" stroke="#9a3412" stroke-width="2.5"/>
-    <use href="#icon-wallet" transform="translate(142 13) scale(.62)" color="#9a3412"/>
+    <rect width="190" height="120" rx="8" fill="url(#ecloeBg)" stroke="#d96e62" stroke-width="2.5"/>
+    <use href="#icon-wallet" transform="translate(142 13) scale(.62)" color="#d96e62"/>
     <text x="20" y="38" class="ct">ECloe Pay</text><text x="20" y="68" class="cb">Upstream-eligible</text><text x="20" y="88" class="cb">benefit candidates</text>
   </g>
   <g transform="translate(335 220)">
-    <rect width="205" height="130" rx="8" fill="#eef6ff" stroke="#2563eb" stroke-width="2.5"/>
-    <use href="#icon-web" transform="translate(155 14) scale(.62)" color="#2563eb"/>
+    <rect width="205" height="130" rx="8" fill="#e5fff7" stroke="#0bb9b0" stroke-width="2.5"/>
+    <use href="#icon-web" transform="translate(155 14) scale(.62)" color="#0bb9b0"/>
     <text x="20" y="40" class="ct">Context Builder</text><text x="20" y="72" class="cb">Bands and neutral categories</text><text x="20" y="92" class="cb">Strict surface allowlists</text>
   </g>
   <g transform="translate(620 220)">
-    <rect width="220" height="130" rx="8" fill="#eef6ff" stroke="#2563eb" stroke-width="3"/>
-    <use href="#icon-engine" transform="translate(168 14) scale(.62)" color="#2563eb"/>
+    <rect width="220" height="130" rx="8" fill="#e5fff7" stroke="#0bb9b0" stroke-width="3"/>
+    <use href="#icon-engine" transform="translate(168 14) scale(.62)" color="#0bb9b0"/>
     <text x="20" y="40" class="ct">ECloe Engine v2</text><text x="20" y="72" class="cb">Baseline or guarded ranker</text><text x="20" y="92" class="cb">Shadow adaptive challengers</text><text x="20" y="112" class="cb">Reason and propensity metadata</text>
   </g>
   <g transform="translate(925 145)">
-    <rect width="235" height="110" rx="8" fill="#fff7ed" stroke="#c2410c" stroke-width="2.5"/>
-    <use href="#icon-data" transform="translate(183 12) scale(.62)" color="#c2410c"/>
+    <rect width="235" height="110" rx="8" fill="#fff0d1" stroke="#f08d78" stroke-width="2.5"/>
+    <use href="#icon-data" transform="translate(183 12) scale(.62)" color="#f08d78"/>
     <text x="20" y="38" class="ct">Cosmos DB</text><text x="20" y="68" class="cb">Decisions, rewards, policies</text><text x="20" y="88" class="cb">Partitioned by subject key</text>
   </g>
   <g transform="translate(925 290)">
-    <rect width="235" height="110" rx="8" fill="#f0fdf4" stroke="#15803d" stroke-width="2.5"/>
-    <use href="#icon-data" transform="translate(183 12) scale(.62)" color="#15803d"/>
+    <rect width="235" height="110" rx="8" fill="#e7ffd4" stroke="#0b9f8f" stroke-width="2.5"/>
+    <use href="#icon-data" transform="translate(183 12) scale(.62)" color="#0b9f8f"/>
     <text x="20" y="38" class="ct">Azure SQL</text><text x="20" y="68" class="cb">Domain state and features</text><text x="20" y="88" class="cb">Transactional outbox</text>
   </g>
   <g transform="translate(925 435)">
-    <rect width="235" height="110" rx="8" fill="#f5f3ff" stroke="#6d28d9" stroke-width="2.5"/>
-    <use href="#icon-file" transform="translate(183 12) scale(.62)" color="#6d28d9"/>
+    <rect width="235" height="110" rx="8" fill="#e9e8ff" stroke="#6976c7" stroke-width="2.5"/>
+    <use href="#icon-file" transform="translate(183 12) scale(.62)" color="#6976c7"/>
     <text x="20" y="38" class="ct">Blob Storage</text><text x="20" y="68" class="cb">Artifacts and manifests</text><text x="20" y="88" class="cb">Checksums and reports</text>
   </g>
   <path d="M260 222H300V260H335" class="line"/><path d="M260 450H300V310H335" class="line"/><path d="M540 285H620" class="line"/><path d="M840 260H885V200H925" class="line"/><path d="M840 285H925" class="line"/><path d="M840 310H885V490H925" class="line"/>
-  <rect x="38" y="584" width="1164" height="78" rx="10" fill="#fff1f2" stroke="#be123c"/>
+  <rect x="38" y="584" width="1164" height="78" rx="10" fill="#ffe4d8" stroke="#dd6b76"/>
   <text x="62" y="614" class="ct">Hard boundary</text><text x="62" y="640" class="sub">Engine ranks supplied candidates. It never creates eligibility, price, stock, balance, credit, fraud, or risk decisions.</text>
 </svg>
