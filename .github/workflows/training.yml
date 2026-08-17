@@ -78,7 +78,7 @@ jobs:
           AZURE_BLOB_CONTAINER_ARTIFACTS: ${{ vars.AZURE_BLOB_CONTAINER_ARTIFACTS || 'ecloe-artifacts' }}
 
       - name: Upload safe training reports
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: policy-training-reports
           path: |
